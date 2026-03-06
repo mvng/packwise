@@ -16,6 +16,7 @@ type Trip = {
   endDate: Date | string | null
   tripType: string | null
   createdAt: Date | string
+  packingLists?: any[]
 }
 
 const getTripEmoji = (tripType: string | null) => {
@@ -27,7 +28,7 @@ const getTripEmoji = (tripType: string | null) => {
     skiing: '⛷️',
     ski: '⛷️',
     business: '💼',
-    leisure: '🌴',
+    leisure: '🎡',
   }
   return icons[tripType] || '🧳'
 }
@@ -47,6 +48,7 @@ export default function DashboardPage() {
         router.push('/login')
         return
       }
+
       setUser(session.user)
 
       try {
@@ -55,23 +57,24 @@ export default function DashboardPage() {
           setTrips(result.trips as Trip[])
         }
       } catch (e) {
-        console.error('Failed to load trips:', e)
+        console.error('Failed to load trips', e)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     checkAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        router.push('/login')
-      } else {
-        setUser(session.user)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!session) {
+          router.push('/login')
+        }
       }
-    })
+    )
 
     return () => subscription.unsubscribe()
-  }, [router])
+  }, [])
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -81,8 +84,8 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
@@ -90,17 +93,17 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🧳</span>
             <span className="font-bold text-xl text-gray-900">Packwise</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">{user?.email}</span>
+            <span className="text-sm text-gray-600">{user?.email}</span>
             <button
               onClick={handleSignOut}
-              className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+              className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
               Sign out
             </button>
@@ -150,7 +153,7 @@ export default function DashboardPage() {
                 <h3 className="font-semibold text-gray-900 mb-1">{trip.name || 'Untitled Trip'}</h3>
                 <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
                 <div className="text-xs text-gray-400">
-                  {trip.startDate ? formatDate(trip.startDate as string) : ''} - {trip.endDate ? formatDate(trip.endDate as string) : ''}
+                  {trip.startDate ? formatDate(trip.startDate as string) : ''} – {trip.endDate ? formatDate(trip.endDate as string) : ''}
                 </div>
               </Link>
             ))}
