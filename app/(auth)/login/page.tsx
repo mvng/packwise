@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,7 +11,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
-  const router = useRouter()
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,8 +36,7 @@ export default function LoginPage() {
       if (error) {
         setError(error.message)
       } else {
-        router.push('/dashboard')
-        router.refresh()
+        window.location.href = '/dashboard'
       }
     }
     setLoading(false)
@@ -58,13 +55,11 @@ export default function LoginPage() {
             {isSignUp ? 'Create your account' : 'Welcome back'}
           </p>
         </div>
-
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h1 className="text-xl font-semibold text-gray-900 mb-6">
             {isSignUp ? 'Sign up' : 'Sign in'}
           </h1>
-
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -80,7 +75,6 @@ export default function LoginPage() {
                 placeholder="you@example.com"
               />
             </div>
-
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
@@ -96,19 +90,16 @@ export default function LoginPage() {
                 placeholder="Min. 6 characters"
               />
             </div>
-
             {error && (
               <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
-
             {message && (
               <div className="bg-green-50 text-green-600 px-4 py-3 rounded-lg text-sm">
                 {message}
               </div>
             )}
-
             <button
               type="submit"
               disabled={loading}
@@ -117,7 +108,6 @@ export default function LoginPage() {
               {loading ? 'Loading...' : isSignUp ? 'Create account' : 'Sign in'}
             </button>
           </form>
-
           <div className="mt-6 text-center">
             <button
               onClick={() => { setIsSignUp(!isSignUp); setError(null); setMessage(null) }}
