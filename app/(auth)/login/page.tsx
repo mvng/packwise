@@ -21,16 +21,27 @@ export default function LoginPage() {
     const supabase = createClient()
 
     if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
       })
+
       if (error) {
         setError(error.message)
-      } else {
-        setMessage('Check your email for a confirmation link!')
+        setLoading(false)
+        return
       }
+
+      // If email confirmation is disabled, signUp returns a valid session.
+      // Redirect immediately to dashboard (the auth callback will upsert the Prisma User).
+      if (data?.session) {
+        window.location.href = '/dashboard'
+        return
+      }
+
+      // Email confirmation is enabled — user must click the link in their email
+      setMessage('Check your email for a confirmation link!')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
