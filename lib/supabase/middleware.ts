@@ -6,11 +6,13 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
-  // Check for guest mode query parameter
+  // Check for guest mode query parameter or existing cookie
   const guestMode = request.nextUrl.searchParams.get('guest') === 'true'
   const hasGuestCookie = request.cookies.get('guest_mode')?.value === 'true'
 
-  // If guest mode is enabled, set a cookie and skip auth
+  // Set/renew the guest_mode cookie if needed, but do NOT return early.
+  // We must still run the Supabase session refresh below so that auth tokens
+  // stay valid for users who are (or later become) logged in.
   if (guestMode || hasGuestCookie) {
     supabaseResponse.cookies.set('guest_mode', 'true', {
       path: '/',
@@ -18,7 +20,6 @@ export async function updateSession(request: NextRequest) {
       httpOnly: true,
       sameSite: 'lax',
     })
-    return supabaseResponse
   }
 
   const supabase = createServerClient(
@@ -36,6 +37,15 @@ export async function updateSession(request: NextRequest) {
           supabaseResponse = NextResponse.next({
             request,
           })
+          // Re-apply the guest_mode cookie since we just created a new response
+          if (guestMode || hasGuestCookie) {
+            supabaseResponse.cookies.set('guest_mode', 'true', {
+              path: '/',
+              maxAge: 60 * 60 * 24 * 7,
+              httpOnly: true,
+              sameSite: 'lax',
+            })
+          }
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -44,23 +54,9 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Refresh session if expired - required for Server Components
-  // This ensures the session cookies are updated and persisted
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Optional: redirect to login if accessing protected routes without auth
-  // Uncomment if you want server-side protection:
-  // if (
-  //   !user &&
-  //   !request.nextUrl.pathname.startsWith('/login') &&
-  //   !request.nextUrl.pathname.startsWith('/auth') &&
-  //   !request.nextUrl.pathname.startsWith('/_next') &&
-  //   !request.nextUrl.pathname.startsWith('/api')
-  // ) {
-  //   const url = request.nextUrl.clone()
-  //   url.pathname = '/login'
-  //   return NextResponse.redirect(url)
-  // }
+  // IMPORTANT: Always refresh the session, even in guest mode.
+  // This keeps auth tokens valid for logged-in users and is a no-op for guests.
+  await supabase.auth.getUser()
 
   return supabaseResponse
 }

@@ -5,18 +5,21 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 
+// Always checks Supabase auth first so that logged-in users are never
+// accidentally blocked by a stale guest_mode cookie.
 async function getAuthenticatedUserId(): Promise<string | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) return user.id
+
+  // No authenticated session — fall back to guest mode
   const cookieStore = await cookies()
   const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
-
   if (isGuestMode) {
-    // In guest mode, the guest_user_id must be set client-side before calling any server actions
     return cookieStore.get('guest_user_id')?.value || null
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user?.id || null
+  return null
 }
 
 export async function toggleItemPacked(itemId: string, isPacked: boolean, tripId?: string) {
