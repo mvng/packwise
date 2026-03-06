@@ -10,15 +10,16 @@ import type { User } from '@supabase/supabase-js'
 
 type Trip = {
   id: string
-  name: string
-  destination: string
-  startDate: string
-  endDate: string
-  tripType: string
-  createdAt: string
+  name: string | null
+  destination: string | null
+  startDate: Date | string | null
+  endDate: Date | string | null
+  tripType: string | null
+  createdAt: Date | string
 }
 
-const getTripEmoji = (tripType: string) => {
+const getTripEmoji = (tripType: string | null) => {
+  if (!tripType) return '🧳'
   const icons: Record<string, string> = {
     beach: '🏖️',
     hiking: '🥾',
@@ -51,7 +52,7 @@ export default function DashboardPage() {
       try {
         const result = await getUserTrips()
         if (result.trips) {
-          setTrips(result.trips)
+          setTrips(result.trips as Trip[])
         }
       } catch (e) {
         console.error('Failed to load trips:', e)
@@ -115,7 +116,7 @@ export default function DashboardPage() {
             <p className="text-gray-500 mt-1">Manage your packing lists</p>
           </div>
           <Link
-            href="/dashboard/new"
+            href="/trip/new"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
           >
             + New Trip
@@ -128,7 +129,7 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold text-gray-700 mb-2">No trips yet</h2>
             <p className="text-gray-500 mb-6">Create your first trip to get started with smart packing lists.</p>
             <Link
-              href="/dashboard/new"
+              href="/trip/new"
               className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
               Create Your First Trip
@@ -144,12 +145,12 @@ export default function DashboardPage() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <span className="text-3xl">{getTripEmoji(trip.tripType)}</span>
-                  <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-full">{trip.tripType}</span>
+                  <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-full">{trip.tripType || 'trip'}</span>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{trip.name}</h3>
-                <p className="text-sm text-gray-500 mb-3">{trip.destination}</p>
+                <h3 className="font-semibold text-gray-900 mb-1">{trip.name || 'Untitled Trip'}</h3>
+                <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
                 <div className="text-xs text-gray-400">
-                  {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
+                  {trip.startDate ? formatDate(trip.startDate as string) : ''} - {trip.endDate ? formatDate(trip.endDate as string) : ''}
                 </div>
               </Link>
             ))}
