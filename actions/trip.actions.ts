@@ -8,31 +8,31 @@ import { generatePackingList } from '@/utils/packingGenerator'
 import { CreateTripInput, TripType } from '@/types'
 import { getTripDuration } from '@/lib/utils'
 
-/**
- * Returns the PRISMA User.id (not the Supabase auth UUID) so that the
- * Trip.userId foreign key constraint is satisfied.
- */
 async function getUserId(): Promise<string | null> {
   console.log('[getUserId] Starting auth check...')
+  console.log('[getUserId] NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30))
+  console.log('[getUserId] NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 30))
+  
   const supabase = await createClient()
+  console.log('[getUserId] Supabase client created')
 
   let authUser: any = null
 
-  // 1. Try getUser() — validates with Supabase API
+  // 1. Try getUser()
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    console.log('[getUserId] getUser() result:', user ? `✓ User found: ${user.id}` : '✗ No user')
-    authUser = user
+    const result = await supabase.auth.getUser()
+    console.log('[getUserId] getUser() full result:', JSON.stringify(result, null, 2))
+    authUser = result.data?.user ?? null
   } catch (e) {
     console.log('[getUserId] getUser() threw error:', e)
   }
 
-  // 2. Fall back to getSession() if getUser() failed
+  // 2. Fall back to getSession()
   if (!authUser) {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      console.log('[getUserId] getSession() result:', session?.user ? `✓ Session found: ${session.user.id}` : '✗ No session')
-      authUser = session?.user ?? null
+      const result = await supabase.auth.getSession()
+      console.log('[getUserId] getSession() full result:', JSON.stringify(result, null, 2))
+      authUser = result.data?.session?.user ?? null
     } catch (e) {
       console.log('[getUserId] getSession() threw error:', e)
     }
@@ -67,6 +67,9 @@ async function getUserId(): Promise<string | null> {
   // 3. Fall back to guest mode
   console.log('[getUserId] No auth user, checking guest mode...')
   const cookieStore = await cookies()
+  const allCookies = cookieStore.getAll()
+  console.log('[getUserId] All cookies from Next.js:', allCookies.map(c => c.name).join(', '))
+  
   const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
   if (isGuestMode) {
     const guestId = cookieStore.get('guest_user_id')?.value ?? null
