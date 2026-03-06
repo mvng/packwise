@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String?
+  avatarUrl    String?  @map("avatar_url")
+  authProvider String   @default("email") @map("auth_provider")
+  supabaseId   String   @unique @map("supabase_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  trips        Trip[]
+  @@map("users")
+}
+
+model Trip {
+  id           String      @id @default(uuid())
+  userId       String      @map("user_id")
+  destination  String
+  startDate    DateTime    @map("start_date")
+  endDate      DateTime    @map("end_date")
+  tripType     String      @map("trip_type")
+  weather      Json?
+  notes        String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packingLists PackingList[]
+  @@index([userId])
+  @@index([startDate])
+  @@map("trips")
+}
+
+model PackingList {
+  id         String     @id @default(uuid())
+  tripId     String     @map("trip_id")
+  name       String     @default("Main Packing List")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  categories Category[]
+  @@index([tripId])
+  @@map("packing_lists")
+}
+
+model Category {
+  id            String      @id @default(uuid())
+  packingListId String      @map("packing_list_id")
+  name          String
+  order         Int         @default(0)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  packingList   PackingList @relation(fields: [packingListId], references: [id], onDelete: Cascade)
+  items         PackingItem[]
+  @@index([packingListId])
+  @@map("categories")
+}
+
+model PackingItem {
+  id         String   @id @default(uuid())
+  categoryId String   @map("category_id")
+  name       String
+  quantity   Int      @default(1)
+  isPacked   Boolean  @default(false) @map("is_packed")
+  isCustom   Boolean  @default(false) @map("is_custom")
+  order      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  @@index([categoryId])
+  @@index([isPacked])
+  @@map("packing_items")
+}
