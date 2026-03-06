@@ -44,9 +44,23 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired - required for Server Components
-  // Do NOT remove - makes Supabase Auth work server-side
-  await supabase.auth.getUser()
+  // IMPORTANT: Refresh session if expired - required for Server Components
+  // This ensures the session cookies are updated and persisted
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Optional: redirect to login if accessing protected routes without auth
+  // Uncomment if you want server-side protection:
+  // if (
+  //   !user &&
+  //   !request.nextUrl.pathname.startsWith('/login') &&
+  //   !request.nextUrl.pathname.startsWith('/auth') &&
+  //   !request.nextUrl.pathname.startsWith('/_next') &&
+  //   !request.nextUrl.pathname.startsWith('/api')
+  // ) {
+  //   const url = request.nextUrl.clone()
+  //   url.pathname = '/login'
+  //   return NextResponse.redirect(url)
+  // }
 
   return supabaseResponse
 }
