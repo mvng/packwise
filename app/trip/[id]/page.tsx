@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getTripById } from '@/actions/trip.actions'
@@ -13,8 +14,14 @@ export default async function TripPage({ params }: TripPageProps) {
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
   if (!user) {
-    redirect('/login')
+    // Allow access if the user is in guest mode
+    const cookieStore = await cookies()
+    const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
+    if (!isGuestMode) {
+      redirect('/login')
+    }
   }
 
   const { trip, error } = await getTripById(id)

@@ -12,18 +12,15 @@ import { getTripDuration } from '@/lib/utils'
 async function getUserId(): Promise<string | null> {
   const cookieStore = await cookies()
   const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
-  
+
   if (isGuestMode) {
-    // Use a fixed guest user ID or create one from session
-    let guestId = cookieStore.get('guest_user_id')?.value
-    if (!guestId) {
-      guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      // Note: We can't set cookies here in a server action helper
-      // The guest ID will be regenerated each time, which is acceptable for demo purposes
-    }
+    // Guest user ID must be set client-side (e.g. via document.cookie) before calling server actions.
+    // Server actions cannot set cookies, so we rely on the client to persist the guest ID.
+    const guestId = cookieStore.get('guest_user_id')?.value
+    if (!guestId) return null
     return guestId
   }
-  
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user?.id || null
@@ -74,12 +71,11 @@ export async function createTrip(input: CreateTripInput) {
     return { success: true, tripId: trip.id }
   } catch (error: any) {
     console.error('Create trip error:', error)
-    
-    // Return specific error messages based on error type
+
     if (error.code === 'P2003') {
-      return { error: 'Database constraint error: Please merge PR #4 to fix the user foreign key constraint' }
+      return { error: 'Failed to create trip due to a database configuration issue. Please try again or contact support.' }
     }
-    
+
     return { error: error.message || 'Failed to create trip' }
   }
 }

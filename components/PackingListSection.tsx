@@ -34,11 +34,12 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   const [lists, setLists] = useState(trip.packingLists)
   const [newItemName, setNewItemName] = useState<Record<string, string>>({})
   const [addingTo, setAddingTo] = useState<string | null>(null)
+  const [addError, setAddError] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
   const handleToggle = (itemId: string, categoryId: string, packingListId: string, isPacked: boolean) => {
     startTransition(async () => {
-      await toggleItemPacked(itemId, !isPacked)
+      await toggleItemPacked(itemId, !isPacked, trip.id)
       setLists((prev) =>
         prev.map((list) =>
           list.id === packingListId
@@ -65,8 +66,12 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     const name = newItemName[categoryId]?.trim()
     if (!name) return
 
-    const result = await addCustomItem(categoryId, name)
-    if (result.item) {
+    setAddError(null)
+    const result = await addCustomItem(categoryId, name, 1, trip.id)
+
+    if (result.error) {
+      setAddError(result.error)
+    } else if (result.item) {
       setLists((prev) =>
         prev.map((list) =>
           list.id === packingListId
@@ -88,7 +93,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
 
   const handleDelete = (itemId: string, categoryId: string, packingListId: string) => {
     startTransition(async () => {
-      await deleteItem(itemId)
+      await deleteItem(itemId, trip.id)
       setLists((prev) =>
         prev.map((list) =>
           list.id === packingListId
@@ -118,6 +123,11 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
 
   return (
     <div className="space-y-6">
+      {addError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {addError}
+        </div>
+      )}
       {lists.map((list) => (
         <div key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50">
@@ -160,14 +170,13 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                         {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
                         {item.name}
                       </span>
-                      {item.isCustom && (
-                        <button
-                          onClick={() => handleDelete(item.id, category.id, list.id)}
-                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
-                        >
-                          ×
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDelete(item.id, category.id, list.id)}
+                        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
+                        aria-label={`Remove ${item.name}`}
+                      >
+                        ×
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -189,7 +198,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                       Add
                     </button>
                     <button
-                      onClick={() => setAddingTo(null)}
+                      onClick={() => { setAddingTo(null); setAddError(null) }}
                       className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700"
                     >
                       Cancel
