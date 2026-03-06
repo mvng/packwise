@@ -91,6 +91,18 @@ export function generatePackingList(
         items: ['Ski goggles', 'Helmet', 'Hand warmers', 'Lip balm SPF', 'Sunscreen high SPF', 'After-ski boots'],
       },
     ],
+    leisure: [
+      {
+        name: 'Clothing',
+        order: 3,
+        items: [`T-shirts (${qty})`, `Casual pants (${Math.ceil(duration / 2)})`, 'Comfortable shoes', 'Sneakers', `Underwear (${qty + 1})`, 'Light jacket', 'Sleepwear'],
+      },
+      {
+        name: 'Leisure Essentials',
+        order: 4,
+        items: ['Book / E-reader', 'Headphones', 'Sunglasses', 'Day bag', 'Water bottle', 'Snacks', 'Camera'],
+      },
+    ],
   }
 
   return [...base, ...specific[tripType]]
