@@ -35,31 +35,44 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
         setError(error.message)
-      } else {
-        window.location.href = '/dashboard'
+        setLoading(false)
+        return
       }
+      window.location.href = '/dashboard'
+      return
     }
     setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
-            <span className="text-3xl">🧳</span>
-            <span className="font-bold text-2xl text-gray-900">Packwise</span>
+            <span className="text-4xl">🧳</span>
+            <span className="text-2xl font-bold text-gray-900">Packwise</span>
           </Link>
-          <p className="text-gray-500 mt-2">
-            {isSignUp ? 'Create your account' : 'Welcome back'}
-          </p>
+          <p className="text-gray-500 mt-2">Welcome back</p>
         </div>
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <h1 className="text-xl font-semibold text-gray-900 mb-6">
-            {isSignUp ? 'Sign up' : 'Sign in'}
+
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">
+            {isSignUp ? 'Create account' : 'Sign in'}
           </h1>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+              {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">
+              {message}
+            </div>
+          )}
+
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -70,11 +83,12 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 placeholder="you@example.com"
+                required
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
@@ -84,38 +98,29 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 placeholder="Min. 6 characters"
+                required
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            {error && (
-              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-            {message && (
-              <div className="bg-green-50 text-green-600 px-4 py-3 rounded-lg text-sm">
-                {message}
-              </div>
-            )}
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Loading...' : isSignUp ? 'Create account' : 'Sign in'}
             </button>
           </form>
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => { setIsSignUp(!isSignUp); setError(null); setMessage(null) }}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-            </button>
-          </div>
+
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700"
+          >
+            {isSignUp
+              ? 'Already have an account? Sign in'
+              : "Don't have an account? Sign up"}
+          </button>
         </div>
       </div>
     </div>
