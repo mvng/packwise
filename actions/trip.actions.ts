@@ -72,9 +72,15 @@ export async function createTrip(input: CreateTripInput) {
 
     revalidatePath('/dashboard')
     return { success: true, tripId: trip.id }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create trip error:', error)
-    return { error: 'Failed to create trip' }
+    
+    // Return specific error messages based on error type
+    if (error.code === 'P2003') {
+      return { error: 'Database constraint error: Please merge PR #4 to fix the user foreign key constraint' }
+    }
+    
+    return { error: error.message || 'Failed to create trip' }
   }
 }
 
@@ -90,8 +96,9 @@ export async function getUserTrips() {
     })
 
     return { trips }
-  } catch (error) {
-    return { error: 'Failed to fetch trips' }
+  } catch (error: any) {
+    console.error('Get trips error:', error)
+    return { error: error.message || 'Failed to fetch trips' }
   }
 }
 
@@ -107,8 +114,9 @@ export async function getTripById(tripId: string) {
 
     if (!trip) return { error: 'Trip not found' }
     return { trip }
-  } catch (error) {
-    return { error: 'Failed to fetch trip' }
+  } catch (error: any) {
+    console.error('Get trip error:', error)
+    return { error: error.message || 'Failed to fetch trip' }
   }
 }
 
@@ -120,7 +128,8 @@ export async function deleteTrip(tripId: string) {
     await prisma.trip.delete({ where: { id: tripId, userId } })
     revalidatePath('/dashboard')
     return { success: true }
-  } catch (error) {
-    return { error: 'Failed to delete trip' }
+  } catch (error: any) {
+    console.error('Delete trip error:', error)
+    return { error: error.message || 'Failed to delete trip' }
   }
 }
