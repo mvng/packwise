@@ -1,8 +1,9 @@
-export type TripType = 'beach' | 'business' | 'hiking' | 'city' | 'skiing'
+export type TripType = 'beach' | 'business' | 'hiking' | 'city' | 'skiing' | 'leisure'
 
 export interface Trip {
   id: string
   userId: string
+  name?: string
   destination: string
   startDate: Date
   endDate: Date
@@ -74,9 +75,11 @@ export interface LocalPackingItem {
 }
 
 export interface CreateTripInput {
+  name: string
   destination: string
-  startDate: Date
-  endDate: Date
-  tripType: TripType
+  startDate?: Date
+  endDate?: Date
+  tripType: string
+  generateSuggestions: boolean
   notes?: string
 }
