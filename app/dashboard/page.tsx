@@ -49,8 +49,10 @@ export default function DashboardPage() {
       setUser(session.user)
 
       try {
-        const userTrips = await getUserTrips()
-        setTrips(userTrips || [])
+        const result = await getUserTrips()
+        if (result.trips) {
+          setTrips(result.trips)
+        }
       } catch (e) {
         console.error('Failed to load trips:', e)
       }
@@ -113,7 +115,7 @@ export default function DashboardPage() {
             <p className="text-gray-500 mt-1">Manage your packing lists</p>
           </div>
           <Link
-            href="/trip/new"
+            href="/dashboard/new"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
           >
             + New Trip
@@ -126,7 +128,7 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold text-gray-700 mb-2">No trips yet</h2>
             <p className="text-gray-500 mb-6">Create your first trip to get started with smart packing lists.</p>
             <Link
-              href="/trip/new"
+              href="/dashboard/new"
               className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
               Create Your First Trip
