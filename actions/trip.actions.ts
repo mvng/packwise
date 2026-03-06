@@ -8,22 +8,24 @@ import { generatePackingList } from '@/utils/packingGenerator'
 import { CreateTripInput, TripType } from '@/types'
 import { getTripDuration } from '@/lib/utils'
 
-// Helper to get user ID (authenticated or guest)
+// Helper to get user ID (authenticated or guest).
+// Always checks Supabase auth first so that logged-in users are never
+// accidentally treated as guests due to a stale guest_mode cookie.
 async function getUserId(): Promise<string | null> {
-  const cookieStore = await cookies()
-  const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
-
-  if (isGuestMode) {
-    // Guest user ID must be set client-side (e.g. via document.cookie) before calling server actions.
-    // Server actions cannot set cookies, so we rely on the client to persist the guest ID.
-    const guestId = cookieStore.get('guest_user_id')?.value
-    if (!guestId) return null
-    return guestId
-  }
-
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  return user?.id || null
+  if (user) return user.id
+
+  // No authenticated session — fall back to guest mode
+  const cookieStore = await cookies()
+  const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
+  if (isGuestMode) {
+    // Guest user ID must be set client-side before calling server actions.
+    // Server actions cannot set cookies, so the client must persist this.
+    return cookieStore.get('guest_user_id')?.value || null
+  }
+
+  return null
 }
 
 export async function createTrip(input: CreateTripInput) {
