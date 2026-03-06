@@ -126,7 +126,13 @@ export default function DashboardPage() {
             <span className="font-bold text-xl text-gray-900">Packwise</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">{user?.email}</span>
+            <Link
+              href="/inventory"
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors flex items-center gap-1.5"
+            >
+              🎒 <span className="hidden sm:inline">Inventory</span>
+            </Link>
+            <span className="text-sm text-gray-600 hidden sm:block">{user?.email}</span>
             <button
               onClick={handleSignOut}
               className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
@@ -156,7 +162,9 @@ export default function DashboardPage() {
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🧳</div>
             <h2 className="text-xl font-semibold text-gray-700 mb-2">No trips yet</h2>
-            <p className="text-gray-500 mb-6">Create your first trip to get started with smart packing lists.</p>
+            <p className="text-gray-500 mb-6">
+              Create your first trip to get started with smart packing lists.
+            </p>
             <Link
               href="/dashboard/new"
               className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
@@ -176,9 +184,13 @@ export default function DashboardPage() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <span className="text-3xl">{getTripEmoji(trip.tripType)}</span>
-                      <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-full">{trip.tripType || 'trip'}</span>
+                      <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-full">
+                        {trip.tripType || 'trip'}
+                      </span>
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-1">{trip.name || 'Untitled Trip'}</h3>
+                    <h3 className="font-semibold text-gray-900 mb-1">
+                      {trip.name || 'Untitled Trip'}
+                    </h3>
                     <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
                     <div className="text-xs text-gray-400 mb-3">
                       {trip.startDate ? formatDate(trip.startDate as string) : ''}
