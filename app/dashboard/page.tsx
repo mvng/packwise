@@ -7,12 +7,24 @@ import { formatDate } from '@/lib/utils'
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) {
     redirect('/login')
   }
 
   const { trips } = await getUserTrips()
+
+  const getTripEmoji = (tripType: string) => {
+    const icons: Record<string, string> = {
+      beach: '🏖️',
+      hiking: '🥾',
+      city: '🏙️',
+      skiing: '⛷️',
+      ski: '⛷️',
+      business: '💼',
+      leisure: '🌴',
+    }
+    return icons[tripType] || '✈️'
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -36,7 +48,6 @@ export default async function DashboardPage() {
           </div>
         </div>
       </header>
-
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Page header */}
         <div className="flex items-center justify-between mb-8">
@@ -56,7 +67,6 @@ export default async function DashboardPage() {
             <span>New trip</span>
           </Link>
         </div>
-
         {/* Trips grid */}
         {trips && trips.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -68,25 +78,11 @@ export default async function DashboardPage() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="text-3xl">
-                    {trip.type === 'beach' ? '🏖️' :
-                     trip.type === 'hiking' ? '🥾' :
-                     trip.type === 'city' ? '🏙️' :
-                     trip.type === 'ski' ? '⛷️' :
-                     trip.type === 'business' ? '💼' : '✈️'}
+                    {getTripEmoji(trip.tripType)}
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    trip.status === 'completed'
-                      ? 'bg-green-100 text-green-700'
-                      : trip.status === 'in_progress'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {trip.status === 'in_progress' ? 'Packing' :
-                     trip.status === 'completed' ? 'Packed' : 'Draft'}
-                  </span>
                 </div>
                 <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                  {trip.name}
+                  {trip.name || trip.destination}
                 </h3>
                 {trip.destination && (
                   <p className="text-sm text-gray-500 mt-1">📍 {trip.destination}</p>
@@ -99,7 +95,7 @@ export default async function DashboardPage() {
                 )}
                 <div className="mt-4 pt-4 border-t border-gray-50">
                   <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>{trip._count?.packingLists ?? 0} list(s)</span>
+                    <span>{trip.packingLists?.length ?? 0} list(s)</span>
                     <span className="text-blue-500 font-medium">View →</span>
                   </div>
                 </div>
