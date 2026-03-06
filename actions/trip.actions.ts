@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { generatePackingList } from '@/utils/packingGenerator'
-import { CreateTripInput } from '@/types'
+import { CreateTripInput, TripType } from '@/types'
 import { getTripDuration } from '@/lib/utils'
 
 export async function createTrip(input: CreateTripInput) {
@@ -15,6 +15,7 @@ export async function createTrip(input: CreateTripInput) {
 
     const startDate = input.startDate ?? new Date()
     const endDate = input.endDate ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const tripType = input.tripType as TripType
 
     const trip = await prisma.trip.create({
       data: {
@@ -23,14 +24,14 @@ export async function createTrip(input: CreateTripInput) {
         destination: input.destination,
         startDate,
         endDate,
-        tripType: input.tripType,
+        tripType,
         notes: input.notes,
       },
     })
 
     if (input.generateSuggestions) {
       const duration = getTripDuration(startDate, endDate)
-      const categories = generatePackingList(input.tripType, duration)
+      const categories = generatePackingList(tripType, duration)
 
       const packingList = await prisma.packingList.create({
         data: { tripId: trip.id, name: 'Main Packing List' },
