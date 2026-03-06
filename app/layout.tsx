@@ -5,6 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
+    metadataBase: new URL('https://packwise-indol.vercel.app'),
   title: 'Packwise – Smart Packing Lists',
   description: 'Create smart packing lists for every trip. Organize by category, track what you have packed, and never forget an item again.',
   keywords: ['packing', 'travel', 'packing list', 'trip planner'],
