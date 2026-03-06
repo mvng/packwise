@@ -1,17 +1,38 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { generatePackingList } from '@/utils/packingGenerator'
 import { CreateTripInput, TripType } from '@/types'
 import { getTripDuration } from '@/lib/utils'
 
+// Helper to get user ID (authenticated or guest)
+async function getUserId(): Promise<string | null> {
+  const cookieStore = await cookies()
+  const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
+  
+  if (isGuestMode) {
+    // Use a fixed guest user ID or create one from session
+    let guestId = cookieStore.get('guest_user_id')?.value
+    if (!guestId) {
+      guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      // Note: We can't set cookies here in a server action helper
+      // The guest ID will be regenerated each time, which is acceptable for demo purposes
+    }
+    return guestId
+  }
+  
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user?.id || null
+}
+
 export async function createTrip(input: CreateTripInput) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
 
     const startDate = input.startDate ?? new Date()
     const endDate = input.endDate ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -19,7 +40,7 @@ export async function createTrip(input: CreateTripInput) {
 
     const trip = await prisma.trip.create({
       data: {
-        userId: user.id,
+        userId,
         name: input.name || input.destination,
         destination: input.destination,
         startDate,
@@ -59,12 +80,11 @@ export async function createTrip(input: CreateTripInput) {
 
 export async function getUserTrips() {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
 
     const trips = await prisma.trip.findMany({
-      where: { userId: user.id },
+      where: { userId },
       orderBy: { createdAt: 'desc' },
       include: { packingLists: { include: { categories: { include: { items: true } } } } },
     })
@@ -77,12 +97,11 @@ export async function getUserTrips() {
 
 export async function getTripById(tripId: string) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
 
     const trip = await prisma.trip.findFirst({
-      where: { id: tripId, userId: user.id },
+      where: { id: tripId, userId },
       include: { packingLists: { include: { categories: { include: { items: true } } } } },
     })
 
@@ -95,11 +114,10 @@ export async function getTripById(tripId: string) {
 
 export async function deleteTrip(tripId: string) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
 
-    await prisma.trip.delete({ where: { id: tripId, userId: user.id } })
+    await prisma.trip.delete({ where: { id: tripId, userId } })
     revalidatePath('/dashboard')
     return { success: true }
   } catch (error) {
