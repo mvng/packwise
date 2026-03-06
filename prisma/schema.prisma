@@ -21,17 +21,18 @@ model User {
 }
 
 model Trip {
-  id           String      @id @default(uuid())
-  userId       String      @map("user_id")
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  name         String?
   destination  String
-  startDate    DateTime    @map("start_date")
-  endDate      DateTime    @map("end_date")
-  tripType     String      @map("trip_type")
+  startDate    DateTime     @map("start_date")
+  endDate      DateTime     @map("end_date")
+  tripType     String       @map("trip_type")
   weather      Json?
   notes        String?
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   packingLists PackingList[]
   @@index([userId])
   @@index([startDate])
@@ -51,29 +52,25 @@ model PackingList {
 }
 
 model Category {
-  id            String      @id @default(uuid())
-  packingListId String      @map("packing_list_id")
+  id            String        @id @default(uuid())
+  packingListId String        @map("packing_list_id")
   name          String
-  order         Int         @default(0)
-  createdAt     DateTime    @default(now()) @map("created_at")
-  packingList   PackingList @relation(fields: [packingListId], references: [id], onDelete: Cascade)
+  order         Int           @default(0)
+  packingList   PackingList   @relation(fields: [packingListId], references: [id], onDelete: Cascade)
   items         PackingItem[]
   @@index([packingListId])
   @@map("categories")
 }
 
 model PackingItem {
-  id         String   @id @default(uuid())
-  categoryId String   @map("category_id")
-  name       String
-  quantity   Int      @default(1)
-  isPacked   Boolean  @default(false) @map("is_packed")
-  isCustom   Boolean  @default(false) @map("is_custom")
-  order      Int      @default(0)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid())
+  categoryId  String   @map("category_id")
+  name        String
+  quantity    Int      @default(1)
+  isPacked    Boolean  @default(false) @map("is_packed")
+  isCustom    Boolean  @default(false) @map("is_custom")
+  order       Int      @default(0)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   @@index([categoryId])
-  @@index([isPacked])
   @@map("packing_items")
 }
