@@ -22,7 +22,7 @@ model User {
 
 model Trip {
   id           String       @id @default(uuid())
-  userId       String       @map("user_id")
+  userId       String?      @map("user_id")
   name         String?
   destination  String
   startDate    DateTime     @map("start_date")
@@ -32,7 +32,7 @@ model Trip {
   notes        String?
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   packingLists PackingList[]
   @@index([userId])
   @@index([startDate])
