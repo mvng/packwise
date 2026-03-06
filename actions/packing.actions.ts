@@ -5,18 +5,35 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 
-// Always checks Supabase auth first so that logged-in users are never
-// accidentally blocked by a stale guest_mode cookie.
+/**
+ * Returns any non-null user identifier (Supabase user.id or guest_user_id)
+ * sufficient to verify the caller is authenticated.
+ *
+ * Priority:
+ * 1. supabase.auth.getUser()  — validates JWT with Supabase API
+ * 2. supabase.auth.getSession() — reads local cookie (fallback for paused projects)
+ * 3. guest_user_id cookie
+ */
 async function getAuthenticatedUserId(): Promise<string | null> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (user) return user.id
 
-  // No authenticated session — fall back to guest mode
+  // 1. Try getUser() first
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) return user.id
+  } catch {}
+
+  // 2. Fall back to getSession()
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) return session.user.id
+  } catch {}
+
+  // 3. Fall back to guest mode
   const cookieStore = await cookies()
   const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
   if (isGuestMode) {
-    return cookieStore.get('guest_user_id')?.value || null
+    return cookieStore.get('guest_user_id')?.value ?? null
   }
 
   return null

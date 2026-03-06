@@ -8,21 +8,64 @@ import { generatePackingList } from '@/utils/packingGenerator'
 import { CreateTripInput, TripType } from '@/types'
 import { getTripDuration } from '@/lib/utils'
 
-// Helper to get user ID (authenticated or guest).
-// Always checks Supabase auth first so that logged-in users are never
-// accidentally treated as guests due to a stale guest_mode cookie.
+/**
+ * Returns the PRISMA User.id (not the Supabase auth UUID) so that the
+ * Trip.userId foreign key constraint is satisfied.
+ *
+ * Priority:
+ * 1. supabase.auth.getUser()  — validates JWT with Supabase API (most secure)
+ * 2. supabase.auth.getSession() — reads local cookie, no network call
+ *    (fallback when Supabase project is paused or API is unreachable)
+ * 3. guest_user_id cookie      — for demo/guest users
+ *
+ * When a Supabase user is found, a Prisma User row is upserted so that
+ * the Trip.userId FK constraint (which references User.id) is satisfied.
+ */
 async function getUserId(): Promise<string | null> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (user) return user.id
 
-  // No authenticated session — fall back to guest mode
+  let authUser: any = null
+
+  // 1. Try getUser() — validates with Supabase API
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    authUser = user
+  } catch {}
+
+  // 2. Fall back to getSession() if getUser() failed (e.g. project paused)
+  if (!authUser) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      authUser = session?.user ?? null
+    } catch {}
+  }
+
+  if (authUser) {
+    // Upsert the Prisma User row so Trip.userId FK constraint is satisfied.
+    // Trip.userId references User.id (Prisma UUID), not supabase user.id.
+    const prismaUser = await prisma.user.upsert({
+      where: { supabaseId: authUser.id },
+      create: {
+        supabaseId: authUser.id,
+        email: authUser.email ?? '',
+        name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
+        avatarUrl: authUser.user_metadata?.avatar_url ?? null,
+        authProvider: authUser.app_metadata?.provider ?? 'email',
+      },
+      update: {
+        email: authUser.email ?? '',
+        name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
+        avatarUrl: authUser.user_metadata?.avatar_url ?? null,
+      },
+    })
+    return prismaUser.id
+  }
+
+  // 3. Fall back to guest mode
   const cookieStore = await cookies()
   const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
   if (isGuestMode) {
-    // Guest user ID must be set client-side before calling server actions.
-    // Server actions cannot set cookies, so the client must persist this.
-    return cookieStore.get('guest_user_id')?.value || null
+    return cookieStore.get('guest_user_id')?.value ?? null
   }
 
   return null
