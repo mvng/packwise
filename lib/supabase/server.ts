@@ -10,19 +10,9 @@ export async function createClient() {
     {
       cookies: {
         getAll() {
-          // @supabase/ssr@0.1.0 stores the session as URL-encoded JSON.
-          // Next.js returns the raw (still URL-encoded) cookie value from
-          // the Cookie header. We must decode it before passing to the
-          // Supabase client so JSON.parse() inside the library succeeds.
-          return cookieStore.getAll().map(({ name, value }) => {
-            try {
-              return { name, value: decodeURIComponent(value) }
-            } catch {
-              return { name, value }
-            }
-          })
+          return cookieStore.getAll()
         },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+        setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
