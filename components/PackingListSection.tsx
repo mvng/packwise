@@ -1,7 +1,14 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { toggleItemPacked, addCustomItem, deleteItem } from '@/actions/packing.actions'
+
+const AddFromInventoryModal = dynamic(
+  () => import('@/components/inventory/AddFromInventoryModal'),
+  { ssr: false }
+)
 
 interface PackingItem {
   id: string
@@ -31,13 +38,20 @@ interface Trip {
 }
 
 export default function PackingListSection({ trip }: { trip: Trip }) {
+  const router = useRouter()
   const [lists, setLists] = useState(trip.packingLists)
   const [newItemName, setNewItemName] = useState<Record<string, string>>({})
   const [addingTo, setAddingTo] = useState<string | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
+  const [showInventoryModal, setShowInventoryModal] = useState(false)
   const [, startTransition] = useTransition()
 
-  const handleToggle = (itemId: string, categoryId: string, packingListId: string, isPacked: boolean) => {
+  const handleToggle = (
+    itemId: string,
+    categoryId: string,
+    packingListId: string,
+    isPacked: boolean
+  ) => {
     startTransition(async () => {
       await toggleItemPacked(itemId, !isPacked, trip.id)
       setLists((prev) =>
@@ -65,10 +79,8 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   const handleAddItem = async (categoryId: string, packingListId: string) => {
     const name = newItemName[categoryId]?.trim()
     if (!name) return
-
     setAddError(null)
     const result = await addCustomItem(categoryId, name, 1, trip.id)
-
     if (result.error) {
       setAddError(result.error)
     } else if (result.item) {
@@ -116,18 +128,31 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
       <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
         <div className="text-5xl mb-4">📋</div>
         <h3 className="font-semibold text-gray-900 mb-2">No packing list yet</h3>
-        <p className="text-gray-500 text-sm">Create a new trip with auto-generated suggestions to get started.</p>
+        <p className="text-gray-500 text-sm">
+          Create a new trip with auto-generated suggestions to get started.
+        </p>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
+      {/* Add from Inventory CTA */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowInventoryModal(true)}
+          className="text-sm px-4 py-2 border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-xl font-medium flex items-center gap-2 transition-colors"
+        >
+          <span>🎒</span> Add from Inventory
+        </button>
+      </div>
+
       {addError && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {addError}
         </div>
       )}
+
       {lists.map((list) => (
         <div key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50">
@@ -146,10 +171,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                 </div>
                 <div className="space-y-2">
                   {category.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-3 group"
-                    >
+                    <div key={item.id} className="flex items-center gap-3 group">
                       <button
                         onClick={() => handleToggle(item.id, category.id, list.id, item.isPacked)}
                         className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
@@ -159,15 +181,29 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                         }`}
                       >
                         {item.isPacked && (
-                          <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          <svg
+                            className="w-3 h-3 text-white m-auto"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
                           </svg>
                         )}
                       </button>
-                      <span className={`flex-1 text-sm ${
-                        item.isPacked ? 'line-through text-gray-400' : 'text-gray-700'
-                      }`}>
-                        {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+                      <span
+                        className={`flex-1 text-sm ${
+                          item.isPacked ? 'line-through text-gray-400' : 'text-gray-700'
+                        }`}
+                      >
+                        {item.quantity > 1 && (
+                          <span className="font-medium mr-1">{item.quantity}x</span>
+                        )}
                         {item.name}
                       </span>
                       <button
@@ -180,13 +216,16 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                     </div>
                   ))}
                 </div>
+
                 {addingTo === category.id ? (
                   <div className="mt-3 flex gap-2">
                     <input
                       type="text"
                       placeholder="Item name"
                       value={newItemName[category.id] || ''}
-                      onChange={(e) => setNewItemName((prev) => ({ ...prev, [category.id]: e.target.value }))}
+                      onChange={(e) =>
+                        setNewItemName((prev) => ({ ...prev, [category.id]: e.target.value }))
+                      }
                       onKeyDown={(e) => e.key === 'Enter' && handleAddItem(category.id, list.id)}
                       className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       autoFocus
@@ -217,6 +256,14 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
           </div>
         </div>
       ))}
+
+      {showInventoryModal && (
+        <AddFromInventoryModal
+          tripId={trip.id}
+          onClose={() => setShowInventoryModal(false)}
+          onAdded={() => router.refresh()}
+        />
+      )}
     </div>
   )
 }
