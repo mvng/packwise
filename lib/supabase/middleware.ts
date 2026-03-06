@@ -6,6 +6,21 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  // Check for guest mode query parameter
+  const guestMode = request.nextUrl.searchParams.get('guest') === 'true'
+  const hasGuestCookie = request.cookies.get('guest_mode')?.value === 'true'
+
+  // If guest mode is enabled, set a cookie and skip auth
+  if (guestMode || hasGuestCookie) {
+    supabaseResponse.cookies.set('guest_mode', 'true', {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      httpOnly: true,
+      sameSite: 'lax',
+    })
+    return supabaseResponse
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
