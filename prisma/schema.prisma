@@ -8,31 +8,32 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  name         String?
-  avatarUrl    String?  @map("avatar_url")
-  authProvider String   @default("email") @map("auth_provider")
-  supabaseId   String   @unique @map("supabase_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  trips        Trip[]
+  id                  String              @id @default(uuid())
+  email               String              @unique
+  name                String?
+  avatarUrl           String?             @map("avatar_url")
+  authProvider        String              @default("email") @map("auth_provider")
+  supabaseId          String              @unique @map("supabase_id")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  trips               Trip[]
+  inventoryCategories InventoryCategory[]
   @@map("users")
 }
 
 model Trip {
-  id           String       @id @default(uuid())
-  userId       String?      @map("user_id")
+  id           String        @id @default(uuid())
+  userId       String?       @map("user_id")
   name         String?
   destination  String
-  startDate    DateTime     @map("start_date")
-  endDate      DateTime     @map("end_date")
-  tripType     String       @map("trip_type")
+  startDate    DateTime      @map("start_date")
+  endDate      DateTime      @map("end_date")
+  tripType     String        @map("trip_type")
   weather      Json?
   notes        String?
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
-  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   packingLists PackingList[]
   @@index([userId])
   @@index([startDate])
@@ -63,14 +64,51 @@ model Category {
 }
 
 model PackingItem {
-  id          String   @id @default(uuid())
-  categoryId  String   @map("category_id")
-  name        String
-  quantity    Int      @default(1)
-  isPacked    Boolean  @default(false) @map("is_packed")
-  isCustom    Boolean  @default(false) @map("is_custom")
-  order       Int      @default(0)
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  categoryId String   @map("category_id")
+  name       String
+  quantity   Int      @default(1)
+  isPacked   Boolean  @default(false) @map("is_packed")
+  isCustom   Boolean  @default(false) @map("is_custom")
+  order      Int      @default(0)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   @@index([categoryId])
   @@map("packing_items")
+}
+
+model InventoryCategory {
+  id        String          @id @default(uuid())
+  userId    String          @map("user_id")
+  name      String
+  icon      String?         // Emoji or icon identifier
+  order     Int             @default(0)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     InventoryItem[]
+  @@index([userId])
+  @@index([userId, order])
+  @@map("inventory_categories")
+}
+
+model InventoryItem {
+  id          String            @id @default(uuid())
+  categoryId  String            @map("category_id")
+  name        String
+  brand       String?           // Optional: "Apple", "Patagonia", etc.
+  size        String?           // Optional: "Medium", "32oz", etc.
+  notes       String?           // User notes
+  imageUrl    String?           @map("image_url")  // Photo URL
+  quantity    Int               @default(1)        // How many they own
+  isFavorite  Boolean           @default(false)    @map("is_favorite")
+  tags        String[]          @default([])       // ["summer", "cold-weather", "business"]
+  timesUsed   Int               @default(0)        @map("times_used")  // Track usage for analytics
+  order       Int               @default(0)
+  createdAt   DateTime          @default(now())    @map("created_at")
+  updatedAt   DateTime          @updatedAt         @map("updated_at")
+  category    InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  @@index([categoryId])
+  @@index([isFavorite])
+  @@index([categoryId, order])
+  @@map("inventory_items")
 }
