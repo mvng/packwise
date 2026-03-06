@@ -11,17 +11,9 @@ import { getTripDuration } from '@/lib/utils'
 /**
  * Returns the PRISMA User.id (not the Supabase auth UUID) so that the
  * Trip.userId foreign key constraint is satisfied.
- *
- * Priority:
- * 1. supabase.auth.getUser()  — validates JWT with Supabase API (most secure)
- * 2. supabase.auth.getSession() — reads local cookie, no network call
- *    (fallback when Supabase project is paused or API is unreachable)
- * 3. guest_user_id cookie      — for demo/guest users
- *
- * When a Supabase user is found, a Prisma User row is upserted so that
- * the Trip.userId FK constraint (which references User.id) is satisfied.
  */
 async function getUserId(): Promise<string | null> {
+  console.log('[getUserId] Starting auth check...')
   const supabase = await createClient()
 
   let authUser: any = null
@@ -29,45 +21,60 @@ async function getUserId(): Promise<string | null> {
   // 1. Try getUser() — validates with Supabase API
   try {
     const { data: { user } } = await supabase.auth.getUser()
+    console.log('[getUserId] getUser() result:', user ? `✓ User found: ${user.id}` : '✗ No user')
     authUser = user
-  } catch {}
+  } catch (e) {
+    console.log('[getUserId] getUser() threw error:', e)
+  }
 
-  // 2. Fall back to getSession() if getUser() failed (e.g. project paused)
+  // 2. Fall back to getSession() if getUser() failed
   if (!authUser) {
     try {
       const { data: { session } } = await supabase.auth.getSession()
+      console.log('[getUserId] getSession() result:', session?.user ? `✓ Session found: ${session.user.id}` : '✗ No session')
       authUser = session?.user ?? null
-    } catch {}
+    } catch (e) {
+      console.log('[getUserId] getSession() threw error:', e)
+    }
   }
 
   if (authUser) {
-    // Upsert the Prisma User row so Trip.userId FK constraint is satisfied.
-    // Trip.userId references User.id (Prisma UUID), not supabase user.id.
-    const prismaUser = await prisma.user.upsert({
-      where: { supabaseId: authUser.id },
-      create: {
-        supabaseId: authUser.id,
-        email: authUser.email ?? '',
-        name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
-        avatarUrl: authUser.user_metadata?.avatar_url ?? null,
-        authProvider: authUser.app_metadata?.provider ?? 'email',
-      },
-      update: {
-        email: authUser.email ?? '',
-        name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
-        avatarUrl: authUser.user_metadata?.avatar_url ?? null,
-      },
-    })
-    return prismaUser.id
+    console.log('[getUserId] Auth user found, upserting Prisma User...')
+    try {
+      const prismaUser = await prisma.user.upsert({
+        where: { supabaseId: authUser.id },
+        create: {
+          supabaseId: authUser.id,
+          email: authUser.email ?? '',
+          name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
+          avatarUrl: authUser.user_metadata?.avatar_url ?? null,
+          authProvider: authUser.app_metadata?.provider ?? 'email',
+        },
+        update: {
+          email: authUser.email ?? '',
+          name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
+          avatarUrl: authUser.user_metadata?.avatar_url ?? null,
+        },
+      })
+      console.log('[getUserId] ✓ Prisma User upserted:', prismaUser.id)
+      return prismaUser.id
+    } catch (e) {
+      console.error('[getUserId] ✗ Prisma upsert failed:', e)
+      return null
+    }
   }
 
   // 3. Fall back to guest mode
+  console.log('[getUserId] No auth user, checking guest mode...')
   const cookieStore = await cookies()
   const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
   if (isGuestMode) {
-    return cookieStore.get('guest_user_id')?.value ?? null
+    const guestId = cookieStore.get('guest_user_id')?.value ?? null
+    console.log('[getUserId] Guest mode:', guestId ? `✓ ${guestId}` : '✗ No guest_user_id cookie')
+    return guestId
   }
 
+  console.log('[getUserId] ✗ No auth found, returning null → Unauthorized')
   return null
 }
 
