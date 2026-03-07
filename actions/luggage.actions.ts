@@ -37,6 +37,7 @@ async function ensureUserExists(userId: string): Promise<void> {
         id: userId,
         email: `guest-${userId}@packwise.app`,
         name: 'Guest User',
+        supabaseId: userId, // Use userId as supabaseId
       },
     })
   }
