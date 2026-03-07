@@ -460,11 +460,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                             itemName={item.name}
                           />
                         )}
-                        {item.tripLuggageId && (
-                          <span className="text-lg" title={tripLuggages.find(t => t.id === item.tripLuggageId)?.luggage.name}>
-                            {getLuggageIcon(item.tripLuggageId)}
-                          </span>
-                        )}
                         <button
                           onClick={() => handleDelete(item.id, category.id, list.id)}
                           className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
