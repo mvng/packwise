@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react'
 import { toggleItemPacked, addCustomItem, deleteItem } from '@/actions/packing.actions'
 import { getTripLuggage, assignItemToLuggage } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
+import LuggageAssignmentButton from '@/components/LuggageAssignmentButton'
 import type { TripLuggage, LuggageType } from '@/types/luggage'
 
 interface PackingItem {
@@ -63,7 +64,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     if (result.tripLuggages) {
       const luggages = result.tripLuggages as TripLuggage[]
       setTripLuggages(luggages)
-      // Auto-expand all luggage groups initially
       const expanded: Record<string, boolean> = { 'not-assigned': true }
       luggages.forEach(tl => {
         expanded[tl.id] = true
@@ -191,7 +191,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     return luggageIcons[tl.luggage.type as LuggageType]
   }
 
-  // Group items by luggage
   const allItems = lists.flatMap(list => 
     list.categories.flatMap(cat => 
       cat.items.map(item => ({
@@ -260,19 +259,12 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>
       </span>
       {tripLuggages.length > 0 && (
-        <select
-          value={item.tripLuggageId || ''}
-          onChange={(e) => handleAssignLuggage(item.id, e.target.value || null, item.categoryId, item.packingListId)}
-          className="text-xs px-2 py-1 border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <option value="">No bag</option>
-          {tripLuggages.map((tl) => (
-            <option key={tl.id} value={tl.id}>
-              {getLuggageIcon(tl.id)} {tl.luggage.name}
-            </option>
-          ))}
-        </select>
+        <LuggageAssignmentButton
+          currentLuggageId={item.tripLuggageId}
+          tripLuggages={tripLuggages}
+          onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, item.categoryId, item.packingListId)}
+          itemName={item.name}
+        />
       )}
       <button
         onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
@@ -306,7 +298,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         🎒 Add from Inventory
       </button>
 
-      {/* View Toggle */}
       {tripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
           <button
@@ -332,7 +323,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      {/* Luggage Grouped View */}
       {viewMode === 'luggage' && tripLuggages.length > 0 ? (
         <div className="space-y-4">
           {tripLuggages.map((tl) => {
@@ -393,7 +383,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
             )
           })}
 
-          {/* Not Assigned Group */}
           {itemsByLuggage['not-assigned'].length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
               <button
@@ -428,7 +417,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
           )}
         </div>
       ) : (
-        /* Original Category View */
         lists.map((list) => (
           <div key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-50">
@@ -465,19 +453,12 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                           {item.name}
                         </span>
                         {tripLuggages.length > 0 && (
-                          <select
-                            value={item.tripLuggageId || ''}
-                            onChange={(e) => handleAssignLuggage(item.id, e.target.value || null, category.id, list.id)}
-                            className="text-xs px-2 py-1 border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <option value="">No bag</option>
-                            {tripLuggages.map((tl) => (
-                              <option key={tl.id} value={tl.id}>
-                                {getLuggageIcon(tl.id)} {tl.luggage.name}
-                              </option>
-                            ))}
-                          </select>
+                          <LuggageAssignmentButton
+                            currentLuggageId={item.tripLuggageId}
+                            tripLuggages={tripLuggages}
+                            onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, category.id, list.id)}
+                            itemName={item.name}
+                          />
                         )}
                         {item.tripLuggageId && (
                           <span className="text-lg" title={tripLuggages.find(t => t.id === item.tripLuggageId)?.luggage.name}>
