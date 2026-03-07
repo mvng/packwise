@@ -365,13 +365,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      <button
-        onClick={() => setShowInventoryPicker(true)}
-        className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors"
-      >
-        🎒 Add from Inventory
-      </button>
-
       {/* Bags in Use Header */}
       <div
         onDragOver={(e) => tripLuggages.length > 0 && handleDragOver(e)}
@@ -441,6 +434,14 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
           </p>
         )}
       </div>
+
+      <button
+        onClick={() => setShowInventoryPicker(true)}
+        className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors"
+      >
+        🎒 Add from Inventory
+      </button>
+
 
       {tripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
