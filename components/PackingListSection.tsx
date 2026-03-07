@@ -4,7 +4,6 @@ import { useState, useTransition, useEffect } from 'react'
 import { toggleItemPacked, addCustomItem, deleteItem } from '@/actions/packing.actions'
 import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
-import LuggageAssignmentButton from '@/components/LuggageAssignmentButton'
 import LuggagePickerModal from '@/components/LuggagePickerModal'
 import type { TripLuggage, LuggageType } from '@/types/luggage'
 
@@ -347,14 +346,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         {item.name}
         {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
       </span>
-      {tripLuggages.length > 0 && (
-        <LuggageAssignmentButton
-          currentLuggageId={item.tripLuggageId}
-          tripLuggages={tripLuggages}
-          onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, item.categoryId, item.packingListId)}
-          itemName={item.name}
-        />
-      )}
       <button
         onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
         className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
@@ -639,14 +630,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                           {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
                           {item.name}
                         </span>
-                        {tripLuggages.length > 0 && (
-                          <LuggageAssignmentButton
-                            currentLuggageId={item.tripLuggageId}
-                            tripLuggages={tripLuggages}
-                            onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, category.id, list.id)}
-                            itemName={item.name}
-                          />
-                        )}
                         <button
                           onClick={() => handleDelete(item.id, category.id, list.id)}
                           className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
