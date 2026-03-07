@@ -174,3 +174,126 @@ export async function deleteTrip(tripId: string) {
     return { error: error.message || 'Failed to delete trip' }
   }
 }
+
+/**
+ * Get a trip by ID without authentication requirement (for public sharing).
+ * This allows unauthenticated users to view shared trips.
+ */
+export async function getSharedTripById(tripId: string) {
+  try {
+    const trip = await prisma.trip.findUnique({
+      where: { id: tripId },
+      include: {
+        packingLists: {
+          include: {
+            categories: {
+              include: {
+                items: {
+                  orderBy: { order: 'asc' }
+                }
+              },
+              orderBy: { order: 'asc' }
+            }
+          }
+        }
+      }
+    })
+
+    if (!trip) return { error: 'Trip not found' }
+    return { trip }
+  } catch (error: any) {
+    console.error('Get shared trip error:', error)
+    return { error: error.message || 'Failed to fetch trip' }
+  }
+}
+
+/**
+ * Fork (copy) a trip from another user to the current user's account.
+ * All packing lists, categories, and items are duplicated with isPacked reset to false.
+ * Luggage assignments are not copied.
+ */
+export async function forkTrip(sourceTripId: string) {
+  try {
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized', requiresAuth: true }
+
+    // Fetch the source trip without user restriction (public access)
+    const sourceTrip = await prisma.trip.findUnique({
+      where: { id: sourceTripId },
+      include: {
+        packingLists: {
+          include: {
+            categories: {
+              include: {
+                items: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!sourceTrip) return { error: 'Trip not found' }
+
+    // Check if user already owns this trip
+    if (sourceTrip.userId === userId) {
+      return { error: 'You already own this trip', alreadyOwned: true }
+    }
+
+    // Create a new trip for the current user
+    const newTrip = await prisma.trip.create({
+      data: {
+        userId,
+        name: `${sourceTrip.name} (Copy)`,
+        destination: sourceTrip.destination,
+        startDate: sourceTrip.startDate,
+        endDate: sourceTrip.endDate,
+        tripType: sourceTrip.tripType,
+        notes: sourceTrip.notes,
+      }
+    })
+
+    // Copy all packing lists, categories, and items
+    for (const sourceList of sourceTrip.packingLists) {
+      const newList = await prisma.packingList.create({
+        data: {
+          tripId: newTrip.id,
+          name: sourceList.name
+        }
+      })
+
+      for (const sourceCategory of sourceList.categories) {
+        const newCategory = await prisma.category.create({
+          data: {
+            packingListId: newList.id,
+            name: sourceCategory.name,
+            order: sourceCategory.order
+          }
+        })
+
+        // Copy items with isPacked reset to false and no luggage assignments
+        await prisma.packingItem.createMany({
+          data: sourceCategory.items.map(item => ({
+            categoryId: newCategory.id,
+            name: item.name,
+            quantity: item.quantity,
+            isPacked: false, // Reset packing status
+            isCustom: item.isCustom,
+            order: item.order
+            // Note: tripLuggageId is intentionally omitted (no luggage copied)
+          }))
+        })
+      }
+    }
+
+    revalidatePath('/dashboard')
+    return { 
+      success: true, 
+      tripId: newTrip.id,
+      message: 'Trip copied to your account successfully!'
+    }
+  } catch (error: any) {
+    console.error('Fork trip error:', error)
+    return { error: error.message || 'Failed to copy trip' }
+  }
+}
