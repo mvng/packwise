@@ -28,6 +28,20 @@ async function getAuthenticatedUserId(): Promise<string | null> {
   return null
 }
 
+async function ensureUserExists(userId: string): Promise<void> {
+  const existingUser = await prisma.user.findUnique({ where: { id: userId } })
+  if (!existingUser) {
+    // Create user if doesn't exist (for guest mode or new auth users)
+    await prisma.user.create({
+      data: {
+        id: userId,
+        email: `guest-${userId}@packwise.app`,
+        name: 'Guest User',
+      },
+    })
+  }
+}
+
 export async function getUserLuggage() {
   try {
     const userId = await getAuthenticatedUserId()
@@ -49,6 +63,9 @@ export async function createLuggage(input: CreateLuggageInput) {
     const userId = await getAuthenticatedUserId()
     if (!userId) return { error: 'Unauthorized' }
 
+    // Ensure user exists in database
+    await ensureUserExists(userId)
+
     const luggage = await prisma.luggage.create({
       data: {
         userId,
@@ -61,6 +78,7 @@ export async function createLuggage(input: CreateLuggageInput) {
     revalidatePath('/luggage')
     return { success: true, luggage }
   } catch (error) {
+    console.error('Failed to create luggage:', error)
     return { error: 'Failed to create luggage' }
   }
 }
