@@ -18,6 +18,7 @@ model User {
   updatedAt           DateTime            @updatedAt @map("updated_at")
   trips               Trip[]
   inventoryCategories InventoryCategory[]
+  bags                Bag[]
   @@map("users")
 }
 
@@ -35,6 +36,7 @@ model Trip {
   updatedAt    DateTime      @updatedAt @map("updated_at")
   user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   packingLists PackingList[]
+  tripBags     TripBag[]
   @@index([userId])
   @@index([startDate])
   @@map("trips")
@@ -71,9 +73,42 @@ model PackingItem {
   isPacked   Boolean  @default(false) @map("is_packed")
   isCustom   Boolean  @default(false) @map("is_custom")
   order      Int      @default(0)
+  bagId      String?  @map("bag_id")
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  bag        TripBag? @relation(fields: [bagId], references: [id], onDelete: SetNull)
   @@index([categoryId])
+  @@index([bagId])
   @@map("packing_items")
+}
+
+model Bag {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  name      String
+  type      String    @default("other")
+  capacity  String?
+  color     String?
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tripBags  TripBag[]
+  @@index([userId])
+  @@map("bags")
+}
+
+model TripBag {
+  id           String        @id @default(uuid())
+  tripId       String        @map("trip_id")
+  bagId        String        @map("bag_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  trip         Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  bag          Bag           @relation(fields: [bagId], references: [id], onDelete: Cascade)
+  packingItems PackingItem[]
+  @@unique([tripId, bagId])
+  @@index([tripId])
+  @@index([bagId])
+  @@map("trip_bags")
 }
 
 model InventoryCategory {

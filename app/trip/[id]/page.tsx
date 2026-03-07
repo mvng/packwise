@@ -3,7 +3,9 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getTripById } from '@/actions/trip.actions'
+import { getTripBags, getUserBags } from '@/actions/bags.actions'
 import PackingListSection from '@/components/PackingListSection'
+import TripBagsSection from '@/components/bags/TripBagsSection'
 import { formatDate } from '@/lib/utils'
 
 interface TripPageProps {
@@ -16,21 +18,27 @@ export default async function TripPage({ params }: TripPageProps) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    // Allow access if the user is in guest mode
     const cookieStore = await cookies()
     const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
-    if (!isGuestMode) {
-      redirect('/login')
-    }
+    if (!isGuestMode) redirect('/login')
   }
 
-  const { trip, error } = await getTripById(id)
-  if (error || !trip) {
-    notFound()
-  }
+  const [{ trip, error }, tripBagsResult, userBagsResult] = await Promise.all([
+    getTripById(id),
+    getTripBags(id),
+    getUserBags(),
+  ])
 
-  const allItems = trip.packingLists.flatMap(
-    (list) => list.categories.flatMap((cat) => cat.items)
+  if (error || !trip) notFound()
+
+  const allItems = trip!.packingLists.flatMap(
+    (list) => list.categories.flatMap((cat) =>
+      cat.items.map((item) => ({
+        ...item,
+        bagId: (item as any).bagId ?? null,
+        category: { name: cat.name },
+      }))
+    )
   )
   const totalItems = allItems.length
   const packedItems = allItems.filter((item) => item.isPacked).length
@@ -49,6 +57,8 @@ export default async function TripPage({ params }: TripPageProps) {
     return icons[tripType] || '✈️'
   }
 
+  const [activeTab, setActiveTab] = ['packing']
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -59,9 +69,9 @@ export default async function TripPage({ params }: TripPageProps) {
               ←
             </Link>
             <div>
-              <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
-              {trip.destination && (
-                <p className="text-xs text-gray-500">📍 {trip.destination}</p>
+              <h1 className="font-semibold text-gray-900">{trip!.name || trip!.destination}</h1>
+              {trip!.destination && (
+                <p className="text-xs text-gray-500">📍 {trip!.destination}</p>
               )}
             </div>
           </div>
@@ -73,7 +83,6 @@ export default async function TripPage({ params }: TripPageProps) {
             )}
           </div>
         </div>
-        {/* Progress bar */}
         {totalItems > 0 && (
           <div className="h-1 bg-gray-100">
             <div
@@ -83,20 +92,19 @@ export default async function TripPage({ params }: TripPageProps) {
           </div>
         )}
       </header>
+
       <main className="max-w-5xl mx-auto px-6 py-8">
-        {/* Trip info */}
+        {/* Trip info card */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="text-4xl">
-                {getTripEmoji(trip.tripType)}
-              </div>
+              <div className="text-4xl">{getTripEmoji(trip!.tripType)}</div>
               <div>
-                <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
-                {trip.startDate && (
+                <h2 className="font-semibold text-gray-900">{trip!.name || trip!.destination}</h2>
+                {trip!.startDate && (
                   <p className="text-sm text-gray-500">
-                    {formatDate(trip.startDate)}
-                    {trip.endDate && ` – ${formatDate(trip.endDate)}`}
+                    {formatDate(trip!.startDate)}
+                    {trip!.endDate && ` – ${formatDate(trip!.endDate)}`}
                   </p>
                 )}
               </div>
@@ -123,9 +131,18 @@ export default async function TripPage({ params }: TripPageProps) {
             </div>
           )}
         </div>
-        {/* Packing lists */}
-        <PackingListSection trip={trip} />
+
+        {/* Tab layout */}
+        <TripPageTabs
+          trip={trip!}
+          tripBags={tripBagsResult.tripBags ?? []}
+          ownedBags={userBagsResult.bags ?? []}
+          allItems={allItems}
+        />
       </main>
     </div>
   )
 }
+
+// ─── Tab switcher (client island) ────────────────────────────────────────────
+import TripPageTabs from '@/components/TripPageTabs'
