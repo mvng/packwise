@@ -83,6 +83,7 @@ export async function createLuggage(input: CreateLuggageInput) {
         userId: dbUserId,
         name: input.name,
         type: input.type,
+        icon: input.icon,
         capacity: input.capacity,
       },
     })

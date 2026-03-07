@@ -5,6 +5,7 @@ export interface Luggage {
   userId: string
   name: string
   type: LuggageType
+  icon?: string | null
   capacity?: number
   createdAt: Date
   updatedAt: Date
@@ -37,11 +38,13 @@ export interface PackingItemWithLuggage {
 export interface CreateLuggageInput {
   name: string
   type: LuggageType
+  icon?: string
   capacity?: number
 }
 
 export interface UpdateLuggageInput {
   name?: string
   type?: LuggageType
+  icon?: string
   capacity?: number
 }
