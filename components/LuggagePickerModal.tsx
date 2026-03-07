@@ -26,14 +26,22 @@ const luggageTypes: { value: LuggageType; label: string }[] = [
   { value: 'other', label: 'Other' },
 ]
 
+const emojiOptions = [
+  '🎒', '🧳', '💼', '📦', '👜',
+  '🛍️', '🎒', '👝', '👑', '👒',
+  '✈️', '🏝️', '🏖️', '🏕️', '⛰️',
+  '🏋️', '⚽', '🎾', '🎸', '📷',
+]
+
 export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props) {
   const [luggage, setLuggage] = useState<Luggage[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [newLuggage, setNewLuggage] = useState({ name: '', type: 'backpack' as LuggageType, capacity: '' })
+  const [newLuggage, setNewLuggage] = useState({ name: '', type: 'backpack' as LuggageType, icon: '', capacity: '' })
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   useEffect(() => {
     loadLuggage()
@@ -78,6 +86,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
     const result = await createLuggage({
       name: newLuggage.name.trim(),
       type: newLuggage.type,
+      icon: newLuggage.icon || undefined,
       capacity: newLuggage.capacity ? parseInt(newLuggage.capacity) : undefined,
     })
 
@@ -93,6 +102,10 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
       await addLuggageToTrip(tripId, result.luggage.id)
       onSuccess()
     }
+  }
+
+  const getDisplayIcon = (item: Luggage) => {
+    return item.icon || luggageIcons[item.type as LuggageType]
   }
 
   return (
@@ -174,6 +187,48 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Custom Icon <span className="text-gray-400 text-xs">optional</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-xl hover:border-gray-400 transition-colors"
+                    >
+                      <span className="text-2xl">{newLuggage.icon || luggageIcons[newLuggage.type]}</span>
+                      <span className="text-sm text-gray-600">Change icon</span>
+                    </button>
+                    {newLuggage.icon && (
+                      <button
+                        type="button"
+                        onClick={() => setNewLuggage({ ...newLuggage, icon: '' })}
+                        className="px-4 py-3 text-sm text-gray-500 hover:text-red-600 transition-colors"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  {showEmojiPicker && (
+                    <div className="mt-2 p-3 bg-gray-50 rounded-xl grid grid-cols-10 gap-2">
+                      {emojiOptions.map((emoji, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setNewLuggage({ ...newLuggage, icon: emoji })
+                            setShowEmojiPicker(false)
+                          }}
+                          className="text-2xl hover:scale-125 transition-transform"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Capacity (liters) <span className="text-gray-400 text-xs">optional</span>
                   </label>
                   <input
@@ -220,7 +275,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                               : 'border-gray-200 hover:border-gray-300 bg-white'
                           }`}
                         >
-                          <div className="text-3xl">{luggageIcons[item.type as LuggageType]}</div>
+                          <div className="text-3xl">{getDisplayIcon(item)}</div>
                           <div className="flex-1">
                             <div className="font-medium text-gray-900">{item.name}</div>
                             <div className="text-sm text-gray-500 capitalize">
@@ -250,7 +305,8 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                   onClick={() => {
                     setShowCreateForm(false)
                     setCreateError(null)
-                    setNewLuggage({ name: '', type: 'backpack', capacity: '' })
+                    setNewLuggage({ name: '', type: 'backpack', icon: '', capacity: '' })
+                    setShowEmojiPicker(false)
                   }}
                   className="px-6 py-2.5 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors font-medium"
                   disabled={creating}
