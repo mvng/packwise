@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { toggleItemPacked, addCustomItem, deleteItem } from '@/actions/packing.actions'
+import { getTripLuggage, assignItemToLuggage } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
+import type { TripLuggage, LuggageType } from '@/types/luggage'
 
 interface PackingItem {
   id: string
@@ -11,6 +13,7 @@ interface PackingItem {
   isPacked: boolean
   isCustom: boolean
   order: number
+  tripLuggageId?: string
 }
 
 interface Category {
@@ -38,7 +41,27 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   const [addError, setAddError] = useState<string | null>(null)
   const [showInventoryPicker, setShowInventoryPicker] = useState(false)
   const [inventoryToast, setInventoryToast] = useState<string | null>(null)
+  const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>([])
   const [, startTransition] = useTransition()
+
+  const luggageIcons: Record<LuggageType, string> = {
+    backpack: '🎒',
+    'carry-on': '🧳',
+    checked: '💼',
+    trunk: '📦',
+    other: '👜',
+  }
+
+  useEffect(() => {
+    loadTripLuggage()
+  }, [])
+
+  async function loadTripLuggage() {
+    const result = await getTripLuggage(trip.id)
+    if (result.tripLuggages) {
+      setTripLuggages(result.tripLuggages as TripLuggage[])
+    }
+  }
 
   const handleToggle = (
     itemId: string,
@@ -119,11 +142,40 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     })
   }
 
+  const handleAssignLuggage = async (itemId: string, tripLuggageId: string | null, categoryId: string, packingListId: string) => {
+    await assignItemToLuggage(itemId, tripLuggageId, trip.id)
+    setLists((prev) =>
+      prev.map((list) =>
+        list.id === packingListId
+          ? {
+              ...list,
+              categories: list.categories.map((cat) =>
+                cat.id === categoryId
+                  ? {
+                      ...cat,
+                      items: cat.items.map((item) =>
+                        item.id === itemId ? { ...item, tripLuggageId: tripLuggageId || undefined } : item
+                      ),
+                    }
+                  : cat
+              ),
+            }
+          : list
+      )
+    )
+  }
+
   function handleInventorySuccess(count: number) {
     setInventoryToast(`${count} item${count !== 1 ? 's' : ''} added to your packing list`)
     setTimeout(() => setInventoryToast(null), 3500)
-    // Trigger a full page refresh so the new server-rendered items appear
     window.location.reload()
+  }
+
+  function getLuggageIcon(tripLuggageId?: string) {
+    if (!tripLuggageId) return null
+    const tl = tripLuggages.find((t) => t.id === tripLuggageId)
+    if (!tl) return null
+    return luggageIcons[tl.luggage.type as LuggageType]
   }
 
   if (!lists.length) {
@@ -161,7 +213,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      {/* Inventory toast */}
       {inventoryToast && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
           <span>✓ {inventoryToast}</span>
@@ -174,7 +225,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         </div>
       )}
 
-      {/* Add from Inventory button */}
       <button
         onClick={() => setShowInventoryPicker(true)}
         className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors"
@@ -237,6 +287,26 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                         )}
                         {item.name}
                       </span>
+                      {tripLuggages.length > 0 && (
+                        <select
+                          value={item.tripLuggageId || ''}
+                          onChange={(e) => handleAssignLuggage(item.id, e.target.value || null, category.id, list.id)}
+                          className="text-xs px-2 py-1 border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <option value="">No bag</option>
+                          {tripLuggages.map((tl) => (
+                            <option key={tl.id} value={tl.id}>
+                              {getLuggageIcon(tl.id)} {tl.luggage.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {item.tripLuggageId && (
+                        <span className="text-lg" title={tripLuggages.find(t => t.id === item.tripLuggageId)?.luggage.name}>
+                          {getLuggageIcon(item.tripLuggageId)}
+                        </span>
+                      )}
                       <button
                         onClick={() => handleDelete(item.id, category.id, list.id)}
                         className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
