@@ -318,52 +318,62 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     )
   }
 
-  const renderItem = (item: typeof allItems[0]) => (
-    <div
-      key={item.id}
-      draggable={tripLuggages.length > 0}
-      onDragStart={(e) => handleDragStart(e, item.id, item.categoryId, item.packingListId)}
-      onDragEnd={handleDragEnd}
-      className={`flex items-center gap-3 group transition-opacity ${
-        tripLuggages.length > 0 ? 'cursor-move' : ''
-      }`}
-    >
-      <button
-        onClick={() => handleToggle(item.id, item.categoryId, item.packingListId, item.isPacked)}
-        className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
-          item.isPacked
-            ? 'bg-green-500 border-green-500'
-            : 'border-gray-300 hover:border-blue-400'
+  const renderItem = (item: typeof allItems[0]) => {
+    const luggageIcon = getLuggageIcon(item.tripLuggageId)
+    
+    return (
+      <div
+        key={item.id}
+        draggable={tripLuggages.length > 0}
+        onDragStart={(e) => handleDragStart(e, item.id, item.categoryId, item.packingListId)}
+        onDragEnd={handleDragEnd}
+        className={`flex items-center gap-3 group transition-opacity ${
+          tripLuggages.length > 0 ? 'cursor-move' : ''
         }`}
       >
-        {item.isPacked && (
-          <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
+        <button
+          onClick={() => handleToggle(item.id, item.categoryId, item.packingListId, item.isPacked)}
+          className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
+            item.isPacked
+              ? 'bg-green-500 border-green-500'
+              : 'border-gray-300 hover:border-blue-400'
+          }`}
+        >
+          {item.isPacked && (
+            <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </button>
+        <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+          {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+          {item.name}
+          {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
+        </span>
+        {/* Show luggage icon in Category view */}
+        {viewMode === 'category' && luggageIcon && (
+          <span className="text-sm opacity-60" title="Assigned to luggage">
+            {luggageIcon}
+          </span>
         )}
-      </button>
-      <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
-        {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
-        {item.name}
-        {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
-      </span>
-      {tripLuggages.length > 0 && (
-        <LuggageAssignmentButton
-          currentLuggageId={item.tripLuggageId}
-          tripLuggages={tripLuggages}
-          onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, item.categoryId, item.packingListId)}
-          itemName={item.name}
-        />
-      )}
-      <button
-        onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
-        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
-        aria-label={`Remove ${item.name}`}
-      >
-        ×
-      </button>
-    </div>
-  )
+        {tripLuggages.length > 0 && (
+          <LuggageAssignmentButton
+            currentLuggageId={item.tripLuggageId}
+            tripLuggages={tripLuggages}
+            onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, item.categoryId, item.packingListId)}
+            itemName={item.name}
+          />
+        )}
+        <button
+          onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
+          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
+          aria-label={`Remove ${item.name}`}
+        >
+          ×
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -613,49 +623,58 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                     </span>
                   </div>
                   <div className="space-y-2">
-                    {category.items.map((item) => (
-                      <div
-                        key={item.id}
-                        draggable={tripLuggages.length > 0}
-                        onDragStart={(e) => handleDragStart(e, item.id, category.id, list.id)}
-                        onDragEnd={handleDragEnd}
-                        className={`flex items-center gap-3 group transition-opacity ${
-                          tripLuggages.length > 0 ? 'cursor-move' : ''
-                        }`}
-                      >
-                        <button
-                          onClick={() => handleToggle(item.id, category.id, list.id, item.isPacked)}
-                          className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
-                            item.isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-blue-400'
+                    {category.items.map((item) => {
+                      const luggageIcon = getLuggageIcon(item.tripLuggageId)
+                      return (
+                        <div
+                          key={item.id}
+                          draggable={tripLuggages.length > 0}
+                          onDragStart={(e) => handleDragStart(e, item.id, category.id, list.id)}
+                          onDragEnd={handleDragEnd}
+                          className={`flex items-center gap-3 group transition-opacity ${
+                            tripLuggages.length > 0 ? 'cursor-move' : ''
                           }`}
                         >
-                          {item.isPacked && (
-                            <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
+                          <button
+                            onClick={() => handleToggle(item.id, category.id, list.id, item.isPacked)}
+                            className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
+                              item.isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-blue-400'
+                            }`}
+                          >
+                            {item.isPacked && (
+                              <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                          <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+                            {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+                            {item.name}
+                          </span>
+                          {/* Show luggage icon badge */}
+                          {luggageIcon && (
+                            <span className="text-sm opacity-60" title="Assigned to luggage">
+                              {luggageIcon}
+                            </span>
                           )}
-                        </button>
-                        <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
-                          {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
-                          {item.name}
-                        </span>
-                        {tripLuggages.length > 0 && (
-                          <LuggageAssignmentButton
-                            currentLuggageId={item.tripLuggageId}
-                            tripLuggages={tripLuggages}
-                            onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, category.id, list.id)}
-                            itemName={item.name}
-                          />
-                        )}
-                        <button
-                          onClick={() => handleDelete(item.id, category.id, list.id)}
-                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
-                          aria-label={`Remove ${item.name}`}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                          {tripLuggages.length > 0 && (
+                            <LuggageAssignmentButton
+                              currentLuggageId={item.tripLuggageId}
+                              tripLuggages={tripLuggages}
+                              onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, category.id, list.id)}
+                              itemName={item.name}
+                            />
+                          )}
+                          <button
+                            onClick={() => handleDelete(item.id, category.id, list.id)}
+                            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
+                            aria-label={`Remove ${item.name}`}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )
+                    })}
                   </div>
                   {addingTo === category.id ? (
                     <div className="mt-3 flex gap-2">
