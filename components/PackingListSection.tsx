@@ -42,6 +42,8 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   const [showInventoryPicker, setShowInventoryPicker] = useState(false)
   const [inventoryToast, setInventoryToast] = useState<string | null>(null)
   const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>([])
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'not-assigned': true })
+  const [viewMode, setViewMode] = useState<'category' | 'luggage'>('category')
   const [, startTransition] = useTransition()
 
   const luggageIcons: Record<LuggageType, string> = {
@@ -59,8 +61,19 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   async function loadTripLuggage() {
     const result = await getTripLuggage(trip.id)
     if (result.tripLuggages) {
-      setTripLuggages(result.tripLuggages as TripLuggage[])
+      const luggages = result.tripLuggages as TripLuggage[]
+      setTripLuggages(luggages)
+      // Auto-expand all luggage groups initially
+      const expanded: Record<string, boolean> = { 'not-assigned': true }
+      luggages.forEach(tl => {
+        expanded[tl.id] = true
+      })
+      setExpandedGroups(expanded)
     }
+  }
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }))
   }
 
   const handleToggle = (
@@ -178,6 +191,26 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     return luggageIcons[tl.luggage.type as LuggageType]
   }
 
+  // Group items by luggage
+  const allItems = lists.flatMap(list => 
+    list.categories.flatMap(cat => 
+      cat.items.map(item => ({
+        ...item,
+        categoryId: cat.id,
+        categoryName: cat.name,
+        packingListId: list.id
+      }))
+    )
+  )
+
+  const itemsByLuggage: Record<string, typeof allItems> = {
+    'not-assigned': allItems.filter(item => !item.tripLuggageId)
+  }
+
+  tripLuggages.forEach(tl => {
+    itemsByLuggage[tl.id] = allItems.filter(item => item.tripLuggageId === tl.id)
+  })
+
   if (!lists.length) {
     return (
       <div className="space-y-4">
@@ -205,6 +238,52 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     )
   }
 
+  const renderItem = (item: typeof allItems[0]) => (
+    <div key={item.id} className="flex items-center gap-3 group">
+      <button
+        onClick={() => handleToggle(item.id, item.categoryId, item.packingListId, item.isPacked)}
+        className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
+          item.isPacked
+            ? 'bg-green-500 border-green-500'
+            : 'border-gray-300 hover:border-blue-400'
+        }`}
+      >
+        {item.isPacked && (
+          <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+      </button>
+      <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+        {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+        {item.name}
+        <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>
+      </span>
+      {tripLuggages.length > 0 && (
+        <select
+          value={item.tripLuggageId || ''}
+          onChange={(e) => handleAssignLuggage(item.id, e.target.value || null, item.categoryId, item.packingListId)}
+          className="text-xs px-2 py-1 border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <option value="">No bag</option>
+          {tripLuggages.map((tl) => (
+            <option key={tl.id} value={tl.id}>
+              {getLuggageIcon(tl.id)} {tl.luggage.name}
+            </option>
+          ))}
+        </select>
+      )}
+      <button
+        onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
+        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
+        aria-label={`Remove ${item.name}`}
+      >
+        ×
+      </button>
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       {addError && (
@@ -216,12 +295,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
       {inventoryToast && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
           <span>✓ {inventoryToast}</span>
-          <button
-            onClick={() => setInventoryToast(null)}
-            className="text-green-400 hover:text-green-600 ml-2"
-          >
-            ×
-          </button>
+          <button onClick={() => setInventoryToast(null)} className="text-green-400 hover:text-green-600 ml-2">×</button>
         </div>
       )}
 
@@ -232,135 +306,232 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         🎒 Add from Inventory
       </button>
 
-      {lists.map((list) => (
-        <div key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-50">
-            <h3 className="font-semibold text-gray-900">{list.name}</h3>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {list.categories.map((category) => (
-              <div key={category.id} className="px-6 py-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    {category.name}
-                  </h4>
-                  <span className="text-xs text-gray-400">
-                    {category.items.filter((i) => i.isPacked).length}/{category.items.length}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {category.items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 group">
-                      <button
-                        onClick={() =>
-                          handleToggle(item.id, category.id, list.id, item.isPacked)
-                        }
-                        className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
-                          item.isPacked
-                            ? 'bg-green-500 border-green-500'
-                            : 'border-gray-300 hover:border-blue-400'
-                        }`}
-                      >
-                        {item.isPacked && (
-                          <svg
-                            className="w-3 h-3 text-white m-auto"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={3}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        )}
-                      </button>
-                      <span
-                        className={`flex-1 text-sm ${
-                          item.isPacked ? 'line-through text-gray-400' : 'text-gray-700'
-                        }`}
-                      >
-                        {item.quantity > 1 && (
-                          <span className="font-medium mr-1">{item.quantity}x</span>
-                        )}
-                        {item.name}
-                      </span>
-                      {tripLuggages.length > 0 && (
-                        <select
-                          value={item.tripLuggageId || ''}
-                          onChange={(e) => handleAssignLuggage(item.id, e.target.value || null, category.id, list.id)}
-                          className="text-xs px-2 py-1 border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <option value="">No bag</option>
-                          {tripLuggages.map((tl) => (
-                            <option key={tl.id} value={tl.id}>
-                              {getLuggageIcon(tl.id)} {tl.luggage.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      {item.tripLuggageId && (
-                        <span className="text-lg" title={tripLuggages.find(t => t.id === item.tripLuggageId)?.luggage.name}>
-                          {getLuggageIcon(item.tripLuggageId)}
-                        </span>
-                      )}
-                      <button
-                        onClick={() => handleDelete(item.id, category.id, list.id)}
-                        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
-                        aria-label={`Remove ${item.name}`}
-                      >
-                        ×
-                      </button>
+      {/* View Toggle */}
+      {tripLuggages.length > 0 && (
+        <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setViewMode('category')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              viewMode === 'category'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            By Category
+          </button>
+          <button
+            onClick={() => setViewMode('luggage')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              viewMode === 'luggage'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            By Luggage
+          </button>
+        </div>
+      )}
+
+      {/* Luggage Grouped View */}
+      {viewMode === 'luggage' && tripLuggages.length > 0 ? (
+        <div className="space-y-4">
+          {tripLuggages.map((tl) => {
+            const items = itemsByLuggage[tl.id] || []
+            const packedCount = items.filter(i => i.isPacked).length
+            const isExpanded = expandedGroups[tl.id]
+
+            return (
+              <div key={tl.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                <button
+                  onClick={() => toggleGroup(tl.id)}
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{luggageIcons[tl.luggage.type as LuggageType]}</span>
+                    <div className="text-left">
+                      <h3 className="font-semibold text-gray-900">{tl.luggage.name}</h3>
+                      <p className="text-xs text-gray-500 capitalize">
+                        {tl.luggage.type}
+                        {tl.luggage.capacity && ` • ${tl.luggage.capacity}L`}
+                        {' • '}
+                        {packedCount}/{items.length} items packed
+                      </p>
                     </div>
-                  ))}
-                </div>
-                {addingTo === category.id ? (
-                  <div className="mt-3 flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Item name"
-                      value={newItemName[category.id] || ''}
-                      onChange={(e) =>
-                        setNewItemName((prev) => ({ ...prev, [category.id]: e.target.value }))
-                      }
-                      onKeyDown={(e) =>
-                        e.key === 'Enter' && handleAddItem(category.id, list.id)
-                      }
-                      className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      autoFocus
-                    />
-                    <button
-                      onClick={() => handleAddItem(category.id, list.id)}
-                      className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={() => {
-                        setAddingTo(null)
-                        setAddError(null)
-                      }}
-                      className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700"
-                    >
-                      Cancel
-                    </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setAddingTo(category.id)}
-                    className="mt-3 text-xs text-blue-500 hover:text-blue-700 font-medium"
-                  >
-                    + Add item
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {items.length > 0 && (
+                      <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-2 bg-blue-500 rounded-full transition-all"
+                          style={{ width: `${(packedCount / items.length) * 100}%` }}
+                        />
+                      </div>
+                    )}
+                    <svg
+                      className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+
+                {isExpanded && (
+                  <div className="px-6 pb-4 border-t border-gray-50">
+                    {items.length === 0 ? (
+                      <p className="text-sm text-gray-400 py-4 text-center">No items assigned to this bag</p>
+                    ) : (
+                      <div className="space-y-2 pt-4">
+                        {items.map(item => renderItem(item))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-            ))}
-          </div>
+            )
+          })}
+
+          {/* Not Assigned Group */}
+          {itemsByLuggage['not-assigned'].length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <button
+                onClick={() => toggleGroup('not-assigned')}
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">☐</span>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900">Not Assigned</h3>
+                    <p className="text-xs text-gray-500">{itemsByLuggage['not-assigned'].length} items</p>
+                  </div>
+                </div>
+                <svg
+                  className={`w-5 h-5 text-gray-400 transition-transform ${expandedGroups['not-assigned'] ? 'rotate-180' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {expandedGroups['not-assigned'] && (
+                <div className="px-6 pb-4 border-t border-gray-50">
+                  <div className="space-y-2 pt-4">
+                    {itemsByLuggage['not-assigned'].map(item => renderItem(item))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      ))}
+      ) : (
+        /* Original Category View */
+        lists.map((list) => (
+          <div key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50">
+              <h3 className="font-semibold text-gray-900">{list.name}</h3>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {list.categories.map((category) => (
+                <div key={category.id} className="px-6 py-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                      {category.name}
+                    </h4>
+                    <span className="text-xs text-gray-400">
+                      {category.items.filter((i) => i.isPacked).length}/{category.items.length}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {category.items.map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 group">
+                        <button
+                          onClick={() => handleToggle(item.id, category.id, list.id, item.isPacked)}
+                          className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
+                            item.isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-blue-400'
+                          }`}
+                        >
+                          {item.isPacked && (
+                            <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                        <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+                          {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+                          {item.name}
+                        </span>
+                        {tripLuggages.length > 0 && (
+                          <select
+                            value={item.tripLuggageId || ''}
+                            onChange={(e) => handleAssignLuggage(item.id, e.target.value || null, category.id, list.id)}
+                            className="text-xs px-2 py-1 border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <option value="">No bag</option>
+                            {tripLuggages.map((tl) => (
+                              <option key={tl.id} value={tl.id}>
+                                {getLuggageIcon(tl.id)} {tl.luggage.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        {item.tripLuggageId && (
+                          <span className="text-lg" title={tripLuggages.find(t => t.id === item.tripLuggageId)?.luggage.name}>
+                            {getLuggageIcon(item.tripLuggageId)}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => handleDelete(item.id, category.id, list.id)}
+                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
+                          aria-label={`Remove ${item.name}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {addingTo === category.id ? (
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Item name"
+                        value={newItemName[category.id] || ''}
+                        onChange={(e) => setNewItemName((prev) => ({ ...prev, [category.id]: e.target.value }))}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddItem(category.id, list.id)}
+                        className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => handleAddItem(category.id, list.id)}
+                        className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={() => { setAddingTo(null); setAddError(null) }}
+                        className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setAddingTo(category.id)}
+                      className="mt-3 text-xs text-blue-500 hover:text-blue-700 font-medium"
+                    >
+                      + Add item
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
 
       {showInventoryPicker && (
         <InventoryPickerModal
