@@ -121,6 +121,7 @@ model Luggage {
   userId       String        @map("user_id")
   name         String
   type         String
+  icon         String?
   capacity     Int?
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
