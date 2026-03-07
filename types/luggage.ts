@@ -30,7 +30,7 @@ export interface PackingItemWithLuggage {
   isPacked: boolean
   isCustom: boolean
   order: number
-  tripLuggageId?: string
+  tripLuggageId?: string | null
   tripLuggage?: TripLuggage
 }
 
