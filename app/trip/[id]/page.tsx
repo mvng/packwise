@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getTripById } from '@/actions/trip.actions'
 import PackingListSection from '@/components/PackingListSection'
+import TripLuggageSelector from '@/components/luggage/TripLuggageSelector'
 import { formatDate } from '@/lib/utils'
 
 interface TripPageProps {
@@ -123,6 +124,12 @@ export default async function TripPage({ params }: TripPageProps) {
             </div>
           )}
         </div>
+        
+        {/* Luggage selector */}
+        <div className="mb-6">
+          <TripLuggageSelector tripId={id} />
+        </div>
+
         {/* Packing lists */}
         <PackingListSection trip={trip} />
       </main>

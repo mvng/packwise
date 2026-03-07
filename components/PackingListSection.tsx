@@ -154,7 +154,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                   ? {
                       ...cat,
                       items: cat.items.map((item) =>
-                        item.id === itemId ? { ...item, tripLuggageId } : item
+                        item.id === itemId ? { ...item, tripLuggageId: tripLuggageId || undefined } : item
                       ),
                     }
                   : cat

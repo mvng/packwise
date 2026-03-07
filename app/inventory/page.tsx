@@ -33,12 +33,20 @@ export default async function InventoryPage() {
               <p className="text-xs text-gray-500">Items you own, reusable across any trip</p>
             </div>
           </div>
-          <Link
-            href="/dashboard"
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors hidden sm:block"
-          >
-            Dashboard
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/luggage"
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+            >
+              🧳 Luggage
+            </Link>
+            <Link
+              href="/dashboard"
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors hidden sm:block"
+            >
+              Dashboard
+            </Link>
+          </div>
         </div>
       </header>
       <main className="max-w-5xl mx-auto px-6 py-8">
