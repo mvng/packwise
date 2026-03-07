@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getUserLuggage } from '@/actions/luggage.actions'
-import { addTripLuggage } from '@/actions/luggage.actions'
+import { getUserLuggage, addLuggageToTrip } from '@/actions/luggage.actions'
 import type { Luggage, LuggageType } from '@/types/luggage'
 
 interface Props {
@@ -50,7 +49,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
 
   const handleAdd = async () => {
     for (const luggageId of selected) {
-      await addTripLuggage(tripId, luggageId)
+      await addLuggageToTrip(tripId, luggageId)
     }
     onSuccess()
   }

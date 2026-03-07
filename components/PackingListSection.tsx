@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { toggleItemPacked, addCustomItem, deleteItem } from '@/actions/packing.actions'
-import { getTripLuggage, assignItemToLuggage, removeTripLuggage } from '@/actions/luggage.actions'
+import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
 import LuggageAssignmentButton from '@/components/LuggageAssignmentButton'
 import LuggagePickerModal from '@/components/LuggagePickerModal'
@@ -180,10 +180,10 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     )
   }
 
-  const handleRemoveLuggage = async (tripLuggageId: string) => {
+  const handleRemoveLuggage = async (tripLuggageId: string, luggageId: string) => {
     if (!confirm('Remove this luggage from the trip? Items will be unassigned.')) return
     
-    await removeTripLuggage(tripLuggageId, trip.id)
+    await removeLuggageFromTrip(trip.id, luggageId)
     setTripLuggages(prev => prev.filter(tl => tl.id !== tripLuggageId))
     
     // Unassign all items from this luggage
@@ -350,7 +350,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                   <span className="text-xs text-gray-500">({itemCount})</span>
                 )}
                 <button
-                  onClick={() => handleRemoveLuggage(tl.id)}
+                  onClick={() => handleRemoveLuggage(tl.id, tl.luggageId)}
                   className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
                   aria-label={`Remove ${tl.luggage.name}`}
                 >
