@@ -646,7 +646,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                             onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, category.id, list.id)}
                             itemName={item.name}
                           />
-                        )>
+                        )}
                         <button
                           onClick={() => handleDelete(item.id, category.id, list.id)}
                           className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
