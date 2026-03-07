@@ -212,7 +212,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   const handleDragStart = (e: React.DragEvent, itemId: string, categoryId: string, packingListId: string) => {
     setDraggedItem({ id: itemId, categoryId, packingListId })
     e.dataTransfer.effectAllowed = 'move'
-    // Add a slight delay to allow the drag preview to render
     setTimeout(() => {
       if (e.currentTarget instanceof HTMLElement) {
         e.currentTarget.style.opacity = '0.5'
@@ -235,7 +234,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   }
 
   const handleDragLeave = (e: React.DragEvent) => {
-    // Only clear if we're actually leaving the drop zone
     const relatedTarget = e.relatedTarget as HTMLElement
     if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
       setDragOverTarget(null)
@@ -247,7 +245,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     e.stopPropagation()
     if (!draggedItem) return
 
-    // Assign item to the target luggage
     handleAssignLuggage(draggedItem.id, targetLuggageId, draggedItem.categoryId, draggedItem.packingListId)
     setDraggedItem(null)
     setDragOverTarget(null)
@@ -374,76 +371,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
       >
         🎒 Add from Inventory
       </button>
-
-      {/* Bags in Use Header */}
-      <div
-        onDragOver={(e) => tripLuggages.length > 0 && handleDragOver(e)}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => e.preventDefault()}
-        className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-4"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-700">Bags for this trip</h3>
-          {tripLuggages.length > 0 && (
-            <span className="text-xs text-gray-500">{tripLuggages.length} bag{tripLuggages.length !== 1 ? 's' : ''}</span>
-          )}
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          {tripLuggages.map((tl) => {
-            const itemCount = itemsByLuggage[tl.id]?.length || 0
-            const isDropTarget = dragOverTarget === tl.id
-            return (
-              <div
-                key={tl.id}
-                onDragOver={(e) => {
-                  e.stopPropagation()
-                  handleDragOver(e, tl.id)
-                }}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => {
-                  e.stopPropagation()
-                  handleDrop(e, tl.id)
-                }}
-                className={`group relative flex items-center gap-2 px-3 py-2 bg-white border rounded-xl hover:shadow-sm transition-all ${
-                  isDropTarget
-                    ? 'border-blue-500 border-2 bg-blue-50 shadow-md scale-105'
-                    : 'border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                <span className="text-lg">{getLuggageIcon(tl)}</span>
-                <span className="text-sm font-medium text-gray-700">{tl.luggage.name}</span>
-                {itemCount > 0 && (
-                  <span className="text-xs text-gray-500">({itemCount})</span>
-                )}
-                <button
-                  onClick={() => handleRemoveLuggage(tl.id, tl.luggageId)}
-                  className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
-                  aria-label={`Remove ${tl.luggage.name}`}
-                >
-                  ×
-                </button>
-              </div>
-            )
-          })}
-          
-          <button
-            onClick={() => setShowLuggagePicker(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-dashed border-blue-300 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-colors"
-          >
-            + Add bag
-          </button>
-        </div>
-        
-        {tripLuggages.length === 0 ? (
-          <p className="text-sm text-gray-500 mt-2">Add luggage to organize your items by bag</p>
-        ) : (
-          <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
-            <span>💡</span>
-            <span>Drag items to assign them to bags</span>
-          </p>
-        )}
-      </div>
 
       {tripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
