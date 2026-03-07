@@ -264,11 +264,8 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     setShowLuggagePicker(false)
   }
 
-  function getLuggageIcon(tripLuggageId?: string | null) {
-    if (!tripLuggageId) return null
-    const tl = tripLuggages.find((t) => t.id === tripLuggageId)
-    if (!tl) return null
-    return luggageIcons[tl.luggage.type as LuggageType]
+  function getLuggageIcon(tl: TripLuggage) {
+    return tl.luggage.icon || luggageIcons[tl.luggage.type as LuggageType]
   }
 
   const allItems = lists.flatMap(list => 
@@ -414,7 +411,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                     : 'border-gray-200 hover:border-blue-300'
                 }`}
               >
-                <span className="text-lg">{luggageIcons[tl.luggage.type as LuggageType]}</span>
+                <span className="text-lg">{getLuggageIcon(tl)}</span>
                 <span className="text-sm font-medium text-gray-700">{tl.luggage.name}</span>
                 {itemCount > 0 && (
                   <span className="text-xs text-gray-500">({itemCount})</span>
@@ -498,7 +495,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                   className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{luggageIcons[tl.luggage.type as LuggageType]}</span>
+                    <span className="text-2xl">{getLuggageIcon(tl)}</span>
                     <div className="text-left">
                       <h3 className="font-semibold text-gray-900">{tl.luggage.name}</h3>
                       <p className="text-xs text-gray-500 capitalize">
