@@ -2,9 +2,10 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { toggleItemPacked, addCustomItem, deleteItem } from '@/actions/packing.actions'
-import { getTripLuggage, assignItemToLuggage } from '@/actions/luggage.actions'
+import { getTripLuggage, assignItemToLuggage, removeTripLuggage } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
 import LuggageAssignmentButton from '@/components/LuggageAssignmentButton'
+import LuggagePickerModal from '@/components/LuggagePickerModal'
 import type { TripLuggage, LuggageType } from '@/types/luggage'
 
 interface PackingItem {
@@ -41,6 +42,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   const [addingTo, setAddingTo] = useState<string | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
   const [showInventoryPicker, setShowInventoryPicker] = useState(false)
+  const [showLuggagePicker, setShowLuggagePicker] = useState(false)
   const [inventoryToast, setInventoryToast] = useState<string | null>(null)
   const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>([])
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'not-assigned': true })
@@ -178,10 +180,37 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     )
   }
 
+  const handleRemoveLuggage = async (tripLuggageId: string) => {
+    if (!confirm('Remove this luggage from the trip? Items will be unassigned.')) return
+    
+    await removeTripLuggage(tripLuggageId, trip.id)
+    setTripLuggages(prev => prev.filter(tl => tl.id !== tripLuggageId))
+    
+    // Unassign all items from this luggage
+    setLists((prev) =>
+      prev.map((list) => ({
+        ...list,
+        categories: list.categories.map((cat) => ({
+          ...cat,
+          items: cat.items.map((item) =>
+            item.tripLuggageId === tripLuggageId
+              ? { ...item, tripLuggageId: undefined }
+              : item
+          ),
+        })),
+      }))
+    )
+  }
+
   function handleInventorySuccess(count: number) {
     setInventoryToast(`${count} item${count !== 1 ? 's' : ''} added to your packing list`)
     setTimeout(() => setInventoryToast(null), 3500)
     window.location.reload()
+  }
+
+  function handleLuggageSuccess() {
+    loadTripLuggage()
+    setShowLuggagePicker(false)
   }
 
   function getLuggageIcon(tripLuggageId?: string | null) {
@@ -297,6 +326,52 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
       >
         🎒 Add from Inventory
       </button>
+
+      {/* Bags in Use Header */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-700">Bags for this trip</h3>
+          {tripLuggages.length > 0 && (
+            <span className="text-xs text-gray-500">{tripLuggages.length} bag{tripLuggages.length !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {tripLuggages.map((tl) => {
+            const itemCount = itemsByLuggage[tl.id]?.length || 0
+            return (
+              <div
+                key={tl.id}
+                className="group relative flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all"
+              >
+                <span className="text-lg">{luggageIcons[tl.luggage.type as LuggageType]}</span>
+                <span className="text-sm font-medium text-gray-700">{tl.luggage.name}</span>
+                {itemCount > 0 && (
+                  <span className="text-xs text-gray-500">({itemCount})</span>
+                )}
+                <button
+                  onClick={() => handleRemoveLuggage(tl.id)}
+                  className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                  aria-label={`Remove ${tl.luggage.name}`}
+                >
+                  ×
+                </button>
+              </div>
+            )
+          })}
+          
+          <button
+            onClick={() => setShowLuggagePicker(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-dashed border-blue-300 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-colors"
+          >
+            + Add bag
+          </button>
+        </div>
+        
+        {tripLuggages.length === 0 && (
+          <p className="text-sm text-gray-500 mt-2">Add luggage to organize your items by bag</p>
+        )}
+      </div>
 
       {tripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
@@ -514,6 +589,14 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
           tripId={trip.id}
           onClose={() => setShowInventoryPicker(false)}
           onSuccess={handleInventorySuccess}
+        />
+      )}
+
+      {showLuggagePicker && (
+        <LuggagePickerModal
+          tripId={trip.id}
+          onClose={() => setShowLuggagePicker(false)}
+          onSuccess={handleLuggageSuccess}
         />
       )}
     </div>
