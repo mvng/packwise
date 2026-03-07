@@ -47,6 +47,8 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>([])
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'not-assigned': true })
   const [viewMode, setViewMode] = useState<'category' | 'luggage'>('category')
+  const [draggedItem, setDraggedItem] = useState<{ id: string; categoryId: string; packingListId: string } | null>(null)
+  const [dragOverTarget, setDragOverTarget] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
   const luggageIcons: Record<LuggageType, string> = {
@@ -202,6 +204,46 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     )
   }
 
+  // Drag and Drop handlers
+  const handleDragStart = (e: React.DragEvent, itemId: string, categoryId: string, packingListId: string) => {
+    setDraggedItem({ id: itemId, categoryId, packingListId })
+    e.dataTransfer.effectAllowed = 'move'
+    // Add a slight delay to allow the drag preview to render
+    setTimeout(() => {
+      if (e.currentTarget instanceof HTMLElement) {
+        e.currentTarget.style.opacity = '0.5'
+      }
+    }, 0)
+  }
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedItem(null)
+    setDragOverTarget(null)
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1'
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent, targetLuggageId: string | null) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverTarget(targetLuggageId || 'not-assigned')
+  }
+
+  const handleDragLeave = () => {
+    setDragOverTarget(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, targetLuggageId: string | null) => {
+    e.preventDefault()
+    if (!draggedItem) return
+
+    // Assign item to the target luggage
+    handleAssignLuggage(draggedItem.id, targetLuggageId, draggedItem.categoryId, draggedItem.packingListId)
+    setDraggedItem(null)
+    setDragOverTarget(null)
+  }
+
   function handleInventorySuccess(count: number) {
     setInventoryToast(`${count} item${count !== 1 ? 's' : ''} added to your packing list`)
     setTimeout(() => setInventoryToast(null), 3500)
@@ -267,7 +309,15 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   }
 
   const renderItem = (item: typeof allItems[0]) => (
-    <div key={item.id} className="flex items-center gap-3 group">
+    <div
+      key={item.id}
+      draggable={tripLuggages.length > 0}
+      onDragStart={(e) => handleDragStart(e, item.id, item.categoryId, item.packingListId)}
+      onDragEnd={handleDragEnd}
+      className={`flex items-center gap-3 group transition-opacity ${
+        tripLuggages.length > 0 ? 'cursor-move' : ''
+      }`}
+    >
       <button
         onClick={() => handleToggle(item.id, item.categoryId, item.packingListId, item.isPacked)}
         className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
@@ -285,7 +335,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
       <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
         {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
         {item.name}
-        <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>
+        {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
       </span>
       {tripLuggages.length > 0 && (
         <LuggageAssignmentButton
@@ -368,8 +418,13 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
           </button>
         </div>
         
-        {tripLuggages.length === 0 && (
+        {tripLuggages.length === 0 ? (
           <p className="text-sm text-gray-500 mt-2">Add luggage to organize your items by bag</p>
+        ) : (
+          <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+            <span>💡</span>
+            <span>Drag items to assign them to bags</span>
+          </p>
         )}
       </div>
 
@@ -404,9 +459,20 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
             const items = itemsByLuggage[tl.id] || []
             const packedCount = items.filter(i => i.isPacked).length
             const isExpanded = expandedGroups[tl.id]
+            const isDropTarget = dragOverTarget === tl.id
 
             return (
-              <div key={tl.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <div
+                key={tl.id}
+                onDragOver={(e) => handleDragOver(e, tl.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, tl.id)}
+                className={`bg-white rounded-2xl border overflow-hidden transition-all ${
+                  isDropTarget
+                    ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]'
+                    : 'border-gray-100'
+                }`}
+              >
                 <button
                   onClick={() => toggleGroup(tl.id)}
                   className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -446,7 +512,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                 {isExpanded && (
                   <div className="px-6 pb-4 border-t border-gray-50">
                     {items.length === 0 ? (
-                      <p className="text-sm text-gray-400 py-4 text-center">No items assigned to this bag</p>
+                      <p className="text-sm text-gray-400 py-4 text-center">No items assigned • Drag items here</p>
                     ) : (
                       <div className="space-y-2 pt-4">
                         {items.map(item => renderItem(item))}
@@ -459,7 +525,16 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
           })}
 
           {itemsByLuggage['not-assigned'].length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div
+              onDragOver={(e) => handleDragOver(e, null)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, null)}
+              className={`bg-white rounded-2xl border overflow-hidden transition-all ${
+                dragOverTarget === 'not-assigned'
+                  ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]'
+                  : 'border-gray-100'
+              }`}
+            >
               <button
                 onClick={() => toggleGroup('not-assigned')}
                 className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -510,7 +585,15 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                   </div>
                   <div className="space-y-2">
                     {category.items.map((item) => (
-                      <div key={item.id} className="flex items-center gap-3 group">
+                      <div
+                        key={item.id}
+                        draggable={tripLuggages.length > 0}
+                        onDragStart={(e) => handleDragStart(e, item.id, category.id, list.id)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center gap-3 group transition-opacity ${
+                          tripLuggages.length > 0 ? 'cursor-move' : ''
+                        }`}
+                      >
                         <button
                           onClick={() => handleToggle(item.id, category.id, list.id, item.isPacked)}
                           className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
