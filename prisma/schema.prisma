@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -16,8 +17,8 @@ model User {
   supabaseId          String              @unique @map("supabase_id")
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
-  trips               Trip[]
   inventoryCategories InventoryCategory[]
+  trips               Trip[]
 
   @@map("users")
 }
@@ -34,8 +35,8 @@ model Trip {
   notes        String?
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
-  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   packingLists PackingList[]
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([startDate])
@@ -48,8 +49,8 @@ model PackingList {
   name       String     @default("Main Packing List")
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @updatedAt @map("updated_at")
-  trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
   categories Category[]
+  trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
   @@map("packing_lists")
