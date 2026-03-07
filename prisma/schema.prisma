@@ -19,6 +19,7 @@ model User {
   trips               Trip[]
   inventoryCategories InventoryCategory[]
   bags                Bag[]
+
   @@map("users")
 }
 
@@ -37,6 +38,7 @@ model Trip {
   user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   packingLists PackingList[]
   tripBags     TripBag[]
+
   @@index([userId])
   @@index([startDate])
   @@map("trips")
@@ -50,6 +52,7 @@ model PackingList {
   updatedAt  DateTime   @updatedAt @map("updated_at")
   trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
   categories Category[]
+
   @@index([tripId])
   @@map("packing_lists")
 }
@@ -61,6 +64,7 @@ model Category {
   order         Int           @default(0)
   packingList   PackingList   @relation(fields: [packingListId], references: [id], onDelete: Cascade)
   items         PackingItem[]
+
   @@index([packingListId])
   @@map("categories")
 }
@@ -68,16 +72,17 @@ model Category {
 model PackingItem {
   id         String   @id @default(uuid())
   categoryId String   @map("category_id")
+  tripBagId  String?  @map("trip_bag_id")
   name       String
   quantity   Int      @default(1)
   isPacked   Boolean  @default(false) @map("is_packed")
   isCustom   Boolean  @default(false) @map("is_custom")
   order      Int      @default(0)
-  bagId      String?  @map("bag_id")
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  bag        TripBag? @relation(fields: [bagId], references: [id], onDelete: SetNull)
+  tripBag    TripBag? @relation(fields: [tripBagId], references: [id], onDelete: SetNull)
+
   @@index([categoryId])
-  @@index([bagId])
+  @@index([tripBagId])
   @@map("packing_items")
 }
 
@@ -85,26 +90,30 @@ model Bag {
   id        String    @id @default(uuid())
   userId    String    @map("user_id")
   name      String
-  type      String    @default("other")
-  capacity  String?
   color     String?
-  notes     String?
+  capacity  String?
+  order     Int       @default(0)
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tripBags  TripBag[]
+
   @@index([userId])
   @@map("bags")
 }
 
 model TripBag {
-  id           String        @id @default(uuid())
-  tripId       String        @map("trip_id")
-  bagId        String        @map("bag_id")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  trip         Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  bag          Bag           @relation(fields: [bagId], references: [id], onDelete: Cascade)
-  packingItems PackingItem[]
+  id         String        @id @default(uuid())
+  tripId     String        @map("trip_id")
+  bagId      String        @map("bag_id")
+  isBringing Boolean       @default(true) @map("is_bringing")
+  order      Int           @default(0)
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+  trip       Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  bag        Bag           @relation(fields: [bagId], references: [id], onDelete: Cascade)
+  items      PackingItem[]
+
   @@unique([tripId, bagId])
   @@index([tripId])
   @@index([bagId])
@@ -120,6 +129,7 @@ model InventoryCategory {
   updatedAt DateTime        @updatedAt @map("updated_at")
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   items     InventoryItem[]
+
   @@index([userId])
   @@map("inventory_categories")
 }
@@ -135,6 +145,7 @@ model InventoryItem {
   createdAt  DateTime          @default(now()) @map("created_at")
   updatedAt  DateTime          @updatedAt @map("updated_at")
   category   InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
   @@index([categoryId])
   @@map("inventory_items")
 }

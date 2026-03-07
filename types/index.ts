@@ -13,6 +13,7 @@ export interface Trip {
   createdAt: Date
   updatedAt: Date
   packingLists?: PackingList[]
+  tripBags?: TripBag[]
 }
 
 export interface PackingList {
@@ -35,11 +36,35 @@ export interface Category {
 export interface PackingItem {
   id: string
   categoryId: string
+  tripBagId?: string | null
   name: string
   quantity: number
   isPacked: boolean
   isCustom: boolean
   order: number
+}
+
+export interface Bag {
+  id: string
+  userId: string
+  name: string
+  color?: string | null
+  capacity?: string | null
+  order: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface TripBag {
+  id: string
+  tripId: string
+  bagId: string
+  isBringing: boolean
+  order: number
+  bag: Bag
+  items?: PackingItem[]
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface WeatherData {

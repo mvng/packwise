@@ -150,7 +150,10 @@ export async function getTripById(tripId: string) {
 
     const trip = await prisma.trip.findFirst({
       where: { id: tripId, userId },
-      include: { packingLists: { include: { categories: { include: { items: true } } } } },
+      include: {
+        packingLists: { include: { categories: { include: { items: true } } } },
+        tripBags: { include: { bag: true }, orderBy: { order: 'asc' } },
+      },
     })
 
     if (!trip) return { error: 'Trip not found' }
