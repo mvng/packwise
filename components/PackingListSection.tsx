@@ -13,7 +13,7 @@ interface PackingItem {
   isPacked: boolean
   isCustom: boolean
   order: number
-  tripLuggageId?: string
+  tripLuggageId?: string | null
 }
 
 interface Category {
@@ -154,7 +154,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                   ? {
                       ...cat,
                       items: cat.items.map((item) =>
-                        item.id === itemId ? { ...item, tripLuggageId: tripLuggageId || undefined } : item
+                        item.id === itemId ? { ...item, tripLuggageId } : item
                       ),
                     }
                   : cat
@@ -171,7 +171,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     window.location.reload()
   }
 
-  function getLuggageIcon(tripLuggageId?: string) {
+  function getLuggageIcon(tripLuggageId?: string | null) {
     if (!tripLuggageId) return null
     const tl = tripLuggages.find((t) => t.id === tripLuggageId)
     if (!tl) return null
