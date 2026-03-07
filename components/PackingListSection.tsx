@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { toggleItemPacked, addCustomItem, deleteItem, assignItemToLuggage } from '@/actions/packing.actions'
-import { getTripLuggage } from '@/actions/luggage.actions'
+import { toggleItemPacked, addCustomItem, deleteItem } from '@/actions/packing.actions'
+import { getTripLuggage, assignItemToLuggage } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
 import type { TripLuggage, LuggageType } from '@/types/luggage'
 
@@ -13,7 +13,7 @@ interface PackingItem {
   isPacked: boolean
   isCustom: boolean
   order: number
-  tripLuggageId?: string
+  tripLuggageId?: string | null
 }
 
 interface Category {
@@ -171,7 +171,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     window.location.reload()
   }
 
-  function getLuggageIcon(tripLuggageId?: string) {
+  function getLuggageIcon(tripLuggageId?: string | null) {
     if (!tripLuggageId) return null
     const tl = tripLuggages.find((t) => t.id === tripLuggageId)
     if (!tl) return null
