@@ -1,9 +1,9 @@
-import { redirect, notFound } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { getTripById } from '@/actions/trip.actions'
+import { getSharedTripById } from '@/actions/trip.actions'
 import PackingListSection from '@/components/PackingListSection'
+import ForkTripButton from '@/components/ForkTripButton'
 import { formatDate } from '@/lib/utils'
 
 interface TripPageProps {
@@ -15,21 +15,45 @@ export default async function TripPage({ params }: TripPageProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    // Allow access if the user is in guest mode
-    const cookieStore = await cookies()
-    const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
-    if (!isGuestMode) {
-      redirect('/login')
-    }
-  }
-
-  const { trip, error } = await getTripById(id)
+  // Use getSharedTripById for public access
+  const { trip, error } = await getSharedTripById(id)
   if (error || !trip) {
     notFound()
   }
 
-  const allItems = trip.packingLists.flatMap(
+  // Determine if this is the owner or a shared view
+  let isOwner = false
+  if (user) {
+    // Get the Prisma user ID from Supabase user
+    const { data: users } = await supabase
+      .from('User')
+      .select('id')
+      .eq('supabaseId', user.id)
+      .limit(1)
+    
+    if (users && users.length > 0) {
+      isOwner = users[0].id === trip.userId
+    }
+  }
+
+  const isSharedView = !isOwner
+
+  // For shared views, reset all items to unchecked
+  const displayTrip = isSharedView ? {
+    ...trip,
+    packingLists: trip.packingLists.map(list => ({
+      ...list,
+      categories: list.categories.map(cat => ({
+        ...cat,
+        items: cat.items.map(item => ({
+          ...item,
+          isPacked: false
+        }))
+      }))
+    }))
+  } : trip
+
+  const allItems = displayTrip.packingLists.flatMap(
     (list) => list.categories.flatMap((cat) => cat.items)
   )
   const totalItems = allItems.length
@@ -55,9 +79,11 @@ export default async function TripPage({ params }: TripPageProps) {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 text-lg">
-              ←
-            </Link>
+            {isOwner && (
+              <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 text-lg">
+                ←
+              </Link>
+            )}
             <div>
               <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
               {trip.destination && (
@@ -66,15 +92,23 @@ export default async function TripPage({ params }: TripPageProps) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {totalItems > 0 && (
+            {isSharedView && (
+              <Link 
+                href="/login"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Sign in
+              </Link>
+            )}
+            {!isSharedView && totalItems > 0 && (
               <div className="text-sm text-gray-500">
                 {packedItems}/{totalItems} packed
               </div>
             )}
           </div>
         </div>
-        {/* Progress bar */}
-        {totalItems > 0 && (
+        {/* Progress bar - only show for owners */}
+        {!isSharedView && totalItems > 0 && (
           <div className="h-1 bg-gray-100">
             <div
               className="h-1 bg-blue-500 transition-all duration-300"
@@ -83,7 +117,33 @@ export default async function TripPage({ params }: TripPageProps) {
           </div>
         )}
       </header>
+      
       <main className="max-w-5xl mx-auto px-6 py-8">
+        {/* Shared view banner with fork button */}
+        {isSharedView && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 mb-6">
+            <div className="flex items-start justify-between gap-6 flex-col lg:flex-row">
+              <div className="flex items-start gap-3 flex-1">
+                <span className="text-3xl">👀</span>
+                <div>
+                  <h3 className="font-semibold text-blue-900 text-lg mb-1">Viewing shared packing list</h3>
+                  <p className="text-blue-700 text-sm">
+                    This is a read-only view. You can save a copy of this packing list to your account and customize it for your own trip.
+                  </p>
+                </div>
+              </div>
+              <div className="flex-shrink-0 w-full lg:w-auto">
+                <ForkTripButton 
+                  tripId={id}
+                  tripName={trip.name || trip.destination}
+                  isAuthenticated={!!user}
+                  variant="primary"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Trip info */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-start justify-between">
@@ -99,16 +159,21 @@ export default async function TripPage({ params }: TripPageProps) {
                     {trip.endDate && ` – ${formatDate(trip.endDate)}`}
                   </p>
                 )}
+                {totalItems > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {totalItems} item{totalItems !== 1 ? 's' : ''} in this list
+                  </p>
+                )}
               </div>
             </div>
-            {progress === 100 && (
+            {!isSharedView && progress === 100 && (
               <div className="text-right">
                 <div className="text-3xl mb-1">🎉</div>
                 <p className="text-xs text-green-600 font-medium">All packed!</p>
               </div>
             )}
           </div>
-          {totalItems > 0 && (
+          {!isSharedView && totalItems > 0 && (
             <div className="mt-4">
               <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
                 <span>Packing progress</span>
@@ -123,14 +188,9 @@ export default async function TripPage({ params }: TripPageProps) {
             </div>
           )}
         </div>
-        
-        {/* Luggage selector
-        <div className="mb-6">
-          <TripLuggageSelector tripId={id} />
-        </div> */}
 
         {/* Packing lists */}
-        <PackingListSection trip={trip} />
+        <PackingListSection trip={displayTrip} readOnly={isSharedView} />
       </main>
     </div>
   )
