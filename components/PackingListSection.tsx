@@ -46,7 +46,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
   const [inventoryToast, setInventoryToast] = useState<string | null>(null)
   const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>([])
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'not-assigned': true })
-  const [viewMode, setViewMode] = useState<'category' | 'luggage'>('category')
+  const [viewMode, setViewMode] = useState<'category' | 'luggage'>('luggage')
   const [draggedItem, setDraggedItem] = useState<{ id: string; categoryId: string; packingListId: string } | null>(null)
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null)
   const [, startTransition] = useTransition()
@@ -73,6 +73,11 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         expanded[tl.id] = true
       })
       setExpandedGroups(expanded)
+      
+      // Set default view mode based on luggage availability
+      if (luggages.length === 0) {
+        setViewMode('category')
+      }
     }
   }
 
@@ -224,18 +229,23 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
     }
   }
 
-  const handleDragOver = (e: React.DragEvent, targetLuggageId: string | null) => {
+  const handleDragOver = (e: React.DragEvent, targetLuggageId?: string | null) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    setDragOverTarget(targetLuggageId || 'not-assigned')
+    setDragOverTarget(targetLuggageId === undefined ? null : (targetLuggageId || 'not-assigned'))
   }
 
-  const handleDragLeave = () => {
-    setDragOverTarget(null)
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if we're actually leaving the drop zone
+    const relatedTarget = e.relatedTarget as HTMLElement
+    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
+      setDragOverTarget(null)
+    }
   }
 
   const handleDrop = (e: React.DragEvent, targetLuggageId: string | null) => {
     e.preventDefault()
+    e.stopPropagation()
     if (!draggedItem) return
 
     // Assign item to the target luggage
@@ -378,7 +388,12 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
       </button>
 
       {/* Bags in Use Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-4">
+      <div
+        onDragOver={(e) => tripLuggages.length > 0 && handleDragOver(e)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => e.preventDefault()}
+        className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-4"
+      >
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-700">Bags for this trip</h3>
           {tripLuggages.length > 0 && (
@@ -389,10 +404,24 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
         <div className="flex flex-wrap gap-2">
           {tripLuggages.map((tl) => {
             const itemCount = itemsByLuggage[tl.id]?.length || 0
+            const isDropTarget = dragOverTarget === tl.id
             return (
               <div
                 key={tl.id}
-                className="group relative flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all"
+                onDragOver={(e) => {
+                  e.stopPropagation()
+                  handleDragOver(e, tl.id)
+                }}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => {
+                  e.stopPropagation()
+                  handleDrop(e, tl.id)
+                }}
+                className={`group relative flex items-center gap-2 px-3 py-2 bg-white border rounded-xl hover:shadow-sm transition-all ${
+                  isDropTarget
+                    ? 'border-blue-500 border-2 bg-blue-50 shadow-md scale-105'
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}
               >
                 <span className="text-lg">{luggageIcons[tl.luggage.type as LuggageType]}</span>
                 <span className="text-sm font-medium text-gray-700">{tl.luggage.name}</span>
@@ -431,16 +460,6 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
       {tripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
           <button
-            onClick={() => setViewMode('category')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              viewMode === 'category'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            By Category
-          </button>
-          <button
             onClick={() => setViewMode('luggage')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               viewMode === 'luggage'
@@ -449,6 +468,16 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
             }`}
           >
             By Luggage
+          </button>
+          <button
+            onClick={() => setViewMode('category')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              viewMode === 'category'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            By Category
           </button>
         </div>
       )}
@@ -617,7 +646,7 @@ export default function PackingListSection({ trip }: { trip: Trip }) {
                             onAssign={(luggageId) => handleAssignLuggage(item.id, luggageId, category.id, list.id)}
                             itemName={item.name}
                           />
-                        )}
+                        )>
                         <button
                           onClick={() => handleDelete(item.id, category.id, list.id)}
                           className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
