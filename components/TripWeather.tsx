@@ -13,6 +13,7 @@ interface TripWeatherProps {
 export default function TripWeather({ destination, startDate, endDate, variant = 'card' }: TripWeatherProps) {
   const [weather, setWeather] = useState<TripWeatherData | DetailedTripWeather | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showTooltip, setShowTooltip] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -24,15 +25,36 @@ export default function TripWeather({ destination, startDate, endDate, variant =
       }
 
       try {
+        console.log('[Weather] Fetching weather for:', { destination, startDate, endDate, variant })
+        
         if (variant === 'detail') {
-          const { weather: data } = await getDetailedTripWeather(destination, startDate, endDate)
-          setWeather(data)
+          const { weather: data, error: apiError } = await getDetailedTripWeather(destination, startDate, endDate)
+          if (apiError) {
+            console.error('[Weather] API error:', apiError)
+            setError(apiError)
+          } else if (!data) {
+            console.error('[Weather] No data returned')
+            setError('Unable to fetch weather data')
+          } else {
+            console.log('[Weather] Success:', data)
+            setWeather(data)
+          }
         } else {
-          const { weather: data } = await getTripWeather(destination, startDate, endDate)
-          setWeather(data)
+          const { weather: data, error: apiError } = await getTripWeather(destination, startDate, endDate)
+          if (apiError) {
+            console.error('[Weather] API error:', apiError)
+            setError(apiError)
+          } else if (!data) {
+            console.error('[Weather] No data returned')
+            setError('Unable to fetch weather data')
+          } else {
+            console.log('[Weather] Success:', data)
+            setWeather(data)
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch weather:', error)
+        console.error('[Weather] Failed to fetch weather:', error)
+        setError(error instanceof Error ? error.message : 'Unknown error')
       } finally {
         setLoading(false)
       }
@@ -56,6 +78,16 @@ export default function TripWeather({ destination, startDate, endDate, variant =
                 <div className="h-3 w-16 bg-gray-100 rounded"></div>
               </div>
             </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (error) {
+      return (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="text-xs text-red-600">
+            Weather unavailable
           </div>
         </div>
       )
@@ -112,6 +144,20 @@ export default function TripWeather({ destination, startDate, endDate, variant =
             </div>
           </div>
           <div className="w-4 h-4 bg-blue-200 rounded"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 rounded-lg border border-red-200 p-3">
+        <div className="flex items-start gap-2">
+          <span className="text-red-600 text-sm">⚠️</span>
+          <div>
+            <p className="text-xs font-medium text-red-900">Weather unavailable</p>
+            <p className="text-xs text-red-600 mt-0.5">{error}</p>
+          </div>
         </div>
       </div>
     )
