@@ -16,6 +16,38 @@ interface TripPageProps {
   params: Promise<{ id: string }>
 }
 
+// Helper to calculate timezone offset difference in hours
+function getTimezoneOffsetDifference(destinationTimezone: string): string {
+  try {
+    const now = new Date()
+    
+    // Get local offset in minutes
+    const localOffset = now.getTimezoneOffset()
+    
+    // Get destination offset by formatting date in both timezones
+    const localTime = now.getTime()
+    const localDateStr = now.toLocaleString('en-US', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })
+    const destDateStr = now.toLocaleString('en-US', { timeZone: destinationTimezone })
+    
+    const localDate = new Date(localDateStr)
+    const destDate = new Date(destDateStr)
+    
+    const diffMs = destDate.getTime() - localDate.getTime()
+    const diffHours = Math.round(diffMs / (1000 * 60 * 60))
+    
+    if (diffHours === 0) {
+      return 'Same timezone as you'
+    } else if (diffHours > 0) {
+      return `${diffHours} hour${Math.abs(diffHours) !== 1 ? 's' : ''} ahead of you`
+    } else {
+      return `${Math.abs(diffHours)} hour${Math.abs(diffHours) !== 1 ? 's' : ''} behind you`
+    }
+  } catch (error) {
+    console.error('Error calculating timezone difference:', error)
+    return ''
+  }
+}
+
 export default function TripPageClient({ params }: TripPageProps) {
   const router = useRouter()
   const [id, setId] = useState<string>('')
@@ -148,6 +180,9 @@ export default function TripPageClient({ params }: TripPageProps) {
     return user.user_metadata?.full_name || user.user_metadata?.name || user.email
   }
 
+  // Get timezone difference text
+  const timezoneDifference = tripTimezone ? getTimezoneOffsetDifference(tripTimezone) : ''
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -248,15 +283,17 @@ export default function TripPageClient({ params }: TripPageProps) {
               <div>
                 <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
                 {trip.startDate && (
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-gray-500">
+                  <div className="relative inline-block group">
+                    <p className="text-sm text-gray-500 cursor-help">
                       {tripTimezone ? formatDateWithTimezone(trip.startDate, tripTimezone) : formatDate(trip.startDate)}
                       {trip.endDate && ` – ${formatDate(trip.endDate)}`}
                     </p>
-                    {tripTimezone && (
-                      <span className="text-xs text-gray-400 font-mono">
-                        {tripTimezone.split('/').pop()?.replace(/_/g, ' ')}
-                      </span>
+                    {tripTimezone && timezoneDifference && (
+                      <div className="absolute left-0 top-full mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                        <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                          {timezoneDifference}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
