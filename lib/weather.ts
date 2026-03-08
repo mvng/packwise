@@ -56,6 +56,7 @@ const WEATHER_TTL = 30 * 60 * 1000 // 30 minutes (balance freshness vs performan
 
 /**
  * Get coordinates for a location name using Open-Meteo Geocoding API
+ * Tries multiple search strategies if first attempt fails
  */
 export async function getCoordinates(location: string): Promise<GeocodingResult | null> {
   const cacheKey = location.toLowerCase().trim()
@@ -70,28 +71,31 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
   }
   
   try {
-    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`
-    console.log('[Geocoding] Fetching:', url)
+    // Try original location first
+    let coords = await tryGeocode(location)
     
-    const response = await fetch(url)
-    
-    if (!response.ok) {
-      console.error('[Geocoding] API error:', response.status, response.statusText)
-      return null
+    // If that fails and location contains "United States", try without it
+    if (!coords && location.includes('United States')) {
+      const withoutUS = location.replace(', United States', '').trim()
+      console.log('[Geocoding] Retrying without "United States":', withoutUS)
+      coords = await tryGeocode(withoutUS)
     }
     
-    const data = await response.json()
+    // If still no results, try adding common US state hints for small cities
+    if (!coords && location.includes('United States')) {
+      const cityName = location.replace(', United States', '').trim()
+      const stateHints = ['California', 'New York', 'Colorado', 'Nevada', 'Utah']
+      
+      for (const state of stateHints) {
+        console.log('[Geocoding] Trying with state hint:', `${cityName}, ${state}`)
+        coords = await tryGeocode(`${cityName}, ${state}`)
+        if (coords) break
+      }
+    }
     
-    if (!data.results || data.results.length === 0) {
+    if (!coords) {
       console.error('[Geocoding] No results found for:', location)
       return null
-    }
-    
-    const result = data.results[0]
-    const coords = {
-      latitude: result.latitude,
-      longitude: result.longitude,
-      name: result.name
     }
     
     console.log('[Geocoding] Success:', coords)
@@ -106,6 +110,34 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
   } catch (error) {
     console.error('[Geocoding] Exception:', error)
     return null
+  }
+}
+
+/**
+ * Helper function to try geocoding a location
+ */
+async function tryGeocode(location: string): Promise<GeocodingResult | null> {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`
+  console.log('[Geocoding] Fetching:', url)
+  
+  const response = await fetch(url)
+  
+  if (!response.ok) {
+    console.error('[Geocoding] API error:', response.status, response.statusText)
+    return null
+  }
+  
+  const data = await response.json()
+  
+  if (!data.results || data.results.length === 0) {
+    return null
+  }
+  
+  const result = data.results[0]
+  return {
+    latitude: result.latitude,
+    longitude: result.longitude,
+    name: result.name
   }
 }
 
