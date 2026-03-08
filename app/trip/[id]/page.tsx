@@ -73,6 +73,12 @@ export default async function TripPage({ params }: TripPageProps) {
     return icons[tripType] || '✈️'
   }
 
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (!user) return null
+    return user.user_metadata?.full_name || user.user_metadata?.name || user.email
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -92,7 +98,17 @@ export default async function TripPage({ params }: TripPageProps) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {isSharedView && (
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600">{getUserDisplayName()}</span>
+                <Link 
+                  href="/api/auth/signout"
+                  className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+                >
+                  Sign out
+                </Link>
+              </div>
+            ) : (
               <Link 
                 href="/login"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -119,7 +135,7 @@ export default async function TripPage({ params }: TripPageProps) {
       </header>
       
       <main className="max-w-5xl mx-auto px-6 py-8">
-        {/* Shared view banner with fork button */}
+        {/* Shared view banner with fork button - ONLY show for non-owners */}
         {isSharedView && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 mb-6">
             <div className="flex items-start justify-between gap-6 flex-col lg:flex-row">
