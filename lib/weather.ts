@@ -25,6 +25,10 @@ export interface DetailedWeatherData {
   humidity: number
   daily: DailyForecast[]
   location?: string
+  isCapped?: boolean
+  cappedNote?: string
+  availableDays?: number
+  totalDays?: number
 }
 
 interface WeatherData {
@@ -38,6 +42,10 @@ interface WeatherData {
   precipitation: number
   humidity: number
   location?: string
+  isCapped?: boolean
+  cappedNote?: string
+  availableDays?: number
+  totalDays?: number
 }
 
 interface GeocodingResult {
@@ -53,6 +61,16 @@ const detailedWeatherCache = new Map<string, { data: DetailedWeatherData; expire
 
 const GEOCODING_TTL = 30 * 24 * 60 * 60 * 1000 // 30 days (coordinates don't change)
 const WEATHER_TTL = 30 * 60 * 1000 // 30 minutes (balance freshness vs performance)
+const MAX_FORECAST_DAYS = 14 // Open-Meteo free tier limit
+
+/**
+ * Calculate days between two dates
+ */
+function getDaysBetween(start: Date, end: Date): number {
+  const msPerDay = 1000 * 60 * 60 * 24
+  const diffMs = end.getTime() - start.getTime()
+  return Math.ceil(diffMs / msPerDay) + 1 // +1 to include both start and end days
+}
 
 /**
  * Get coordinates for a location name using Open-Meteo Geocoding API
@@ -113,6 +131,7 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
 
 /**
  * Get detailed weather forecast with daily breakdown
+ * Automatically caps at 14 days from today
  */
 export async function getDetailedWeatherForecast(
   latitude: number,
@@ -122,11 +141,28 @@ export async function getDetailedWeatherForecast(
   locationName?: string
 ): Promise<DetailedWeatherData | null> {
   try {
+    // Cap end date at 14 days from today
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const maxDate = new Date(today)
+    maxDate.setDate(today.getDate() + MAX_FORECAST_DAYS)
+    
+    const originalEndDate = new Date(endDate)
+    const cappedEndDate = endDate > maxDate ? maxDate : endDate
+    const isCapped = endDate > maxDate
+    
+    const totalDays = getDaysBetween(startDate, originalEndDate)
+    const availableDays = getDaysBetween(startDate, cappedEndDate)
+    
+    if (isCapped) {
+      console.log('[Weather] Trip extends beyond 14-day forecast. Capping to:', cappedEndDate.toISOString().split('T')[0])
+    }
+    
     const start = startDate.toISOString().split('T')[0]
-    const end = endDate.toISOString().split('T')[0]
+    const end = cappedEndDate.toISOString().split('T')[0]
     
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&temperature_unit=fahrenheit&timezone=auto&start_date=${start}&end_date=${end}`
-    console.log('[Weather] Fetching detailed forecast:', { location: locationName, start, end })
+    console.log('[Weather] Fetching detailed forecast:', { location: locationName, start, end, isCapped })
     
     const response = await fetch(url)
     
@@ -171,7 +207,7 @@ export async function getDetailedWeatherForecast(
     const totalPrecip = precip.reduce((a: number, b: number) => a + b, 0)
     const dominantWeatherCode = weatherCodes[0] || 0
     
-    const result = {
+    const result: DetailedWeatherData = {
       temperature: {
         min: Math.round(avgMin),
         max: Math.round(avgMax),
@@ -182,10 +218,17 @@ export async function getDetailedWeatherForecast(
       precipitation: Math.round(totalPrecip),
       humidity: 0,
       daily,
-      location: locationName
+      location: locationName,
+      isCapped,
+      availableDays,
+      totalDays
     }
     
-    console.log('[Weather] Success:', result.temperature, result.condition)
+    if (isCapped) {
+      result.cappedNote = `Weather forecast available for first ${availableDays} of ${totalDays} days`
+    }
+    
+    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '')
     return result
   } catch (error) {
     console.error('[Weather] Exception:', error)
@@ -195,6 +238,7 @@ export async function getDetailedWeatherForecast(
 
 /**
  * Get weather forecast for a location and date range
+ * Automatically caps at 14 days from today
  */
 export async function getWeatherForecast(
   latitude: number,
@@ -204,11 +248,28 @@ export async function getWeatherForecast(
   locationName?: string
 ): Promise<WeatherData | null> {
   try {
+    // Cap end date at 14 days from today
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const maxDate = new Date(today)
+    maxDate.setDate(today.getDate() + MAX_FORECAST_DAYS)
+    
+    const originalEndDate = new Date(endDate)
+    const cappedEndDate = endDate > maxDate ? maxDate : endDate
+    const isCapped = endDate > maxDate
+    
+    const totalDays = getDaysBetween(startDate, originalEndDate)
+    const availableDays = getDaysBetween(startDate, cappedEndDate)
+    
+    if (isCapped) {
+      console.log('[Weather] Trip extends beyond 14-day forecast. Capping to:', cappedEndDate.toISOString().split('T')[0])
+    }
+    
     const start = startDate.toISOString().split('T')[0]
-    const end = endDate.toISOString().split('T')[0]
+    const end = cappedEndDate.toISOString().split('T')[0]
     
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&temperature_unit=fahrenheit&timezone=auto&start_date=${start}&end_date=${end}`
-    console.log('[Weather] Fetching forecast:', { location: locationName, start, end })
+    console.log('[Weather] Fetching forecast:', { location: locationName, start, end, isCapped })
     
     const response = await fetch(url)
     
@@ -239,7 +300,7 @@ export async function getWeatherForecast(
     const totalPrecip = precip.reduce((a: number, b: number) => a + b, 0)
     const dominantWeatherCode = weatherCodes[0] || 0
     
-    const result = {
+    const result: WeatherData = {
       temperature: {
         min: Math.round(avgMin),
         max: Math.round(avgMax),
@@ -249,10 +310,17 @@ export async function getWeatherForecast(
       icon: getWeatherIcon(dominantWeatherCode),
       precipitation: Math.round(totalPrecip),
       humidity: 0, // Not included in free tier
-      location: locationName
+      location: locationName,
+      isCapped,
+      availableDays,
+      totalDays
     }
     
-    console.log('[Weather] Success:', result.temperature, result.condition)
+    if (isCapped) {
+      result.cappedNote = `Weather forecast available for first ${availableDays} of ${totalDays} days`
+    }
+    
+    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '')
     return result
   } catch (error) {
     console.error('[Weather] Exception:', error)
