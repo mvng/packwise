@@ -21,6 +21,7 @@ export default function NewTripPage() {
   const [formData, setFormData] = useState({
     name: '',
     destination: '',
+    country: 'United States',
     tripType: 'leisure',
     startDate: '',
     endDate: '',
@@ -32,9 +33,14 @@ export default function NewTripPage() {
     setLoading(true)
     setError(null)
 
+    // Combine destination with country for better geocoding
+    const fullDestination = formData.country 
+      ? `${formData.destination}, ${formData.country}`
+      : formData.destination
+
     const result = await createTrip({
       name: formData.name,
-      destination: formData.destination || '',
+      destination: fullDestination || '',
       tripType: formData.tripType,
       startDate: formData.startDate ? new Date(formData.startDate) : undefined,
       endDate: formData.endDate ? new Date(formData.endDate) : undefined,
@@ -78,16 +84,29 @@ export default function NewTripPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Destination *</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Paris, France"
-              value={formData.destination}
-              onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">City/Location *</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. San Francisco"
+                value={formData.destination}
+                onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Country *</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. United States"
+                value={formData.country}
+                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
           <div>
@@ -147,7 +166,7 @@ export default function NewTripPage() {
 
           <button
             type="submit"
-            disabled={loading || !formData.destination}
+            disabled={loading || !formData.destination || !formData.country}
             className="w-full py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Creating Trip...' : 'Create Trip & Generate List'}
