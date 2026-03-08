@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { forkTrip } from '@/actions/trip.actions'
+import { getTripLocalStorageState } from '@/components/PackingListSection'
 
 interface ForkTripButtonProps {
   tripId: string
@@ -35,7 +36,11 @@ export default function ForkTripButton({
     setError(null)
 
     startTransition(async () => {
-      const result = await forkTrip(tripId)
+      // Get localStorage state for this trip (checked items from anonymous viewing)
+      const localStorageState = getTripLocalStorageState(tripId)
+      
+      // Fork the trip with localStorage state
+      const result = await forkTrip(tripId, localStorageState)
 
       if (result.error) {
         if (result.alreadyOwned) {
@@ -49,6 +54,12 @@ export default function ForkTripButton({
         setIsForking(false)
       } else if (result.success && result.tripId) {
         setShowSuccess(true)
+        
+        // Clear localStorage for this trip after successful fork
+        if (typeof window !== 'undefined' && localStorageState) {
+          localStorage.removeItem(`packwise_trip_${tripId}`)
+        }
+        
         setTimeout(() => {
           router.push(`/trip/${result.tripId}`)
         }, 1500)
