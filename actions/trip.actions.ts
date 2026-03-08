@@ -227,8 +227,16 @@ export async function getSharedTripById(tripId: string) {
     const trip = await prisma.trip.findUnique({
       where: { id: tripId },
       include: {
-        tripLuggage: {
-          orderBy: { order: 'asc' }
+        tripLuggages: {
+          include: {
+            luggage: true
+          },
+          where: {
+            isActive: true
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
         },
         packingLists: {
           include: {
@@ -236,7 +244,11 @@ export async function getSharedTripById(tripId: string) {
               include: {
                 items: {
                   include: {
-                    tripLuggage: true
+                    tripLuggage: {
+                      include: {
+                        luggage: true
+                      }
+                    }
                   },
                   orderBy: { order: 'asc' }
                 }
