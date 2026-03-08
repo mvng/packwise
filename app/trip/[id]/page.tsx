@@ -90,12 +90,21 @@ export default async function TripPage({ params }: TripPageProps) {
                 ←
               </Link>
             )}
-            <div>
-              <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
-              {trip.destination && (
-                <p className="text-xs text-gray-500">📍 {trip.destination}</p>
-              )}
-            </div>
+            {user ? (
+              <Link href="/dashboard" className="hover:opacity-70 transition-opacity">
+                <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
+                {trip.destination && (
+                  <p className="text-xs text-gray-500">📍 {trip.destination}</p>
+                )}
+              </Link>
+            ) : (
+              <div>
+                <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
+                {trip.destination && (
+                  <p className="text-xs text-gray-500">📍 {trip.destination}</p>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-4">
             {user ? (
