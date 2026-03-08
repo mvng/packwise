@@ -118,6 +118,12 @@ export default function TripWeather({ destination, startDate, endDate, variant =
             </div>
           )}
         </div>
+        
+        {weather.isCapped && weather.cappedNote && (
+          <div className="mt-2 text-[10px] text-amber-600 bg-amber-50 rounded px-2 py-1">
+            ℹ️ {weather.cappedNote}
+          </div>
+        )}
 
         {showTooltip && (
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50 pointer-events-none">
@@ -208,6 +214,11 @@ export default function TripWeather({ destination, startDate, endDate, variant =
               {weather.temperature.min}°-{weather.temperature.max}°F • {weather.condition}
               {weather.precipitation > 0 && ` • 💧${weather.precipitation}mm`}
             </div>
+            {weather.isCapped && weather.cappedNote && (
+              <div className="text-[10px] text-amber-700 mt-0.5">
+                ℹ️ {weather.cappedNote}
+              </div>
+            )}
           </div>
         </div>
         
@@ -225,6 +236,19 @@ export default function TripWeather({ destination, startDate, endDate, variant =
       {/* Expanded details - show all available days */}
       {isExpanded && (
         <div id="weather-details" className="px-3 pb-3 border-t border-blue-100">
+          {/* Capped forecast warning */}
+          {weather.isCapped && weather.cappedNote && (
+            <div className="my-2 text-xs text-amber-700 bg-amber-50 rounded-md px-2.5 py-1.5 border border-amber-200">
+              <div className="flex items-start gap-1.5">
+                <span className="flex-shrink-0">ℹ️</span>
+                <div>
+                  <p className="font-medium">{weather.cappedNote}</p>
+                  <p className="text-[10px] mt-0.5 text-amber-600">Forecast limited to 14 days from today. Plan ahead for longer trips!</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Horizontal scrollable day-by-day forecast - all days */}
           {hasDaily && (
             <div className="my-2 -mx-1">
