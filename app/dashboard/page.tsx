@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getUserTrips, deleteTrip } from '@/actions/trip.actions'
 import { formatDate } from '@/lib/utils'
+import TripWeather from '@/components/TripWeather'
 import type { User } from '@supabase/supabase-js'
 
 type Trip = {
@@ -196,8 +197,16 @@ export default function DashboardPage() {
                       {trip.startDate ? formatDate(trip.startDate as string) : ''}
                       {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
                     </div>
+                    
+                    {/* Weather widget */}
+                    <TripWeather 
+                      destination={trip.destination}
+                      startDate={trip.startDate}
+                      endDate={trip.endDate}
+                    />
+                    
                     {total > 0 && (
-                      <div>
+                      <div className="mt-3">
                         <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
                           <span>{packed}/{total} packed</span>
                           <span>{percent}%</span>
