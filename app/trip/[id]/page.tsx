@@ -5,11 +5,12 @@ import { notFound, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getSharedTripById } from '@/actions/trip.actions'
+import { getTripWeather } from '@/actions/weather.actions'
 import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
 import EditTripModal from '@/components/EditTripModal'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatDateWithTimezone } from '@/lib/utils'
 
 interface TripPageProps {
   params: Promise<{ id: string }>
@@ -23,6 +24,7 @@ export default function TripPageClient({ params }: TripPageProps) {
   const [loading, setLoading] = useState(true)
   const [isOwner, setIsOwner] = useState(false)
   const [editingTrip, setEditingTrip] = useState<any>(null)
+  const [tripTimezone, setTripTimezone] = useState<string | null>(null)
 
   useEffect(() => {
     async function init() {
@@ -40,6 +42,18 @@ export default function TripPageClient({ params }: TripPageProps) {
       }
 
       setTrip(fetchedTrip)
+
+      // Fetch timezone if destination exists
+      if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
+        const { weather } = await getTripWeather(
+          fetchedTrip.destination,
+          fetchedTrip.startDate,
+          fetchedTrip.endDate
+        )
+        if (weather?.timezone) {
+          setTripTimezone(weather.timezone)
+        }
+      }
 
       // Check ownership
       if (authUser) {
@@ -64,6 +78,18 @@ export default function TripPageClient({ params }: TripPageProps) {
     const { trip: fetchedTrip } = await getSharedTripById(id)
     if (fetchedTrip) {
       setTrip(fetchedTrip)
+      
+      // Reload timezone
+      if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
+        const { weather } = await getTripWeather(
+          fetchedTrip.destination,
+          fetchedTrip.startDate,
+          fetchedTrip.endDate
+        )
+        if (weather?.timezone) {
+          setTripTimezone(weather.timezone)
+        }
+      }
     }
   }
 
@@ -222,10 +248,17 @@ export default function TripPageClient({ params }: TripPageProps) {
               <div>
                 <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
                 {trip.startDate && (
-                  <p className="text-sm text-gray-500">
-                    {formatDate(trip.startDate)}
-                    {trip.endDate && ` – ${formatDate(trip.endDate)}`}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-gray-500">
+                      {tripTimezone ? formatDateWithTimezone(trip.startDate, tripTimezone) : formatDate(trip.startDate)}
+                      {trip.endDate && ` – ${formatDate(trip.endDate)}`}
+                    </p>
+                    {tripTimezone && (
+                      <span className="text-xs text-gray-400 font-mono">
+                        {tripTimezone.split('/').pop()?.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                  </div>
                 )}
                 {totalItems > 0 && (
                   <p className="text-xs text-gray-400 mt-1">
