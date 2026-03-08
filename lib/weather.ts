@@ -71,26 +71,38 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
   }
   
   try {
-    // Try original location first
-    let coords = await tryGeocode(location)
+    let coords: GeocodingResult | null = null
     
-    // If that fails and location contains "United States", try without it
+    // For United States locations, try state-specific searches FIRST
+    // This prioritizes US results over international ones
+    if (location.includes('United States')) {
+      const cityName = location.replace(', United States', '').trim()
+      const stateHints = [
+        'California', 'New York', 'Texas', 'Florida', 'Colorado', 
+        'Nevada', 'Utah', 'Washington', 'Oregon', 'Arizona',
+        'Illinois', 'Massachusetts', 'Pennsylvania', 'Georgia'
+      ]
+      
+      for (const state of stateHints) {
+        console.log('[Geocoding] Trying US state:', `${cityName}, ${state}, USA`)
+        coords = await tryGeocode(`${cityName}, ${state}, USA`)
+        if (coords) {
+          console.log('[Geocoding] Found in', state)
+          break
+        }
+      }
+    }
+    
+    // If no US state match, try original location
+    if (!coords) {
+      coords = await tryGeocode(location)
+    }
+    
+    // If still no match and has "United States", try without it
     if (!coords && location.includes('United States')) {
       const withoutUS = location.replace(', United States', '').trim()
       console.log('[Geocoding] Retrying without "United States":', withoutUS)
       coords = await tryGeocode(withoutUS)
-    }
-    
-    // If still no results, try adding common US state hints for small cities
-    if (!coords && location.includes('United States')) {
-      const cityName = location.replace(', United States', '').trim()
-      const stateHints = ['California', 'New York', 'Colorado', 'Nevada', 'Utah']
-      
-      for (const state of stateHints) {
-        console.log('[Geocoding] Trying with state hint:', `${cityName}, ${state}`)
-        coords = await tryGeocode(`${cityName}, ${state}`)
-        if (coords) break
-      }
     }
     
     if (!coords) {
@@ -118,12 +130,10 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
  */
 async function tryGeocode(location: string): Promise<GeocodingResult | null> {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`
-  console.log('[Geocoding] Fetching:', url)
   
   const response = await fetch(url)
   
   if (!response.ok) {
-    console.error('[Geocoding] API error:', response.status, response.statusText)
     return null
   }
   
@@ -156,12 +166,13 @@ export async function getDetailedWeatherForecast(
     const end = endDate.toISOString().split('T')[0]
     
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&temperature_unit=fahrenheit&timezone=auto&start_date=${start}&end_date=${end}`
-    console.log('[Weather] Fetching detailed forecast:', { location: locationName, start, end })
+    console.log('[Weather] Fetching detailed forecast:', { location: locationName, lat: latitude, lng: longitude, start, end })
     
     const response = await fetch(url)
     
     if (!response.ok) {
       console.error('[Weather] API error:', response.status, response.statusText)
+      console.error('[Weather] Failed URL:', url)
       return null
     }
     
