@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getSharedTripById } from '@/actions/trip.actions'
 import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
+import TripWeather from '@/components/TripWeather'
 import { formatDate } from '@/lib/utils'
 
 interface TripPageProps {
@@ -171,7 +172,7 @@ export default async function TripPage({ params }: TripPageProps) {
 
         {/* Trip info */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
               <div className="text-4xl">
                 {getTripEmoji(trip.tripType)}
@@ -198,8 +199,21 @@ export default async function TripPage({ params }: TripPageProps) {
               </div>
             )}
           </div>
+
+          {/* Weather information */}
+          {trip.destination && trip.startDate && trip.endDate && (
+            <div className="mb-4">
+              <TripWeather 
+                destination={trip.destination}
+                startDate={trip.startDate}
+                endDate={trip.endDate}
+                variant="detail"
+              />
+            </div>
+          )}
+
           {!isSharedView && totalItems > 0 && (
-            <div className="mt-4">
+            <div>
               <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
                 <span>Packing progress</span>
                 <span className="font-medium text-gray-700">{progress}%</span>
