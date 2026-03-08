@@ -18,9 +18,24 @@ interface EditTripModalProps {
 }
 
 export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModalProps) {
+  // Parse destination into city and country (split by last comma)
+  const parseDestination = (dest: string | null) => {
+    if (!dest) return { city: '', country: 'United States' }
+    const parts = dest.split(',').map(p => p.trim())
+    if (parts.length >= 2) {
+      const country = parts[parts.length - 1]
+      const city = parts.slice(0, -1).join(', ')
+      return { city, country }
+    }
+    return { city: dest, country: 'United States' }
+  }
+
+  const { city, country } = parseDestination(trip.destination)
+
   const [formData, setFormData] = useState({
     name: trip.name || '',
-    destination: trip.destination || '',
+    city: city,
+    country: country,
     startDate: trip.startDate ? new Date(trip.startDate).toISOString().split('T')[0] : '',
     endDate: trip.endDate ? new Date(trip.endDate).toISOString().split('T')[0] : '',
     tripType: trip.tripType || 'leisure',
@@ -33,15 +48,20 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
     e.preventDefault()
     setError('')
 
-    if (!formData.destination.trim()) {
-      setError('Destination is required')
+    if (!formData.city.trim()) {
+      setError('City is required')
       return
     }
+
+    // Combine city and country for destination
+    const fullDestination = formData.country
+      ? `${formData.city.trim()}, ${formData.country.trim()}`
+      : formData.city.trim()
 
     startTransition(async () => {
       const result = await updateTrip(trip.id, {
         name: formData.name.trim() || null,
-        destination: formData.destination.trim(),
+        destination: fullDestination,
         startDate: formData.startDate ? new Date(formData.startDate) : null,
         endDate: formData.endDate ? new Date(formData.endDate) : null,
         tripType: formData.tripType,
@@ -90,19 +110,35 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
             />
           </div>
 
-          <div>
-            <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">
-              Destination *
-            </label>
-            <input
-              type="text"
-              id="destination"
-              value={formData.destination}
-              onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., Tokyo, Japan"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                City/Location *
+              </label>
+              <input
+                type="text"
+                id="city"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., San Francisco"
+              />
+            </div>
+            <div>
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                Country *
+              </label>
+              <input
+                type="text"
+                id="country"
+                value={formData.country}
+                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., United States"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
