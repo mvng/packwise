@@ -33,15 +33,6 @@ export async function getTripWeather(
     const start = typeof startDate === 'string' ? new Date(startDate) : startDate
     const end = typeof endDate === 'string' ? new Date(endDate) : endDate
 
-    // Only fetch weather for future trips or trips within 14 days
-    const now = new Date()
-    const daysDiff = Math.floor((start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    
-    if (daysDiff < -14 || daysDiff > 14) {
-      // Too far in past or future for accurate forecast
-      return { weather: null }
-    }
-
     const weather = await getLocationWeather(destination, start, end)
     return { weather }
   } catch (error: any) {
@@ -52,6 +43,7 @@ export async function getTripWeather(
 
 /**
  * Get detailed weather forecast with daily breakdown for a trip
+ * Always shows up to 14 days of forecast from the trip start date
  */
 export async function getDetailedTripWeather(
   destination: string,
@@ -66,16 +58,14 @@ export async function getDetailedTripWeather(
     const start = typeof startDate === 'string' ? new Date(startDate) : startDate
     const end = typeof endDate === 'string' ? new Date(endDate) : endDate
 
-    // Only fetch weather for future trips or trips within 14 days
-    const now = new Date()
-    const daysDiff = Math.floor((start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    // Calculate forecast end date: either trip end or start + 14 days, whichever is greater
+    const maxForecastEnd = new Date(start)
+    maxForecastEnd.setDate(maxForecastEnd.getDate() + 13) // +13 to include start day (14 total days)
     
-    if (daysDiff < -14 || daysDiff > 14) {
-      // Too far in past or future for accurate forecast
-      return { weather: null }
-    }
+    // Use the later of trip end date or 14-day forecast end
+    const forecastEnd = end > maxForecastEnd ? end : maxForecastEnd
 
-    const weather = await getDetailedLocationWeather(destination, start, end)
+    const weather = await getDetailedLocationWeather(destination, start, forecastEnd)
     return { weather }
   } catch (error: any) {
     console.error('Get detailed trip weather error:', error)
