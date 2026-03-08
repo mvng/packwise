@@ -125,6 +125,49 @@ export async function createTrip(input: CreateTripInput) {
   }
 }
 
+export async function updateTrip(
+  tripId: string,
+  input: {
+    name?: string | null
+    destination?: string
+    startDate?: Date | null
+    endDate?: Date | null
+    tripType?: string | null
+    notes?: string | null
+  }
+) {
+  try {
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
+
+    // Verify user owns this trip
+    const existingTrip = await prisma.trip.findFirst({
+      where: { id: tripId, userId }
+    })
+
+    if (!existingTrip) return { error: 'Trip not found' }
+
+    await prisma.trip.update({
+      where: { id: tripId },
+      data: {
+        name: input.name,
+        destination: input.destination,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        tripType: input.tripType,
+        notes: input.notes
+      }
+    })
+
+    revalidatePath('/dashboard')
+    revalidatePath(`/trip/${tripId}`)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Update trip error:', error)
+    return { error: error.message || 'Failed to update trip' }
+  }
+}
+
 export async function getUserTrips() {
   try {
     const userId = await getUserId()
