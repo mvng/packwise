@@ -118,7 +118,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -145,7 +145,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="flex-1 max-w-7xl mx-auto px-6 py-8 w-full">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Trips</h1>
@@ -158,16 +158,6 @@ export default function DashboardPage() {
             + New Trip
           </Link>
         </div>
-
-        {/* Weather availability note */}
-        {trips.length > 0 && (
-          <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 flex items-start gap-2">
-            <span className="text-blue-500 text-sm">🌤️</span>
-            <p className="text-xs text-blue-700 leading-relaxed">
-              Weather forecasts are shown for trips within 14 days of today. Hover over weather info for details.
-            </p>
-          </div>
-        )}
 
         {trips.length === 0 ? (
           <div className="text-center py-16">
@@ -246,6 +236,17 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Footer with weather disclaimer */}
+      {trips.length > 0 && (
+        <footer className="border-t border-gray-200 bg-white mt-12">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <p className="text-xs text-gray-400 text-center">
+              Weather forecasts shown for trips within 14 days. Forecasts are estimates and may change.
+            </p>
+          </div>
+        </footer>
+      )}
     </div>
   )
 }
