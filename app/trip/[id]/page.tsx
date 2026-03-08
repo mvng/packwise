@@ -10,10 +10,24 @@ import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
 import EditTripModal from '@/components/EditTripModal'
-import { formatDate, formatDateWithTimezone } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 
 interface TripPageProps {
   params: Promise<{ id: string }>
+}
+
+// Helper to get timezone abbreviation (e.g., PST, EST, GMT)
+function getTimezoneAbbreviation(timezone: string, date: Date): string {
+  try {
+    const dateStr = date.toLocaleDateString('en-US', {
+      day: '2-digit',
+      timeZoneName: 'short',
+      timeZone: timezone
+    })
+    return dateStr.split(', ')[1] || ''
+  } catch (error) {
+    return ''
+  }
 }
 
 // Helper to calculate timezone offset difference in hours
@@ -180,8 +194,10 @@ export default function TripPageClient({ params }: TripPageProps) {
     return user.user_metadata?.full_name || user.user_metadata?.name || user.email
   }
 
-  // Get timezone difference text
+  // Get timezone info for tooltip
+  const timezoneAbbr = tripTimezone && trip.startDate ? getTimezoneAbbreviation(tripTimezone, new Date(trip.startDate)) : ''
   const timezoneDifference = tripTimezone ? getTimezoneOffsetDifference(tripTimezone) : ''
+  const timezoneTooltip = timezoneAbbr && timezoneDifference ? `${timezoneAbbr} • ${timezoneDifference}` : timezoneDifference
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -285,13 +301,13 @@ export default function TripPageClient({ params }: TripPageProps) {
                 {trip.startDate && (
                   <div className="relative inline-block group">
                     <p className="text-sm text-gray-500 cursor-help">
-                      {tripTimezone ? formatDateWithTimezone(trip.startDate, tripTimezone) : formatDate(trip.startDate)}
+                      {formatDate(trip.startDate)}
                       {trip.endDate && ` – ${formatDate(trip.endDate)}`}
                     </p>
-                    {tripTimezone && timezoneDifference && (
+                    {timezoneTooltip && (
                       <div className="absolute left-0 top-full mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                         <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                          {timezoneDifference}
+                          {timezoneTooltip}
                         </div>
                       </div>
                     )}
