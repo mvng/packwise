@@ -46,10 +46,26 @@ interface GeocodingResult {
   name: string
 }
 
+// In-memory caches
+const geocodingCache = new Map<string, { data: GeocodingResult; expires: number }>()
+const weatherCache = new Map<string, { data: WeatherData; expires: number }>()
+const detailedWeatherCache = new Map<string, { data: DetailedWeatherData; expires: number }>()
+
+const GEOCODING_TTL = 30 * 24 * 60 * 60 * 1000 // 30 days (coordinates don't change)
+const WEATHER_TTL = 30 * 60 * 1000 // 30 minutes (balance freshness vs performance)
+
 /**
  * Get coordinates for a location name using Open-Meteo Geocoding API
  */
 export async function getCoordinates(location: string): Promise<GeocodingResult | null> {
+  const cacheKey = location.toLowerCase().trim()
+  
+  // Check cache
+  const cached = geocodingCache.get(cacheKey)
+  if (cached && Date.now() < cached.expires) {
+    return cached.data
+  }
+  
   try {
     const response = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`
@@ -61,11 +77,19 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
     if (!data.results || data.results.length === 0) return null
     
     const result = data.results[0]
-    return {
+    const coords = {
       latitude: result.latitude,
       longitude: result.longitude,
       name: result.name
     }
+    
+    // Cache the result
+    geocodingCache.set(cacheKey, {
+      data: coords,
+      expires: Date.now() + GEOCODING_TTL
+    })
+    
+    return coords
   } catch (error) {
     console.error('Geocoding error:', error)
     return null
@@ -251,10 +275,28 @@ export async function getLocationWeather(
   startDate: Date,
   endDate: Date
 ): Promise<WeatherData | null> {
+  const cacheKey = `${location}:${startDate.toISOString()}:${endDate.toISOString()}`
+  
+  // Check cache
+  const cached = weatherCache.get(cacheKey)
+  if (cached && Date.now() < cached.expires) {
+    return cached.data
+  }
+  
   const coords = await getCoordinates(location)
   if (!coords) return null
   
-  return await getWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name)
+  const weather = await getWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name)
+  
+  // Cache the result
+  if (weather) {
+    weatherCache.set(cacheKey, {
+      data: weather,
+      expires: Date.now() + WEATHER_TTL
+    })
+  }
+  
+  return weather
 }
 
 /**
@@ -265,8 +307,26 @@ export async function getDetailedLocationWeather(
   startDate: Date,
   endDate: Date
 ): Promise<DetailedWeatherData | null> {
+  const cacheKey = `detailed:${location}:${startDate.toISOString()}:${endDate.toISOString()}`
+  
+  // Check cache
+  const cached = detailedWeatherCache.get(cacheKey)
+  if (cached && Date.now() < cached.expires) {
+    return cached.data
+  }
+  
   const coords = await getCoordinates(location)
   if (!coords) return null
   
-  return await getDetailedWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name)
+  const weather = await getDetailedWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name)
+  
+  // Cache the result
+  if (weather) {
+    detailedWeatherCache.set(cacheKey, {
+      data: weather,
+      expires: Date.now() + WEATHER_TTL
+    })
+  }
+  
+  return weather
 }
