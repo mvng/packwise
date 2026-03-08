@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getTripWeather, TripWeather as TripWeatherData } from '@/actions/weather.actions'
+import { getTripWeather, getDetailedTripWeather, TripWeather as TripWeatherData, DetailedTripWeather } from '@/actions/weather.actions'
 
 interface TripWeatherProps {
   destination: string | null
@@ -11,7 +11,7 @@ interface TripWeatherProps {
 }
 
 export default function TripWeather({ destination, startDate, endDate, variant = 'card' }: TripWeatherProps) {
-  const [weather, setWeather] = useState<TripWeatherData | null>(null)
+  const [weather, setWeather] = useState<TripWeatherData | DetailedTripWeather | null>(null)
   const [loading, setLoading] = useState(true)
   const [showTooltip, setShowTooltip] = useState(false)
 
@@ -23,8 +23,13 @@ export default function TripWeather({ destination, startDate, endDate, variant =
       }
 
       try {
-        const { weather: data } = await getTripWeather(destination, startDate, endDate)
-        setWeather(data)
+        if (variant === 'detail') {
+          const { weather: data } = await getDetailedTripWeather(destination, startDate, endDate)
+          setWeather(data)
+        } else {
+          const { weather: data } = await getTripWeather(destination, startDate, endDate)
+          setWeather(data)
+        }
       } catch (error) {
         console.error('Failed to fetch weather:', error)
       } finally {
@@ -33,7 +38,7 @@ export default function TripWeather({ destination, startDate, endDate, variant =
     }
 
     fetchWeather()
-  }, [destination, startDate, endDate])
+  }, [destination, startDate, endDate, variant])
 
   if (loading) {
     if (variant === 'card') {
@@ -98,57 +103,64 @@ export default function TripWeather({ destination, startDate, endDate, variant =
     )
   }
 
-  // Detail variant - enhanced display
+  // Detail variant - day-by-day forecast
+  const detailedWeather = weather as DetailedTripWeather
+  const hasDaily = detailedWeather.daily && detailedWeather.daily.length > 0
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  }
+
   return (
     <div 
       className="bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 rounded-xl border border-blue-100 p-5 relative cursor-help shadow-sm"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4 flex-1">
-          <div className="text-5xl">{weather.icon}</div>
-          <div className="flex-1">
-            <div className="mb-3">
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Weather Forecast</h3>
-              <p className="text-xs text-gray-500">Expected conditions for your trip</p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              {/* Temperature */}
-              <div className="bg-white bg-opacity-60 rounded-lg p-3">
-                <div className="text-xs text-gray-500 mb-1">Temperature Range</div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {weather.temperature.min}°F - {weather.temperature.max}°F
-                </div>
-                <div className="text-xs text-gray-600 mt-0.5">
-                  Avg: {weather.temperature.avg}°F
+      <div className="mb-3">
+        <h3 className="text-sm font-semibold text-gray-700 mb-1">Weather Forecast</h3>
+        <p className="text-xs text-gray-500">Expected conditions for your trip</p>
+      </div>
+
+      {/* Day-by-day forecast */}
+      {hasDaily && (
+        <div className="grid gap-2 mb-4">
+          {detailedWeather.daily.slice(0, 7).map((day, index) => (
+            <div 
+              key={day.date}
+              className="bg-white bg-opacity-60 rounded-lg p-3 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <span className="text-2xl">{day.icon}</span>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900">{formatDate(day.date)}</div>
+                  <div className="text-xs text-gray-600">{day.condition}</div>
                 </div>
               </div>
-
-              {/* Conditions */}
-              <div className="bg-white bg-opacity-60 rounded-lg p-3">
-                <div className="text-xs text-gray-500 mb-1">Conditions</div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {weather.condition}
+              <div className="text-right">
+                <div className="text-sm font-semibold text-gray-900">
+                  {day.tempMax}°F
                 </div>
-                {weather.precipitation > 0 && (
-                  <div className="text-xs text-blue-600 mt-0.5 flex items-center gap-1">
-                    <span>💧</span>
-                    <span>{weather.precipitation}mm expected</span>
+                <div className="text-xs text-gray-500">
+                  {day.tempMin}°F
+                </div>
+                {day.precipitation > 0 && (
+                  <div className="text-xs text-blue-600 mt-0.5">
+                    💧 {day.precipitation}mm
                   </div>
                 )}
               </div>
             </div>
-          </div>
+          ))}
         </div>
-      </div>
+      )}
 
-      {/* Packing suggestions based on weather */}
-      <div className="mt-4 pt-4 border-t border-blue-100">
-        <div className="flex items-start gap-2">
-          <span className="text-sm">🧳</span>
-          <div className="text-xs text-gray-600">
+      {/* Summary */}
+      <div className="pt-3 border-t border-blue-100">
+        <div className="flex items-start gap-2 text-xs text-gray-600">
+          <span>🧳</span>
+          <div>
             <span className="font-medium">Pack accordingly: </span>
             {weather.temperature.avg < 50 && 'Bring warm layers and a jacket. '}
             {weather.temperature.avg >= 50 && weather.temperature.avg < 70 && 'Light layers recommended. '}
