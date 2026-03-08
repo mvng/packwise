@@ -52,9 +52,9 @@ export default function TripWeather({ destination, startDate, endDate, variant =
       )
     }
     return (
-      <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-xl border border-blue-100 p-4">
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <div className="animate-pulse">Loading weather forecast...</div>
+      <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-lg border border-blue-100 p-2">
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          <div className="animate-pulse">Loading weather...</div>
         </div>
       </div>
     )
@@ -104,7 +104,7 @@ export default function TripWeather({ destination, startDate, endDate, variant =
     )
   }
 
-  // Detail variant - collapsible forecast
+  // Detail variant - ultra-compact collapsible forecast
   const detailedWeather = weather as DetailedTripWeather
   const hasDaily = detailedWeather.daily && detailedWeather.daily.length > 0
 
@@ -126,48 +126,48 @@ export default function TripWeather({ destination, startDate, endDate, variant =
 
   const formatShortDate = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { weekday: 'short' })
+    return date.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3)
   }
 
   return (
     <div 
-      className="bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 rounded-xl border border-blue-100 relative cursor-help shadow-sm overflow-hidden transition-all"
+      className="bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 rounded-lg border border-blue-100 relative cursor-help shadow-sm overflow-hidden transition-all"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      {/* Compact preview - always visible */}
+      {/* Ultra-compact preview */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-4 flex items-center justify-between hover:bg-white hover:bg-opacity-30 transition-colors text-left"
+        className="w-full px-3 py-2 flex items-center justify-between hover:bg-white hover:bg-opacity-30 transition-colors text-left gap-2"
         aria-expanded={isExpanded}
         aria-controls="weather-details"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{weather.icon}</span>
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700">Weather Forecast</h3>
-            <p className="text-xs text-gray-600">
-              {weather.temperature.min}°F - {weather.temperature.max}°F • {weather.condition}
-              {weather.precipitation > 0 && ` • 💧 ${weather.precipitation}mm`}
-            </p>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xl flex-shrink-0">{weather.icon}</span>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-gray-700 truncate">Weather Forecast</div>
+            <div className="text-xs text-gray-600 truncate">
+              {weather.temperature.min}°-{weather.temperature.max}°F
+              {weather.precipitation > 0 && ` • 💧${weather.precipitation}mm`}
+            </div>
           </div>
         </div>
         
-        {/* Mini preview of first 3 days */}
+        {/* Mini preview of first 4 days */}
         {hasDaily && !isExpanded && (
-          <div className="hidden md:flex items-center gap-2 mr-2">
-            {detailedWeather.daily.slice(0, 3).map((day) => (
+          <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+            {detailedWeather.daily.slice(0, 4).map((day) => (
               <div key={day.date} className="text-center">
-                <div className="text-xs text-gray-500 mb-0.5">{formatShortDate(day.date)}</div>
-                <div className="text-lg">{day.icon}</div>
-                <div className="text-xs font-medium text-gray-700">{day.tempMax}°</div>
+                <div className="text-[10px] text-gray-500 leading-tight">{formatShortDate(day.date)}</div>
+                <div className="text-base leading-tight">{day.icon}</div>
+                <div className="text-[10px] font-medium text-gray-700 leading-tight">{day.tempMax}°</div>
               </div>
             ))}
           </div>
         )}
         
         <svg
-          className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -179,31 +179,29 @@ export default function TripWeather({ destination, startDate, endDate, variant =
 
       {/* Expanded details */}
       {isExpanded && (
-        <div id="weather-details" className="px-4 pb-4 border-t border-blue-100">
-          <p className="text-xs text-gray-500 mb-3 mt-3">Expected conditions for your trip</p>
-          
+        <div id="weather-details" className="px-3 pb-3 border-t border-blue-100">
           {/* Horizontal scrollable day-by-day forecast */}
           {hasDaily && (
-            <div className="mb-4 -mx-1">
-              <div className="flex gap-2 overflow-x-auto pb-2 px-1 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
+            <div className="my-2 -mx-1">
+              <div className="flex gap-1.5 overflow-x-auto pb-1.5 px-1 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
                 {detailedWeather.daily.slice(0, 7).map((day) => (
                   <div 
                     key={day.date}
-                    className="flex-shrink-0 bg-white bg-opacity-70 rounded-lg p-3 min-w-[100px] text-center backdrop-blur-sm"
+                    className="flex-shrink-0 bg-white bg-opacity-70 rounded-md p-2 min-w-[85px] text-center backdrop-blur-sm"
                   >
-                    <div className="text-xs font-medium text-gray-700 mb-2">{formatDate(day.date)}</div>
-                    <div className="text-3xl mb-2">{day.icon}</div>
-                    <div className="text-xs font-semibold text-gray-900 mb-0.5">
+                    <div className="text-[10px] font-medium text-gray-700 mb-1">{formatDate(day.date)}</div>
+                    <div className="text-2xl mb-1">{day.icon}</div>
+                    <div className="text-xs font-semibold text-gray-900">
                       {day.tempMax}°F
                     </div>
-                    <div className="text-xs text-gray-500 mb-1">
+                    <div className="text-[10px] text-gray-500 mb-1">
                       {day.tempMin}°F
                     </div>
-                    <div className="text-xs text-gray-600 mb-1 line-clamp-1" title={day.condition}>
+                    <div className="text-[10px] text-gray-600 line-clamp-1" title={day.condition}>
                       {day.condition}
                     </div>
                     {day.precipitation > 0 && (
-                      <div className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                      <div className="text-[10px] text-blue-600 flex items-center justify-center gap-0.5 mt-0.5">
                         <span>💧</span>
                         <span>{day.precipitation}mm</span>
                       </div>
@@ -215,16 +213,16 @@ export default function TripWeather({ destination, startDate, endDate, variant =
           )}
 
           {/* Packing suggestions */}
-          <div className="pt-3 border-t border-blue-100">
-            <div className="flex items-start gap-2 text-xs text-gray-600">
-              <span>🧳</span>
-              <div>
-                <span className="font-medium">Pack accordingly: </span>
-                {weather.temperature.avg < 50 && 'Bring warm layers and a jacket. '}
-                {weather.temperature.avg >= 50 && weather.temperature.avg < 70 && 'Light layers recommended. '}
-                {weather.temperature.avg >= 70 && 'Light clothing suitable. '}
+          <div className="pt-2 border-t border-blue-100">
+            <div className="flex items-start gap-1.5 text-[11px] text-gray-600">
+              <span className="flex-shrink-0">🧳</span>
+              <div className="leading-snug">
+                <span className="font-medium">Pack: </span>
+                {weather.temperature.avg < 50 && 'Warm layers & jacket. '}
+                {weather.temperature.avg >= 50 && weather.temperature.avg < 70 && 'Light layers. '}
+                {weather.temperature.avg >= 70 && 'Light clothing. '}
                 {weather.precipitation > 10 && 'Rain gear essential. '}
-                {weather.precipitation > 0 && weather.precipitation <= 10 && 'Consider bringing an umbrella. '}
+                {weather.precipitation > 0 && weather.precipitation <= 10 && 'Umbrella recommended. '}
               </div>
             </div>
           </div>
