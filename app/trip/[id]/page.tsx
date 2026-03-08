@@ -247,7 +247,11 @@ export default function TripPageClient({ params }: TripPageProps) {
                   className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                   aria-label="Edit trip"
                 >
-                  ✏️
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="3" r="1.5" />
+                    <circle cx="10" cy="10" r="1.5" />
+                    <circle cx="10" cy="17" r="1.5" />
+                  </svg>
                 </button>
               )}
             </div>
