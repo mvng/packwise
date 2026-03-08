@@ -77,12 +77,13 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     if (!readOnly) {
       loadTripLuggage()
     } else if (sharedTripLuggages && sharedTripLuggages.length > 0) {
-      // For read-only shared view with luggage, set up expanded state
+      // For read-only shared view with luggage, set up expanded state and switch to luggage view
       const expanded: Record<string, boolean> = { 'not-assigned': true }
       sharedTripLuggages.forEach(tl => {
         expanded[tl.id] = true
       })
       setExpandedGroups(expanded)
+      setViewMode('luggage')
     }
   }, [readOnly, sharedTripLuggages])
 
@@ -388,12 +389,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
           {item.name}
           {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
         </span>
-        {/* Show luggage icon next to item in category view */}
-        {readOnly && item.tripLuggage && (
-          <span className="text-base ml-2" title={item.tripLuggage.luggage.name}>
-            {item.tripLuggage.luggage.icon || luggageIcons[item.tripLuggage.luggage.type as LuggageType]}
-          </span>
-        )}
       </label>
       {!readOnly && (
         <button
@@ -419,33 +414,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between" role="status" aria-live="polite">
           <span>✓ {inventoryToast}</span>
           <button onClick={() => setInventoryToast(null)} className="text-green-400 hover:text-green-600 ml-2 focus:outline-none focus:ring-2 focus:ring-green-500 rounded" aria-label="Dismiss notification">×</button>
-        </div>
-      )}
-
-      {/* Show luggage info for shared view */}
-      {readOnly && tripLuggages.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Bags used for this trip</h3>
-          <div className="flex flex-wrap gap-2">
-            {tripLuggages.map((tl) => {
-              const itemCount = itemsByLuggage[tl.id]?.length || 0
-              return (
-                <div
-                  key={tl.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl"
-                >
-                  <span className="text-lg" role="img" aria-hidden="true">{getLuggageIcon(tl)}</span>
-                  <span className="text-sm font-medium text-gray-700">{tl.luggage.name}</span>
-                  {itemCount > 0 && (
-                    <span className="text-xs text-gray-500">({itemCount})</span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-          <p className="text-xs text-gray-500 mt-3">
-            Items with luggage icons show which bag they're assigned to
-          </p>
         </div>
       )}
 
@@ -534,30 +502,32 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         </>
       )}
 
-      {!readOnly && tripLuggages.length > 0 && (
+      {tripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit" role="tablist" aria-label="View mode">
           <button
             onClick={() => setViewMode('luggage')}
+            disabled={readOnly}
             role="tab"
             aria-selected={viewMode === 'luggage'}
             aria-controls="packing-list-content"
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               viewMode === 'luggage'
                 ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             By Luggage
           </button>
           <button
             onClick={() => setViewMode('category')}
+            disabled={readOnly}
             role="tab"
             aria-selected={viewMode === 'category'}
             aria-controls="packing-list-content"
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               viewMode === 'category'
                 ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             By Category
@@ -566,20 +536,20 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       )}
 
       <div id="packing-list-content" role="tabpanel">
-        {!readOnly && viewMode === 'luggage' && tripLuggages.length > 0 ? (
+        {viewMode === 'luggage' && tripLuggages.length > 0 ? (
           <div className="space-y-4">
             {tripLuggages.map((tl) => {
               const items = itemsByLuggage[tl.id] || []
               const packedCount = items.filter(i => i.isPacked).length
               const isExpanded = expandedGroups[tl.id]
-              const isDropTarget = dragOverTarget === tl.id
+              const isDropTarget = !readOnly && dragOverTarget === tl.id
 
               return (
                 <section
                   key={tl.id}
-                  onDragOver={(e) => handleDragOver(e, tl.id)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, tl.id)}
+                  onDragOver={(e) => !readOnly && handleDragOver(e, tl.id)}
+                  onDragLeave={!readOnly ? handleDragLeave : undefined}
+                  onDrop={(e) => !readOnly && handleDrop(e, tl.id)}
                   className={`bg-white rounded-2xl border overflow-hidden transition-all ${
                     isDropTarget
                       ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]'
@@ -601,13 +571,23 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         <p className="text-xs text-gray-500 capitalize">
                           {tl.luggage.type}
                           {tl.luggage.capacity && ` • ${tl.luggage.capacity}L`}
-                          {' • '}
-                          {packedCount}/{items.length} items packed
+                          {!readOnly && (
+                            <>
+                              {' • '}
+                              {packedCount}/{items.length} items packed
+                            </>
+                          )}
+                          {readOnly && items.length > 0 && (
+                            <>
+                              {' • '}
+                              {items.length} item{items.length !== 1 ? 's' : ''}
+                            </>
+                          )}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {items.length > 0 && (
+                      {!readOnly && items.length > 0 && (
                         <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden" role="progressbar" aria-valuenow={packedCount} aria-valuemin={0} aria-valuemax={items.length} aria-label="Packing progress">
                           <div
                             className="h-2 bg-blue-500 rounded-full transition-all"
@@ -630,7 +610,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                   {isExpanded && (
                     <div id={`luggage-${tl.id}-content`} className="px-6 pb-4 border-t border-gray-50">
                       {items.length === 0 ? (
-                        <p className="text-sm text-gray-400 py-4 text-center">No items assigned • Drag items here</p>
+                        <p className="text-sm text-gray-400 py-4 text-center">{readOnly ? 'No items in this bag' : 'No items assigned • Drag items here'}</p>
                       ) : (
                         <ul className="space-y-2 pt-4" role="list">
                           {items.map(item => renderItem(item))}
@@ -644,11 +624,11 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
 
             {itemsByLuggage['not-assigned'].length > 0 && (
               <section
-                onDragOver={(e) => handleDragOver(e, null)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, null)}
+                onDragOver={(e) => !readOnly && handleDragOver(e, null)}
+                onDragLeave={!readOnly ? handleDragLeave : undefined}
+                onDrop={(e) => !readOnly && handleDrop(e, null)}
                 className={`bg-white rounded-2xl border overflow-hidden transition-all ${
-                  dragOverTarget === 'not-assigned'
+                  !readOnly && dragOverTarget === 'not-assigned'
                     ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]'
                     : 'border-gray-100'
                 }`}
@@ -665,7 +645,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                     <span className="text-2xl" role="img" aria-label="Unassigned items">☐</span>
                     <div className="text-left">
                       <h3 className="font-semibold text-gray-900">Not Assigned</h3>
-                      <p className="text-xs text-gray-500">{itemsByLuggage['not-assigned'].length} items</p>
+                      <p className="text-xs text-gray-500">{itemsByLuggage['not-assigned'].length} item{itemsByLuggage['not-assigned'].length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
                   <svg
@@ -742,12 +722,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                               {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
                               {item.name}
                             </span>
-                            {/* Show luggage icon next to item in category view */}
-                            {readOnly && item.tripLuggage && (
-                              <span className="text-base ml-2" title={item.tripLuggage.luggage.name}>
-                                {item.tripLuggage.luggage.icon || luggageIcons[item.tripLuggage.luggage.type as LuggageType]}
-                              </span>
-                            )}
                           </label>
                           {!readOnly && (
                             <button
