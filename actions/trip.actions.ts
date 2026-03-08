@@ -276,10 +276,16 @@ export async function getSharedTripById(tripId: string) {
 
 /**
  * Fork (copy) a trip from another user to the current user's account.
- * All packing lists, categories, and items are duplicated with isPacked reset to false.
+ * All packing lists, categories, and items are duplicated.
  * Luggage assignments are not copied.
+ * 
+ * @param sourceTripId - The ID of the trip to copy
+ * @param localStorageState - Optional: localStorage state from anonymous viewer with item IDs mapped to packed status
  */
-export async function forkTrip(sourceTripId: string) {
+export async function forkTrip(
+  sourceTripId: string, 
+  localStorageState?: Record<string, boolean> | null
+) {
   try {
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized', requiresAuth: true }
@@ -338,26 +344,37 @@ export async function forkTrip(sourceTripId: string) {
           }
         })
 
-        // Copy items with isPacked reset to false and no luggage assignments
-        await prisma.packingItem.createMany({
-          data: sourceCategory.items.map(item => ({
-            categoryId: newCategory.id,
-            name: item.name,
-            quantity: item.quantity,
-            isPacked: false, // Reset packing status
-            isCustom: item.isCustom,
-            order: item.order
-            // Note: tripLuggageId is intentionally omitted (no luggage copied)
-          }))
-        })
+        // Copy items with isPacked from localStorage if provided, otherwise reset to false
+        for (const sourceItem of sourceCategory.items) {
+          // Check if localStorage has a packed state for this item
+          const isPacked = localStorageState?.[sourceItem.id] ?? false
+          
+          await prisma.packingItem.create({
+            data: {
+              categoryId: newCategory.id,
+              name: sourceItem.name,
+              quantity: sourceItem.quantity,
+              isPacked, // Use localStorage state if available
+              isCustom: sourceItem.isCustom,
+              order: sourceItem.order
+              // Note: tripLuggageId is intentionally omitted (no luggage copied)
+            }
+          })
+        }
       }
     }
 
     revalidatePath('/dashboard')
+    
+    const hasLocalStorageState = localStorageState && Object.keys(localStorageState).length > 0
+    const message = hasLocalStorageState 
+      ? 'Trip copied to your account with your checked items!'
+      : 'Trip copied to your account successfully!'
+    
     return { 
       success: true, 
       tripId: newTrip.id,
-      message: 'Trip copied to your account successfully!'
+      message
     }
   } catch (error: any) {
     console.error('Fork trip error:', error)
