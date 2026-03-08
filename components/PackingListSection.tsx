@@ -300,7 +300,9 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
     return (
       <div className="space-y-4">
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <div className="text-5xl mb-4">📋</div>
+          <div className="text-5xl mb-4" role="img" aria-label="Empty packing list">
+            📋
+          </div>
           <h3 className="font-semibold text-gray-900 mb-2">No packing list yet</h3>
           <p className="text-gray-500 text-sm">
             {readOnly 
@@ -312,9 +314,10 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
           <>
             <button
               onClick={() => setShowInventoryPicker(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label="Add items from inventory"
             >
-              🎒 Add from Inventory
+              <span role="img" aria-hidden="true">🎒</span> Add from Inventory
             </button>
             {showInventoryPicker && (
               <InventoryPickerModal
@@ -338,31 +341,42 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
       className={`flex items-center gap-3 group transition-opacity ${
         !readOnly && tripLuggages.length > 0 ? 'cursor-move' : ''
       }`}
+      role="listitem"
     >
-      <div
-        onClick={() => handleToggle(item.id, item.categoryId, item.packingListId, item.isPacked)}
-        className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
-          item.isPacked
-            ? 'bg-green-500 border-green-500'
-            : 'border-gray-300'
-        } ${readOnly ? 'cursor-default' : 'cursor-pointer hover:border-blue-400'}`}
-      >
-        {item.isPacked && (
-          <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        )}
-      </div>
-      <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
-        {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
-        {item.name}
-        {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
-      </span>
+      <label className="flex items-center gap-3 flex-1 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={item.isPacked}
+          onChange={() => handleToggle(item.id, item.categoryId, item.packingListId, item.isPacked)}
+          disabled={readOnly}
+          className="sr-only peer"
+          aria-label={`${item.quantity > 1 ? item.quantity + ' ' : ''}${item.name}${item.isPacked ? ', packed' : ', not packed'}`}
+        />
+        <div
+          className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${
+            item.isPacked
+              ? 'bg-green-500 border-green-500'
+              : 'border-gray-300'
+          } ${readOnly ? '' : 'peer-hover:border-blue-400'}`}
+          aria-hidden="true"
+        >
+          {item.isPacked && (
+            <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+        <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+          {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+          {item.name}
+          {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
+        </span>
+      </label>
       {!readOnly && (
         <button
           onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
-          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
-          aria-label={`Remove ${item.name}`}
+          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
+          aria-label={`Remove ${item.name} from packing list`}
         >
           ×
         </button>
@@ -373,15 +387,15 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
   return (
     <div className="space-y-6">
       {!readOnly && addError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm" role="alert">
           {addError}
         </div>
       )}
 
       {!readOnly && inventoryToast && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between" role="status" aria-live="polite">
           <span>✓ {inventoryToast}</span>
-          <button onClick={() => setInventoryToast(null)} className="text-green-400 hover:text-green-600 ml-2">×</button>
+          <button onClick={() => setInventoryToast(null)} className="text-green-400 hover:text-green-600 ml-2 focus:outline-none focus:ring-2 focus:ring-green-500 rounded" aria-label="Dismiss notification">×</button>
         </div>
       )}
 
@@ -392,15 +406,17 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
             onDragLeave={handleDragLeave}
             onDrop={(e) => e.preventDefault()}
             className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-4"
+            role="region"
+            aria-label="Trip luggage"
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-700">Bags for this trip</h3>
               {tripLuggages.length > 0 && (
-                <span className="text-xs text-gray-500">{tripLuggages.length} bag{tripLuggages.length !== 1 ? 's' : ''}</span>
+                <span className="text-xs text-gray-500" aria-live="polite">{tripLuggages.length} bag{tripLuggages.length !== 1 ? 's' : ''}</span>
               )}
             </div>
             
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" role="list">
               {tripLuggages.map((tl) => {
                 const itemCount = itemsByLuggage[tl.id]?.length || 0
                 const isDropTarget = dragOverTarget === tl.id
@@ -421,16 +437,17 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
                         ? 'border-blue-500 border-2 bg-blue-50 shadow-md scale-105'
                         : 'border-gray-200 hover:border-blue-300'
                     }`}
+                    role="listitem"
                   >
-                    <span className="text-lg">{getLuggageIcon(tl)}</span>
+                    <span className="text-lg" role="img" aria-hidden="true">{getLuggageIcon(tl)}</span>
                     <span className="text-sm font-medium text-gray-700">{tl.luggage.name}</span>
                     {itemCount > 0 && (
                       <span className="text-xs text-gray-500">({itemCount})</span>
                     )}
                     <button
                       onClick={() => handleRemoveLuggage(tl.id, tl.luggageId)}
-                      className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
-                      aria-label={`Remove ${tl.luggage.name}`}
+                      className="ml-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
+                      aria-label={`Remove ${tl.luggage.name} from trip`}
                     >
                       ×
                     </button>
@@ -440,7 +457,8 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
               
               <button
                 onClick={() => setShowLuggagePicker(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-dashed border-blue-300 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-dashed border-blue-300 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="Add luggage to trip"
               >
                 + Add bag
               </button>
@@ -450,7 +468,7 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
               <p className="text-sm text-gray-500 mt-2">Add luggage to organize your items by bag</p>
             ) : (
               <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
-                <span>💡</span>
+                <span role="img" aria-label="Tip">💡</span>
                 <span>Drag items to assign them to bags</span>
               </p>
             )}
@@ -458,18 +476,22 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
 
           <button
             onClick={() => setShowInventoryPicker(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label="Add items from inventory"
           >
-            🎒 Add from Inventory
+            <span role="img" aria-hidden="true">🎒</span> Add from Inventory
           </button>
         </>
       )}
 
       {!readOnly && tripLuggages.length > 0 && (
-        <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
+        <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit" role="tablist" aria-label="View mode">
           <button
             onClick={() => setViewMode('luggage')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            role="tab"
+            aria-selected={viewMode === 'luggage'}
+            aria-controls="packing-list-content"
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               viewMode === 'luggage'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -479,7 +501,10 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
           </button>
           <button
             onClick={() => setViewMode('category')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            role="tab"
+            aria-selected={viewMode === 'category'}
+            aria-controls="packing-list-content"
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
               viewMode === 'category'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -490,213 +515,240 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
         </div>
       )}
 
-      {!readOnly && viewMode === 'luggage' && tripLuggages.length > 0 ? (
-        <div className="space-y-4">
-          {tripLuggages.map((tl) => {
-            const items = itemsByLuggage[tl.id] || []
-            const packedCount = items.filter(i => i.isPacked).length
-            const isExpanded = expandedGroups[tl.id]
-            const isDropTarget = dragOverTarget === tl.id
+      <div id="packing-list-content" role="tabpanel">
+        {!readOnly && viewMode === 'luggage' && tripLuggages.length > 0 ? (
+          <div className="space-y-4">
+            {tripLuggages.map((tl) => {
+              const items = itemsByLuggage[tl.id] || []
+              const packedCount = items.filter(i => i.isPacked).length
+              const isExpanded = expandedGroups[tl.id]
+              const isDropTarget = dragOverTarget === tl.id
 
-            return (
-              <div
-                key={tl.id}
-                onDragOver={(e) => handleDragOver(e, tl.id)}
+              return (
+                <section
+                  key={tl.id}
+                  onDragOver={(e) => handleDragOver(e, tl.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, tl.id)}
+                  className={`bg-white rounded-2xl border overflow-hidden transition-all ${
+                    isDropTarget
+                      ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]'
+                      : 'border-gray-100'
+                  }`}
+                  aria-labelledby={`luggage-${tl.id}-heading`}
+                >
+                  <button
+                    id={`luggage-${tl.id}-heading`}
+                    onClick={() => toggleGroup(tl.id)}
+                    aria-expanded={isExpanded}
+                    aria-controls={`luggage-${tl.id}-content`}
+                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl" role="img" aria-hidden="true">{getLuggageIcon(tl)}</span>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-gray-900">{tl.luggage.name}</h3>
+                        <p className="text-xs text-gray-500 capitalize">
+                          {tl.luggage.type}
+                          {tl.luggage.capacity && ` • ${tl.luggage.capacity}L`}
+                          {' • '}
+                          {packedCount}/{items.length} items packed
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {items.length > 0 && (
+                        <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden" role="progressbar" aria-valuenow={packedCount} aria-valuemin={0} aria-valuemax={items.length} aria-label="Packing progress">
+                          <div
+                            className="h-2 bg-blue-500 rounded-full transition-all"
+                            style={{ width: `${(packedCount / items.length) * 100}%` }}
+                          />
+                        </div>
+                      )}
+                      <svg
+                        className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+
+                  {isExpanded && (
+                    <div id={`luggage-${tl.id}-content`} className="px-6 pb-4 border-t border-gray-50">
+                      {items.length === 0 ? (
+                        <p className="text-sm text-gray-400 py-4 text-center">No items assigned • Drag items here</p>
+                      ) : (
+                        <ul className="space-y-2 pt-4" role="list">
+                          {items.map(item => renderItem(item))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </section>
+              )
+            })}
+
+            {itemsByLuggage['not-assigned'].length > 0 && (
+              <section
+                onDragOver={(e) => handleDragOver(e, null)}
                 onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, tl.id)}
+                onDrop={(e) => handleDrop(e, null)}
                 className={`bg-white rounded-2xl border overflow-hidden transition-all ${
-                  isDropTarget
+                  dragOverTarget === 'not-assigned'
                     ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]'
                     : 'border-gray-100'
                 }`}
+                aria-labelledby="not-assigned-heading"
               >
                 <button
-                  onClick={() => toggleGroup(tl.id)}
-                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  id="not-assigned-heading"
+                  onClick={() => toggleGroup('not-assigned')}
+                  aria-expanded={expandedGroups['not-assigned']}
+                  aria-controls="not-assigned-content"
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{getLuggageIcon(tl)}</span>
+                    <span className="text-2xl" role="img" aria-label="Unassigned items">☐</span>
                     <div className="text-left">
-                      <h3 className="font-semibold text-gray-900">{tl.luggage.name}</h3>
-                      <p className="text-xs text-gray-500 capitalize">
-                        {tl.luggage.type}
-                        {tl.luggage.capacity && ` • ${tl.luggage.capacity}L`}
-                        {' • '}
-                        {packedCount}/{items.length} items packed
-                      </p>
+                      <h3 className="font-semibold text-gray-900">Not Assigned</h3>
+                      <p className="text-xs text-gray-500">{itemsByLuggage['not-assigned'].length} items</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {items.length > 0 && (
-                      <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-2 bg-blue-500 rounded-full transition-all"
-                          style={{ width: `${(packedCount / items.length) * 100}%` }}
-                        />
-                      </div>
-                    )}
-                    <svg
-                      className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+                  <svg
+                    className={`w-5 h-5 text-gray-400 transition-transform ${expandedGroups['not-assigned'] ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
 
-                {isExpanded && (
-                  <div className="px-6 pb-4 border-t border-gray-50">
-                    {items.length === 0 ? (
-                      <p className="text-sm text-gray-400 py-4 text-center">No items assigned • Drag items here</p>
-                    ) : (
-                      <div className="space-y-2 pt-4">
-                        {items.map(item => renderItem(item))}
-                      </div>
-                    )}
+                {expandedGroups['not-assigned'] && (
+                  <div id="not-assigned-content" className="px-6 pb-4 border-t border-gray-50">
+                    <ul className="space-y-2 pt-4" role="list">
+                      {itemsByLuggage['not-assigned'].map(item => renderItem(item))}
+                    </ul>
                   </div>
                 )}
-              </div>
-            )
-          })}
-
-          {itemsByLuggage['not-assigned'].length > 0 && (
-            <div
-              onDragOver={(e) => handleDragOver(e, null)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, null)}
-              className={`bg-white rounded-2xl border overflow-hidden transition-all ${
-                dragOverTarget === 'not-assigned'
-                  ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]'
-                  : 'border-gray-100'
-              }`}
-            >
-              <button
-                onClick={() => toggleGroup('not-assigned')}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">☐</span>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900">Not Assigned</h3>
-                    <p className="text-xs text-gray-500">{itemsByLuggage['not-assigned'].length} items</p>
-                  </div>
-                </div>
-                <svg
-                  className={`w-5 h-5 text-gray-400 transition-transform ${expandedGroups['not-assigned'] ? 'rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {expandedGroups['not-assigned'] && (
-                <div className="px-6 pb-4 border-t border-gray-50">
-                  <div className="space-y-2 pt-4">
-                    {itemsByLuggage['not-assigned'].map(item => renderItem(item))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      ) : (
-        lists.map((list) => (
-          <div key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-50">
-              <h3 className="font-semibold text-gray-900">{list.name}</h3>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {list.categories.map((category) => (
-                <div key={category.id} className="px-6 py-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                      {category.name}
-                    </h4>
-                    <span className="text-xs text-gray-400">
-                      {category.items.filter((i) => i.isPacked).length}/{category.items.length}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {category.items.map((item) => (
-                      <div
-                        key={item.id}
-                        draggable={!readOnly && tripLuggages.length > 0}
-                        onDragStart={(e) => handleDragStart(e, item.id, category.id, list.id)}
-                        onDragEnd={handleDragEnd}
-                        className={`flex items-center gap-3 group transition-opacity ${
-                          !readOnly && tripLuggages.length > 0 ? 'cursor-move' : ''
-                        }`}
-                      >
-                        <div
-                          onClick={() => handleToggle(item.id, category.id, list.id, item.isPacked)}
-                          className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all ${
-                            item.isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300'
-                          } ${readOnly ? 'cursor-default' : 'cursor-pointer hover:border-blue-400'}`}
-                        >
-                          {item.isPacked && (
-                            <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
-                        <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
-                          {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
-                          {item.name}
-                        </span>
-                        {!readOnly && (
-                          <button
-                            onClick={() => handleDelete(item.id, category.id, list.id)}
-                            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity"
-                            aria-label={`Remove ${item.name}`}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  {!readOnly && (addingTo === category.id ? (
-                    <div className="mt-3 flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Item name"
-                        value={newItemName[category.id] || ''}
-                        onChange={(e) => setNewItemName((prev) => ({ ...prev, [category.id]: e.target.value }))}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddItem(category.id, list.id)}
-                        className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        autoFocus
-                      />
-                      <button
-                        onClick={() => handleAddItem(category.id, list.id)}
-                        className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      >
-                        Add
-                      </button>
-                      <button
-                        onClick={() => { setAddingTo(null); setAddError(null) }}
-                        className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setAddingTo(category.id)}
-                      className="mt-3 text-xs text-blue-500 hover:text-blue-700 font-medium"
-                    >
-                      + Add item
-                    </button>
-                  ))}
-                </div>
-              ))}
-            </div>
+              </section>
+            )}
           </div>
-        ))
-      )}
+        ) : (
+          lists.map((list) => (
+            <article key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <header className="px-6 py-4 border-b border-gray-50">
+                <h3 className="font-semibold text-gray-900">{list.name}</h3>
+              </header>
+              <div className="divide-y divide-gray-50">
+                {list.categories.map((category) => (
+                  <section key={category.id} className="px-6 py-4" aria-labelledby={`category-${category.id}-heading`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 id={`category-${category.id}-heading`} className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        {category.name}
+                      </h4>
+                      <span className="text-xs text-gray-400" aria-live="polite" aria-label={`${category.items.filter((i) => i.isPacked).length} of ${category.items.length} items packed`}>
+                        {category.items.filter((i) => i.isPacked).length}/{category.items.length}
+                      </span>
+                    </div>
+                    <ul className="space-y-2" role="list">
+                      {category.items.map((item) => (
+                        <li
+                          key={item.id}
+                          draggable={!readOnly && tripLuggages.length > 0}
+                          onDragStart={(e) => handleDragStart(e, item.id, category.id, list.id)}
+                          onDragEnd={handleDragEnd}
+                          className={`flex items-center gap-3 group transition-opacity ${
+                            !readOnly && tripLuggages.length > 0 ? 'cursor-move' : ''
+                          }`}
+                        >
+                          <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={item.isPacked}
+                              onChange={() => handleToggle(item.id, category.id, list.id, item.isPacked)}
+                              disabled={readOnly}
+                              className="sr-only peer"
+                              aria-label={`${item.quantity > 1 ? item.quantity + ' ' : ''}${item.name}${item.isPacked ? ', packed' : ', not packed'}`}
+                            />
+                            <div
+                              className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${
+                                item.isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                              } ${readOnly ? '' : 'peer-hover:border-blue-400'}`}
+                              aria-hidden="true"
+                            >
+                              {item.isPacked && (
+                                <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+                              {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+                              {item.name}
+                            </span>
+                          </label>
+                          {!readOnly && (
+                            <button
+                              onClick={() => handleDelete(item.id, category.id, list.id)}
+                              className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
+                              aria-label={`Remove ${item.name} from packing list`}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {!readOnly && (addingTo === category.id ? (
+                      <div className="mt-3 flex gap-2">
+                        <label className="sr-only" htmlFor={`add-item-${category.id}`}>Item name</label>
+                        <input
+                          id={`add-item-${category.id}`}
+                          type="text"
+                          placeholder="Item name"
+                          value={newItemName[category.id] || ''}
+                          onChange={(e) => setNewItemName((prev) => ({ ...prev, [category.id]: e.target.value }))}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddItem(category.id, list.id)}
+                          className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleAddItem(category.id, list.id)}
+                          className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          aria-label="Add item to packing list"
+                        >
+                          Add
+                        </button>
+                        <button
+                          onClick={() => { setAddingTo(null); setAddError(null) }}
+                          className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 rounded"
+                          aria-label="Cancel adding item"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setAddingTo(category.id)}
+                        className="mt-3 text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-1"
+                        aria-label={`Add item to ${category.name}`}
+                      >
+                        + Add item
+                      </button>
+                    ))}
+                  </section>
+                ))}
+              </div>
+            </article>
+          ))
+        )}
+      </div>
 
       {!readOnly && showInventoryPicker && (
         <InventoryPickerModal
