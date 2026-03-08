@@ -152,8 +152,8 @@ export async function updateTrip(
       data: {
         name: input.name,
         destination: input.destination,
-        startDate: input.startDate,
-        endDate: input.endDate,
+        startDate: input.startDate ?? undefined,
+        endDate: input.endDate ?? undefined,
         tripType: input.tripType,
         notes: input.notes
       }
