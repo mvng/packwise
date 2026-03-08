@@ -174,6 +174,8 @@ export default function TripWeather({ destination, startDate, endDate, variant =
   // Detail variant - ultra-compact collapsible forecast
   const detailedWeather = weather as DetailedTripWeather
   const hasDaily = detailedWeather.daily && detailedWeather.daily.length > 0
+  const tripDays = detailedWeather.daily?.filter(d => !d.isExtended) || []
+  const extendedDays = detailedWeather.daily?.filter(d => d.isExtended) || []
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -244,11 +246,25 @@ export default function TripWeather({ destination, startDate, endDate, variant =
             </div>
           )}
 
+          {/* Extended forecast info for short trips */}
+          {extendedDays.length > 0 && !weather.isCapped && (
+            <div className="my-2 text-xs text-blue-700 bg-blue-50 rounded-md px-2.5 py-1.5 border border-blue-200">
+              <div className="flex items-start gap-1.5">
+                <span className="flex-shrink-0">🔮</span>
+                <div>
+                  <p className="font-medium">Extended {extendedDays.length}-day forecast included</p>
+                  <p className="text-[10px] mt-0.5 text-blue-600">Days beyond your trip are shown for planning flexibility</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Horizontal scrollable day-by-day forecast - all days */}
           {hasDaily && (
             <div className="my-2 -mx-1">
               <div className="flex gap-1.5 overflow-x-auto pb-1.5 px-1 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
-                {detailedWeather.daily.map((day) => (
+                {/* Trip days */}
+                {tripDays.map((day) => (
                   <div 
                     key={day.date}
                     className="flex-shrink-0 bg-white bg-opacity-70 rounded-md p-2 min-w-[85px] text-center backdrop-blur-sm"
@@ -266,6 +282,33 @@ export default function TripWeather({ destination, startDate, endDate, variant =
                     </div>
                     {day.precipitation > 0 && (
                       <div className="text-[10px] text-blue-600 flex items-center justify-center gap-0.5 mt-0.5">
+                        <span>💧</span>
+                        <span>{day.precipitation}mm</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {/* Extended days - visually distinct */}
+                {extendedDays.map((day) => (
+                  <div 
+                    key={day.date}
+                    className="flex-shrink-0 bg-gray-50 bg-opacity-80 rounded-md p-2 min-w-[85px] text-center backdrop-blur-sm border border-dashed border-gray-300"
+                    title="Extended forecast (after trip end)"
+                  >
+                    <div className="text-[10px] font-medium text-gray-500 mb-1">{formatDate(day.date)}</div>
+                    <div className="text-2xl mb-1 opacity-60">{day.icon}</div>
+                    <div className="text-xs font-semibold text-gray-700">
+                      {day.tempMax}°F
+                    </div>
+                    <div className="text-[10px] text-gray-400 mb-1">
+                      {day.tempMin}°F
+                    </div>
+                    <div className="text-[10px] text-gray-500 line-clamp-1" title={day.condition}>
+                      {day.condition}
+                    </div>
+                    {day.precipitation > 0 && (
+                      <div className="text-[10px] text-gray-400 flex items-center justify-center gap-0.5 mt-0.5">
                         <span>💧</span>
                         <span>{day.precipitation}mm</span>
                       </div>
