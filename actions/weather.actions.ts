@@ -12,10 +12,18 @@ export interface TripWeather {
   icon: string
   precipitation: number
   location?: string
+  timezone?: string  // IANA timezone (e.g., 'America/Los_Angeles')
+  isCapped?: boolean
+  cappedNote?: string
+  availableDays?: number
+  totalDays?: number
 }
 
 export interface DetailedTripWeather extends TripWeather {
   daily: DailyForecast[]
+  tripDays?: number
+  extendedDays?: number
+  preDays?: number
 }
 
 /**
