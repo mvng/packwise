@@ -12,6 +12,7 @@ export interface DailyForecast {
   precipitation: number
   weatherCode: number
   isExtended?: boolean  // Day is beyond trip end date
+  isPreTrip?: boolean   // Day is before trip start date
 }
 
 export interface DetailedWeatherData {
@@ -32,6 +33,7 @@ export interface DetailedWeatherData {
   totalDays?: number
   tripDays?: number  // Actual days of trip
   extendedDays?: number  // Extra days fetched beyond trip
+  preDays?: number  // Days before trip start
 }
 
 interface WeatherData {
@@ -65,6 +67,7 @@ const detailedWeatherCache = new Map<string, { data: DetailedWeatherData; expire
 const GEOCODING_TTL = 30 * 24 * 60 * 60 * 1000 // 30 days (coordinates don't change)
 const WEATHER_TTL = 30 * 60 * 1000 // 30 minutes (balance freshness vs performance)
 const MAX_FORECAST_DAYS = 14 // Open-Meteo free tier limit
+const PRE_TRIP_DAYS = 2 // Days before trip to include
 
 /**
  * Calculate days between two dates
@@ -134,8 +137,8 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
 
 /**
  * Get detailed weather forecast with daily breakdown
- * Always fetches 14 days from start date (or until max forecast limit)
- * Marks days beyond trip end date as "extended"
+ * Fetches 2 days before trip start + trip days + extends to 14 days total (or max forecast limit)
+ * Marks pre-trip and extended days appropriately
  */
 export async function getDetailedWeatherForecast(
   latitude: number,
@@ -148,35 +151,43 @@ export async function getDetailedWeatherForecast(
     // Calculate trip length
     const tripDays = getDaysBetween(startDate, endDate)
     
-    // Always try to fetch 14 days from start, or until max forecast limit
+    // Start fetching 2 days before trip
+    const fetchStartDate = new Date(startDate)
+    fetchStartDate.setDate(startDate.getDate() - PRE_TRIP_DAYS)
+    
+    // Don't fetch before today
     const today = new Date()
     today.setHours(0, 0, 0, 0)
+    const actualFetchStart = fetchStartDate < today ? today : fetchStartDate
+    const actualPreDays = getDaysBetween(actualFetchStart, new Date(startDate.getTime() - 86400000)) // day before start
+    
+    // Calculate max forecast date
     const maxDate = new Date(today)
     maxDate.setDate(today.getDate() + MAX_FORECAST_DAYS)
     
-    // Fetch end date: 14 days from start, or maxDate, whichever is earlier
-    const idealFetchEnd = new Date(startDate)
-    idealFetchEnd.setDate(startDate.getDate() + MAX_FORECAST_DAYS - 1)
+    // Fetch end date: Try to get full 14 days from actual start, or maxDate
+    const idealFetchEnd = new Date(actualFetchStart)
+    idealFetchEnd.setDate(actualFetchStart.getDate() + MAX_FORECAST_DAYS - 1)
     const fetchEndDate = idealFetchEnd < maxDate ? idealFetchEnd : maxDate
     
     const originalEndDate = new Date(endDate)
     const isCapped = originalEndDate > maxDate
     
     const totalDays = getDaysBetween(startDate, originalEndDate)
-    const availableDays = getDaysBetween(startDate, fetchEndDate)
-    const extendedDays = Math.max(0, getDaysBetween(originalEndDate, fetchEndDate) - 1)
+    const availableDays = getDaysBetween(actualFetchStart, fetchEndDate)
+    const extendedDays = originalEndDate < fetchEndDate ? getDaysBetween(originalEndDate, fetchEndDate) - 1 : 0
     
     if (isCapped) {
       console.log('[Weather] Trip extends beyond 14-day forecast. Capping to:', fetchEndDate.toISOString().split('T')[0])
     } else {
-      console.log('[Weather] Fetching full 14-day forecast for', tripDays, 'day trip')
+      console.log('[Weather] Fetching forecast: 2 days prior + ', tripDays, 'day trip +', extendedDays, 'extended')
     }
     
-    const start = startDate.toISOString().split('T')[0]
+    const start = actualFetchStart.toISOString().split('T')[0]
     const end = fetchEndDate.toISOString().split('T')[0]
     
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&temperature_unit=fahrenheit&timezone=auto&start_date=${start}&end_date=${end}`
-    console.log('[Weather] Fetching detailed forecast:', { location: locationName, start, end, tripDays, extendedDays })
+    console.log('[Weather] Fetching detailed forecast:', { location: locationName, start, end, preDays: actualPreDays, tripDays, extendedDays })
     
     const response = await fetch(url)
     
@@ -202,11 +213,13 @@ export async function getDetailedWeatherForecast(
       return null
     }
     
-    console.log('[Weather] Received', dates.length, 'days of forecast (', tripDays, 'trip days +', extendedDays, 'extended)')
+    console.log('[Weather] Received', dates.length, 'days:', actualPreDays, 'pre +', tripDays, 'trip +', extendedDays, 'extended')
     
-    // Build daily forecast array with extended marking
+    // Build daily forecast array with pre-trip and extended marking
     const daily: DailyForecast[] = dates.map((date: string, index: number) => {
-      const isExtended = new Date(date) > originalEndDate
+      const dateObj = new Date(date)
+      const isPreTrip = dateObj < startDate
+      const isExtended = dateObj > originalEndDate
       return {
         date,
         tempMax: Math.round(temps[index] || 0),
@@ -215,19 +228,20 @@ export async function getDetailedWeatherForecast(
         icon: getWeatherIcon(weatherCodes[index] || 0),
         precipitation: Math.round(precip[index] || 0),
         weatherCode: weatherCodes[index] || 0,
+        isPreTrip,
         isExtended
       }
     })
     
-    // Calculate averages ONLY for trip days (not extended)
-    const tripDaily = daily.filter(d => !d.isExtended)
+    // Calculate averages ONLY for trip days (not pre or extended)
+    const tripDaily = daily.filter(d => !d.isExtended && !d.isPreTrip)
     const tripTempsMax = tripDaily.map(d => d.tempMax)
     const tripTempsMin = tripDaily.map(d => d.tempMin)
     const tripPrecip = tripDaily.reduce((sum, d) => sum + d.precipitation, 0)
     
     const avgMax = tripTempsMax.reduce((a, b) => a + b, 0) / tripTempsMax.length
     const avgMin = tripTempsMin.reduce((a, b) => a + b, 0) / tripTempsMin.length
-    const dominantWeatherCode = weatherCodes[0] || 0
+    const dominantWeatherCode = weatherCodes[actualPreDays] || weatherCodes[0] || 0  // Use first trip day
     
     const result: DetailedWeatherData = {
       temperature: {
@@ -245,14 +259,15 @@ export async function getDetailedWeatherForecast(
       availableDays,
       totalDays,
       tripDays,
-      extendedDays
+      extendedDays,
+      preDays: actualPreDays
     }
     
     if (isCapped) {
       result.cappedNote = `Weather forecast available for first ${availableDays} of ${totalDays} days`
     }
     
-    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '', `+ ${extendedDays} extended days`)
+    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '', `${actualPreDays} pre + ${extendedDays} extended`)
     return result
   } catch (error) {
     console.error('[Weather] Exception:', error)
