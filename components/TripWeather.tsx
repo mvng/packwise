@@ -174,7 +174,8 @@ export default function TripWeather({ destination, startDate, endDate, variant =
   // Detail variant - ultra-compact collapsible forecast
   const detailedWeather = weather as DetailedTripWeather
   const hasDaily = detailedWeather.daily && detailedWeather.daily.length > 0
-  const tripDays = detailedWeather.daily?.filter(d => !d.isExtended) || []
+  const preTripDays = detailedWeather.daily?.filter(d => d.isPreTrip) || []
+  const tripDays = detailedWeather.daily?.filter(d => !d.isExtended && !d.isPreTrip) || []
   const extendedDays = detailedWeather.daily?.filter(d => d.isExtended) || []
 
   const formatDate = (dateStr: string) => {
@@ -230,7 +231,7 @@ export default function TripWeather({ destination, startDate, endDate, variant =
         </svg>
       </button>
 
-      {/* Expanded details - show capped warning here */}
+      {/* Expanded details - show all info here */}
       {isExpanded && (
         <div id="weather-details" className="px-3 pb-3 border-t border-blue-100">
           {/* Capped forecast warning - only when expanded */}
@@ -246,24 +247,58 @@ export default function TripWeather({ destination, startDate, endDate, variant =
             </div>
           )}
 
-          {/* Extended forecast info for short trips */}
-          {extendedDays.length > 0 && !weather.isCapped && (
+          {/* Extended forecast info - when extra days are shown */}
+          {(preTripDays.length > 0 || extendedDays.length > 0) && !weather.isCapped && (
             <div className="my-2 text-xs text-blue-700 bg-blue-50 rounded-md px-2.5 py-1.5 border border-blue-200">
               <div className="flex items-start gap-1.5">
                 <span className="flex-shrink-0">🔮</span>
                 <div>
-                  <p className="font-medium">Extended {extendedDays.length}-day forecast included</p>
-                  <p className="text-[10px] mt-0.5 text-blue-600">Days beyond your trip are shown for planning flexibility</p>
+                  <p className="font-medium">
+                    {preTripDays.length > 0 && extendedDays.length > 0 && `${preTripDays.length} pre-trip + ${extendedDays.length} extended days included`}
+                    {preTripDays.length > 0 && extendedDays.length === 0 && `${preTripDays.length} pre-trip days included`}
+                    {preTripDays.length === 0 && extendedDays.length > 0 && `${extendedDays.length} extended days included`}
+                  </p>
+                  <p className="text-[10px] mt-0.5 text-blue-600">
+                    {preTripDays.length > 0 && 'Pre-trip weather helps plan travel. '}
+                    {extendedDays.length > 0 && 'Extended days provide planning flexibility'}
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Horizontal scrollable day-by-day forecast - all days */}
+          {/* Horizontal scrollable day-by-day forecast */}
           {hasDaily && (
             <div className="my-2 -mx-1">
               <div className="flex gap-1.5 overflow-x-auto pb-1.5 px-1 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
-                {/* Trip days */}
+                {/* Pre-trip days - muted purple style */}
+                {preTripDays.map((day) => (
+                  <div 
+                    key={day.date}
+                    className="flex-shrink-0 bg-purple-50 bg-opacity-60 rounded-md p-2 min-w-[85px] text-center backdrop-blur-sm border border-dashed border-purple-300"
+                    title="Pre-trip day (before departure)"
+                  >
+                    <div className="text-[10px] font-medium text-purple-600 mb-1">{formatDate(day.date)}</div>
+                    <div className="text-2xl mb-1 opacity-60">{day.icon}</div>
+                    <div className="text-xs font-semibold text-purple-700">
+                      {day.tempMax}°F
+                    </div>
+                    <div className="text-[10px] text-purple-500 mb-1">
+                      {day.tempMin}°F
+                    </div>
+                    <div className="text-[10px] text-purple-600 line-clamp-1" title={day.condition}>
+                      {day.condition}
+                    </div>
+                    {day.precipitation > 0 && (
+                      <div className="text-[10px] text-purple-500 flex items-center justify-center gap-0.5 mt-0.5">
+                        <span>💧</span>
+                        <span>{day.precipitation}mm</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {/* Trip days - bright white style */}
                 {tripDays.map((day) => (
                   <div 
                     key={day.date}
@@ -289,7 +324,7 @@ export default function TripWeather({ destination, startDate, endDate, variant =
                   </div>
                 ))}
                 
-                {/* Extended days - visually distinct */}
+                {/* Extended days - muted gray style */}
                 {extendedDays.map((day) => (
                   <div 
                     key={day.date}
