@@ -15,6 +15,15 @@ interface PackingItem {
   isCustom: boolean
   order: number
   tripLuggageId?: string | null
+  tripLuggage?: {
+    id: string
+    luggage: {
+      id: string
+      name: string
+      type: string
+      icon?: string
+    }
+  }
 }
 
 interface Category {
@@ -38,9 +47,10 @@ interface Trip {
 interface PackingListSectionProps {
   trip: Trip
   readOnly?: boolean
+  sharedTripLuggages?: TripLuggage[]
 }
 
-export default function PackingListSection({ trip, readOnly = false }: PackingListSectionProps) {
+export default function PackingListSection({ trip, readOnly = false, sharedTripLuggages }: PackingListSectionProps) {
   const [lists, setLists] = useState(trip.packingLists)
   const [newItemName, setNewItemName] = useState<Record<string, string>>({})
   const [addingTo, setAddingTo] = useState<string | null>(null)
@@ -48,7 +58,7 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
   const [showInventoryPicker, setShowInventoryPicker] = useState(false)
   const [showLuggagePicker, setShowLuggagePicker] = useState(false)
   const [inventoryToast, setInventoryToast] = useState<string | null>(null)
-  const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>([])
+  const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>(sharedTripLuggages || [])
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'not-assigned': true })
   const [viewMode, setViewMode] = useState<'category' | 'luggage'>('category')
   const [draggedItem, setDraggedItem] = useState<{ id: string; categoryId: string; packingListId: string } | null>(null)
@@ -66,8 +76,15 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
   useEffect(() => {
     if (!readOnly) {
       loadTripLuggage()
+    } else if (sharedTripLuggages && sharedTripLuggages.length > 0) {
+      // For read-only shared view with luggage, set up expanded state
+      const expanded: Record<string, boolean> = { 'not-assigned': true }
+      sharedTripLuggages.forEach(tl => {
+        expanded[tl.id] = true
+      })
+      setExpandedGroups(expanded)
     }
-  }, [readOnly])
+  }, [readOnly, sharedTripLuggages])
 
   async function loadTripLuggage() {
     const result = await getTripLuggage(trip.id)
@@ -371,6 +388,12 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
           {item.name}
           {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
         </span>
+        {/* Show luggage icon next to item in category view */}
+        {readOnly && item.tripLuggage && (
+          <span className="text-base ml-2" title={item.tripLuggage.luggage.name}>
+            {item.tripLuggage.luggage.icon || luggageIcons[item.tripLuggage.luggage.type as LuggageType]}
+          </span>
+        )}
       </label>
       {!readOnly && (
         <button
@@ -396,6 +419,33 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between" role="status" aria-live="polite">
           <span>✓ {inventoryToast}</span>
           <button onClick={() => setInventoryToast(null)} className="text-green-400 hover:text-green-600 ml-2 focus:outline-none focus:ring-2 focus:ring-green-500 rounded" aria-label="Dismiss notification">×</button>
+        </div>
+      )}
+
+      {/* Show luggage info for shared view */}
+      {readOnly && tripLuggages.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Bags used for this trip</h3>
+          <div className="flex flex-wrap gap-2">
+            {tripLuggages.map((tl) => {
+              const itemCount = itemsByLuggage[tl.id]?.length || 0
+              return (
+                <div
+                  key={tl.id}
+                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl"
+                >
+                  <span className="text-lg" role="img" aria-hidden="true">{getLuggageIcon(tl)}</span>
+                  <span className="text-sm font-medium text-gray-700">{tl.luggage.name}</span>
+                  {itemCount > 0 && (
+                    <span className="text-xs text-gray-500">({itemCount})</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-xs text-gray-500 mt-3">
+            Items with luggage icons show which bag they're assigned to
+          </p>
         </div>
       )}
 
@@ -692,6 +742,12 @@ export default function PackingListSection({ trip, readOnly = false }: PackingLi
                               {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
                               {item.name}
                             </span>
+                            {/* Show luggage icon next to item in category view */}
+                            {readOnly && item.tripLuggage && (
+                              <span className="text-base ml-2" title={item.tripLuggage.luggage.name}>
+                                {item.tripLuggage.luggage.icon || luggageIcons[item.tripLuggage.luggage.type as LuggageType]}
+                              </span>
+                            )}
                           </label>
                           {!readOnly && (
                             <button
