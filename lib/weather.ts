@@ -24,6 +24,7 @@ export interface DetailedWeatherData {
   precipitation: number
   humidity: number
   daily: DailyForecast[]
+  location?: string
 }
 
 interface WeatherData {
@@ -36,6 +37,7 @@ interface WeatherData {
   icon: string
   precipitation: number
   humidity: number
+  location?: string
 }
 
 interface GeocodingResult {
@@ -77,7 +79,8 @@ export async function getDetailedWeatherForecast(
   latitude: number,
   longitude: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  locationName?: string
 ): Promise<DetailedWeatherData | null> {
   try {
     const start = startDate.toISOString().split('T')[0]
@@ -127,7 +130,8 @@ export async function getDetailedWeatherForecast(
       icon: getWeatherIcon(dominantWeatherCode),
       precipitation: Math.round(totalPrecip),
       humidity: 0,
-      daily
+      daily,
+      location: locationName
     }
   } catch (error) {
     console.error('Weather forecast error:', error)
@@ -142,7 +146,8 @@ export async function getWeatherForecast(
   latitude: number,
   longitude: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  locationName?: string
 ): Promise<WeatherData | null> {
   try {
     const start = startDate.toISOString().split('T')[0]
@@ -179,7 +184,8 @@ export async function getWeatherForecast(
       condition: getWeatherCondition(dominantWeatherCode),
       icon: getWeatherIcon(dominantWeatherCode),
       precipitation: Math.round(totalPrecip),
-      humidity: 0 // Not included in free tier
+      humidity: 0, // Not included in free tier
+      location: locationName
     }
   } catch (error) {
     console.error('Weather forecast error:', error)
@@ -248,7 +254,7 @@ export async function getLocationWeather(
   const coords = await getCoordinates(location)
   if (!coords) return null
   
-  return await getWeatherForecast(coords.latitude, coords.longitude, startDate, endDate)
+  return await getWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name)
 }
 
 /**
@@ -262,5 +268,5 @@ export async function getDetailedLocationWeather(
   const coords = await getCoordinates(location)
   if (!coords) return null
   
-  return await getDetailedWeatherForecast(coords.latitude, coords.longitude, startDate, endDate)
+  return await getDetailedWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name)
 }
