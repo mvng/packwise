@@ -118,15 +118,15 @@ export default function TripWeather({ destination, startDate, endDate, variant =
             </div>
           )}
         </div>
-        
-        {weather.isCapped && weather.cappedNote && (
-          <div className="mt-2 text-[10px] text-amber-600 bg-amber-50 rounded px-2 py-1">
-            ℹ️ {weather.cappedNote}
-          </div>
-        )}
 
+        {/* Tooltip - includes capped warning on hover */}
         {showTooltip && (
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50 pointer-events-none">
+            {weather.isCapped && weather.cappedNote && (
+              <p className="leading-relaxed mb-2 pb-2 border-b border-gray-700 text-amber-300">
+                <span className="font-medium">ℹ️ {weather.cappedNote}</span>
+              </p>
+            )}
             <p className="leading-relaxed">
               Weather forecasts are estimates and may change. Always check current conditions closer to your trip dates.
             </p>
@@ -197,7 +197,7 @@ export default function TripWeather({ destination, startDate, endDate, variant =
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      {/* Ultra-compact preview - no day cards */}
+      {/* Ultra-compact preview - no capped warning when collapsed */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full px-3 py-2 flex items-center justify-between hover:bg-white hover:bg-opacity-30 transition-colors text-left gap-2"
@@ -214,11 +214,6 @@ export default function TripWeather({ destination, startDate, endDate, variant =
               {weather.temperature.min}°-{weather.temperature.max}°F • {weather.condition}
               {weather.precipitation > 0 && ` • 💧${weather.precipitation}mm`}
             </div>
-            {weather.isCapped && weather.cappedNote && (
-              <div className="text-[10px] text-amber-700 mt-0.5">
-                ℹ️ {weather.cappedNote}
-              </div>
-            )}
           </div>
         </div>
         
@@ -233,10 +228,10 @@ export default function TripWeather({ destination, startDate, endDate, variant =
         </svg>
       </button>
 
-      {/* Expanded details - show all available days */}
+      {/* Expanded details - show capped warning here */}
       {isExpanded && (
         <div id="weather-details" className="px-3 pb-3 border-t border-blue-100">
-          {/* Capped forecast warning */}
+          {/* Capped forecast warning - only when expanded */}
           {weather.isCapped && weather.cappedNote && (
             <div className="my-2 text-xs text-amber-700 bg-amber-50 rounded-md px-2.5 py-1.5 border border-amber-200">
               <div className="flex items-start gap-1.5">
