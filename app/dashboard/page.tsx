@@ -207,8 +207,15 @@ export default function DashboardPage() {
                     </h3>
                     <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
                     <div className="text-xs text-gray-400 mb-3">
-                      {trip.startDate ? formatDate(trip.startDate as string) : ''}
-                      {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
+                      {trip.startDate ? formatDate(trip.startDate as string, { includeTimezone: true }) : ''}
+                      {trip.endDate ? (
+                        <>
+                          {' – '}
+                          <span className="inline-block">
+                            {formatDate(trip.endDate as string)}
+                          </span>
+                        </>
+                      ) : ''}
                     </div>
                     
                     {/* Weather widget */}
