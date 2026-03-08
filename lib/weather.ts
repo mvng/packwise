@@ -27,6 +27,7 @@ export interface DetailedWeatherData {
   humidity: number
   daily: DailyForecast[]
   location?: string
+  timezone?: string  // IANA timezone (e.g., 'America/Los_Angeles')
   isCapped?: boolean
   cappedNote?: string
   availableDays?: number
@@ -47,6 +48,7 @@ interface WeatherData {
   precipitation: number
   humidity: number
   location?: string
+  timezone?: string  // IANA timezone
   isCapped?: boolean
   cappedNote?: string
   availableDays?: number
@@ -57,6 +59,7 @@ interface GeocodingResult {
   latitude: number
   longitude: number
   name: string
+  timezone?: string  // IANA timezone from geocoding
 }
 
 // In-memory caches
@@ -114,10 +117,11 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
     }
     
     const result = data.results[0]
-    const coords = {
+    const coords: GeocodingResult = {
       latitude: result.latitude,
       longitude: result.longitude,
-      name: result.name
+      name: result.name,
+      timezone: result.timezone // IANA timezone from geocoding API
     }
     
     console.log('[Geocoding] Success:', coords)
@@ -145,7 +149,8 @@ export async function getDetailedWeatherForecast(
   longitude: number,
   startDate: Date,
   endDate: Date,
-  locationName?: string
+  locationName?: string,
+  timezone?: string
 ): Promise<DetailedWeatherData | null> {
   try {
     // Calculate trip length
@@ -187,7 +192,7 @@ export async function getDetailedWeatherForecast(
     const end = fetchEndDate.toISOString().split('T')[0]
     
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&temperature_unit=fahrenheit&timezone=auto&start_date=${start}&end_date=${end}`
-    console.log('[Weather] Fetching detailed forecast:', { location: locationName, start, end, preDays: actualPreDays, tripDays, extendedDays })
+    console.log('[Weather] Fetching detailed forecast:', { location: locationName, start, end, preDays: actualPreDays, tripDays, extendedDays, timezone })
     
     const response = await fetch(url)
     
@@ -208,12 +213,15 @@ export async function getDetailedWeatherForecast(
     const weatherCodes = data.daily.weathercode || []
     const dates = data.daily.time || []
     
+    // Capture timezone from API response (IANA format)
+    const apiTimezone = data.timezone || timezone
+    
     if (temps.length === 0) {
       console.error('[Weather] Empty temperature data')
       return null
     }
     
-    console.log('[Weather] Received', dates.length, 'days:', actualPreDays, 'pre +', tripDays, 'trip +', extendedDays, 'extended')
+    console.log('[Weather] Received', dates.length, 'days:', actualPreDays, 'pre +', tripDays, 'trip +', extendedDays, 'extended', `(${apiTimezone})`)
     
     // Build daily forecast array with pre-trip and extended marking
     const daily: DailyForecast[] = dates.map((date: string, index: number) => {
@@ -255,6 +263,7 @@ export async function getDetailedWeatherForecast(
       humidity: 0,
       daily,
       location: locationName,
+      timezone: apiTimezone,
       isCapped,
       availableDays,
       totalDays,
@@ -267,7 +276,7 @@ export async function getDetailedWeatherForecast(
       result.cappedNote = `Weather forecast available for first ${availableDays} of ${totalDays} days`
     }
     
-    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '', `${actualPreDays} pre + ${extendedDays} extended`)
+    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '', `${actualPreDays} pre + ${extendedDays} extended`, apiTimezone)
     return result
   } catch (error) {
     console.error('[Weather] Exception:', error)
@@ -284,7 +293,8 @@ export async function getWeatherForecast(
   longitude: number,
   startDate: Date,
   endDate: Date,
-  locationName?: string
+  locationName?: string,
+  timezone?: string
 ): Promise<WeatherData | null> {
   try {
     // Cap end date at 14 days from today
@@ -308,7 +318,7 @@ export async function getWeatherForecast(
     const end = cappedEndDate.toISOString().split('T')[0]
     
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&temperature_unit=fahrenheit&timezone=auto&start_date=${start}&end_date=${end}`
-    console.log('[Weather] Fetching forecast:', { location: locationName, start, end, isCapped })
+    console.log('[Weather] Fetching forecast:', { location: locationName, start, end, isCapped, timezone })
     
     const response = await fetch(url)
     
@@ -322,6 +332,9 @@ export async function getWeatherForecast(
       console.error('[Weather] No daily data in response')
       return null
     }
+    
+    // Capture timezone from API response
+    const apiTimezone = data.timezone || timezone
     
     // Calculate averages over the trip period
     const temps = data.daily.temperature_2m_max || []
@@ -350,6 +363,7 @@ export async function getWeatherForecast(
       precipitation: Math.round(totalPrecip),
       humidity: 0, // Not included in free tier
       location: locationName,
+      timezone: apiTimezone,
       isCapped,
       availableDays,
       totalDays
@@ -359,7 +373,7 @@ export async function getWeatherForecast(
       result.cappedNote = `Weather forecast available for first ${availableDays} of ${totalDays} days`
     }
     
-    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '')
+    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '', apiTimezone)
     return result
   } catch (error) {
     console.error('[Weather] Exception:', error)
@@ -438,7 +452,7 @@ export async function getLocationWeather(
   const coords = await getCoordinates(location)
   if (!coords) return null
   
-  const weather = await getWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name)
+  const weather = await getWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name, coords.timezone)
   
   // Cache the result
   if (weather) {
@@ -473,7 +487,7 @@ export async function getDetailedLocationWeather(
   const coords = await getCoordinates(location)
   if (!coords) return null
   
-  const weather = await getDetailedWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name)
+  const weather = await getDetailedWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name, coords.timezone)
   
   // Cache the result
   if (weather) {
