@@ -220,13 +220,19 @@ export async function deleteTrip(tripId: string) {
 
 /**
  * Get a trip by ID without authentication requirement (for public sharing).
- * This allows unauthenticated users to view shared trips with luggage assignments.
+ * This allows unauthenticated users to view shared trips with luggage assignments and owner info.
  */
 export async function getSharedTripById(tripId: string) {
   try {
     const trip = await prisma.trip.findUnique({
       where: { id: tripId },
       include: {
+        user: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
         tripLuggages: {
           include: {
             luggage: true
