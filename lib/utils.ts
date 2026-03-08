@@ -49,6 +49,46 @@ export function formatDate(date: Date | string, options?: { includeTimezone?: bo
   return formatted
 }
 
+/**
+ * Format date with timezone based on IANA timezone identifier
+ * @param date - Date to format
+ * @param timeZone - IANA timezone identifier (e.g., 'America/Los_Angeles', 'Europe/London')
+ * @returns Formatted date with timezone abbreviation
+ */
+export function formatDateWithTimezone(date: Date | string, timeZone: string): string {
+  // Parse date string as local date to avoid timezone shifts
+  let d: Date
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+    const [year, month, day] = date.split('T')[0].split('-').map(Number)
+    d = new Date(year, month - 1, day)
+  } else {
+    d = new Date(date)
+  }
+  
+  try {
+    // Format the date in the target timezone
+    const formatted = d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone
+    })
+    
+    // Get timezone abbreviation
+    const timezone = d.toLocaleDateString('en-US', {
+      day: '2-digit',
+      timeZoneName: 'short',
+      timeZone
+    }).split(', ')[1]
+    
+    return `${formatted} ${timezone}`
+  } catch (error) {
+    // Fallback to regular formatting if timezone is invalid
+    console.warn(`Invalid timezone: ${timeZone}`, error)
+    return formatDate(date, { includeTimezone: true })
+  }
+}
+
 export function getTripDuration(startDate: Date | string, endDate: Date | string): number {
   const start = new Date(startDate)
   const end = new Date(endDate)
