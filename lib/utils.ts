@@ -4,25 +4,49 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs)
 }
 
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string, options?: { includeTimezone?: boolean }): string {
   // If it's a string in YYYY-MM-DD format, parse it as local date to avoid timezone shifts
   if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
     const [year, month, day] = date.split('T')[0].split('-').map(Number)
     const d = new Date(year, month - 1, day) // month is 0-indexed
-    return d.toLocaleDateString('en-US', {
+    
+    const formatted = d.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
     })
+    
+    if (options?.includeTimezone) {
+      // Get timezone abbreviation (e.g., PST, EST, GMT)
+      const timezone = d.toLocaleDateString('en-US', {
+        day: '2-digit',
+        timeZoneName: 'short'
+      }).split(', ')[1]
+      
+      return `${formatted} ${timezone}`
+    }
+    
+    return formatted
   }
   
   // Otherwise use the date as-is
   const d = new Date(date)
-  return d.toLocaleDateString('en-US', {
+  const formatted = d.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   })
+  
+  if (options?.includeTimezone) {
+    const timezone = d.toLocaleDateString('en-US', {
+      day: '2-digit',
+      timeZoneName: 'short'
+    }).split(', ')[1]
+    
+    return `${formatted} ${timezone}`
+  }
+  
+  return formatted
 }
 
 export function getTripDuration(startDate: Date | string, endDate: Date | string): number {
