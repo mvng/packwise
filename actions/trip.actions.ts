@@ -150,12 +150,12 @@ export async function updateTrip(
     await prisma.trip.update({
       where: { id: tripId },
       data: {
-        name: input.name,
+        name: input.name ?? undefined,
         destination: input.destination,
         startDate: input.startDate ?? undefined,
         endDate: input.endDate ?? undefined,
-        tripType: input.tripType,
-        notes: input.notes
+        tripType: input.tripType ?? undefined,
+        notes: input.notes ?? undefined
       }
     })
 
