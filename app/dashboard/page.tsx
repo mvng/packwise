@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getUserTrips, deleteTrip } from '@/actions/trip.actions'
 import { formatDate } from '@/lib/utils'
 import TripWeather from '@/components/TripWeather'
+import EditTripModal from '@/components/EditTripModal'
 import type { User } from '@supabase/supabase-js'
 
 type Trip = {
@@ -16,6 +17,7 @@ type Trip = {
   startDate: Date | string | null
   endDate: Date | string | null
   tripType: string | null
+  notes: string | null
   createdAt: Date | string
   packingLists?: Array<{
     categories: Array<{
@@ -51,6 +53,7 @@ export default function DashboardPage() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
 
   const loadTrips = useCallback(async () => {
     try {
@@ -107,6 +110,16 @@ export default function DashboardPage() {
       setTrips((prev) => prev.filter((t) => t.id !== tripId))
     }
     setDeletingId(null)
+  }
+
+  const handleEditTrip = (e: React.MouseEvent, trip: Trip) => {
+    e.preventDefault()
+    setEditingTrip(trip)
+  }
+
+  const handleEditSuccess = () => {
+    setEditingTrip(null)
+    loadTrips()
   }
 
   if (loading) {
@@ -222,14 +235,25 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </Link>
-                  <button
-                    onClick={(e) => handleDeleteTrip(e, trip.id)}
-                    disabled={deletingId === trip.id}
-                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
-                    aria-label="Delete trip"
-                  >
-                    {deletingId === trip.id ? '…' : '🗑️'}
-                  </button>
+                  
+                  {/* Action buttons */}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                    <button
+                      onClick={(e) => handleEditTrip(e, trip)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                      aria-label="Edit trip"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteTrip(e, trip.id)}
+                      disabled={deletingId === trip.id}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                      aria-label="Delete trip"
+                    >
+                      {deletingId === trip.id ? '…' : '🗑️'}
+                    </button>
+                  </div>
                 </div>
               )
             })}
@@ -246,6 +270,15 @@ export default function DashboardPage() {
             </p>
           </div>
         </footer>
+      )}
+
+      {/* Edit Trip Modal */}
+      {editingTrip && (
+        <EditTripModal
+          trip={editingTrip}
+          onClose={() => setEditingTrip(null)}
+          onSuccess={handleEditSuccess}
+        />
       )}
     </div>
   )
