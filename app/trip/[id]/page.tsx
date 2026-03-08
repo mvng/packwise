@@ -194,6 +194,12 @@ export default function TripPageClient({ params }: TripPageProps) {
     return user.user_metadata?.full_name || user.user_metadata?.name || user.email
   }
 
+  // Get trip owner display name
+  const getTripOwnerName = () => {
+    if (!trip.user) return 'Someone'
+    return trip.user.name || trip.user.email || 'Someone'
+  }
+
   // Get timezone info for tooltip
   const timezoneAbbr = tripTimezone && trip.startDate ? getTimezoneAbbreviation(tripTimezone, new Date(trip.startDate)) : ''
   const timezoneDifference = tripTimezone ? getTimezoneOffsetDifference(tripTimezone) : ''
@@ -264,7 +270,7 @@ export default function TripPageClient({ params }: TripPageProps) {
       </header>
       
       <main className="max-w-5xl mx-auto px-6 py-8">
-        {/* Shared view banner with fork button - ONLY show for non-owners */}
+        {/* Shared view banner with fork button and owner info - ONLY show for non-owners */}
         {isSharedView && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 mb-6">
             <div className="flex items-start justify-between gap-6 flex-col lg:flex-row">
@@ -272,6 +278,9 @@ export default function TripPageClient({ params }: TripPageProps) {
                 <span className="text-3xl">👀</span>
                 <div>
                   <h3 className="font-semibold text-blue-900 text-lg mb-1">Viewing shared packing list</h3>
+                  <p className="text-blue-700 text-sm mb-2">
+                    Created by <span className="font-medium">{getTripOwnerName()}</span>
+                  </p>
                   <p className="text-blue-700 text-sm">
                     This is a read-only view. You can save a copy of this packing list to your account and customize it for your own trip.
                   </p>
@@ -372,7 +381,11 @@ export default function TripPageClient({ params }: TripPageProps) {
         </div>
 
         {/* Packing lists */}
-        <PackingListSection trip={displayTrip} readOnly={isSharedView} />
+        <PackingListSection 
+          trip={displayTrip} 
+          readOnly={isSharedView}
+          sharedTripLuggages={isSharedView ? trip.tripLuggages : undefined}
+        />
       </main>
 
       {/* Edit Trip Modal */}
