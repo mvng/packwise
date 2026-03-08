@@ -50,6 +50,8 @@ interface PackingListSectionProps {
   sharedTripLuggages?: TripLuggage[]
 }
 
+const STORAGE_KEY_PREFIX = 'packwise_trip_'
+
 export default function PackingListSection({ trip, readOnly = false, sharedTripLuggages }: PackingListSectionProps) {
   const [lists, setLists] = useState(trip.packingLists)
   const [newItemName, setNewItemName] = useState<Record<string, string>>({})
@@ -63,6 +65,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const [viewMode, setViewMode] = useState<'category' | 'luggage'>('category')
   const [draggedItem, setDraggedItem] = useState<{ id: string; categoryId: string; packingListId: string } | null>(null)
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null)
+  const [localPackedState, setLocalPackedState] = useState<Record<string, boolean>>({})
   const [, startTransition] = useTransition()
 
   const luggageIcons: Record<LuggageType, string> = {
@@ -72,6 +75,30 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     trunk: '📦',
     other: '👜',
   }
+
+  // Load localStorage state for anonymous users
+  useEffect(() => {
+    if (readOnly && typeof window !== 'undefined') {
+      const storageKey = `${STORAGE_KEY_PREFIX}${trip.id}`
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          setLocalPackedState(parsed.packedItems || {})
+        } catch (e) {
+          console.error('Failed to parse localStorage state:', e)
+        }
+      }
+    }
+  }, [readOnly, trip.id])
+
+  // Save localStorage state when it changes
+  useEffect(() => {
+    if (readOnly && typeof window !== 'undefined' && Object.keys(localPackedState).length > 0) {
+      const storageKey = `${STORAGE_KEY_PREFIX}${trip.id}`
+      localStorage.setItem(storageKey, JSON.stringify({ packedItems: localPackedState }))
+    }
+  }, [localPackedState, readOnly, trip.id])
 
   useEffect(() => {
     if (!readOnly) {
@@ -114,7 +141,15 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     packingListId: string,
     isPacked: boolean
   ) => {
-    if (readOnly) return
+    if (readOnly) {
+      // For anonymous users, toggle in localStorage
+      setLocalPackedState(prev => ({
+        ...prev,
+        [itemId]: !isPacked
+      }))
+      return
+    }
+    
     startTransition(async () => {
       await toggleItemPacked(itemId, !isPacked, trip.id)
       setLists((prev) =>
@@ -295,13 +330,22 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     return tl.luggage.icon || luggageIcons[tl.luggage.type as LuggageType]
   }
 
+  // Helper to get item's packed state (from localStorage for anonymous, from item for owners)
+  const getItemPackedState = (item: PackingItem): boolean => {
+    if (readOnly) {
+      return localPackedState[item.id] ?? item.isPacked
+    }
+    return item.isPacked
+  }
+
   const allItems = lists.flatMap(list => 
     list.categories.flatMap(cat => 
       cat.items.map(item => ({
         ...item,
         categoryId: cat.id,
         categoryName: cat.name,
-        packingListId: list.id
+        packingListId: list.id,
+        isPacked: getItemPackedState(item) // Use localStorage state for anonymous
       }))
     )
   )
@@ -350,57 +394,60 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     )
   }
 
-  const renderItem = (item: typeof allItems[0]) => (
-    <div
-      key={item.id}
-      draggable={!readOnly && tripLuggages.length > 0}
-      onDragStart={(e) => handleDragStart(e, item.id, item.categoryId, item.packingListId)}
-      onDragEnd={handleDragEnd}
-      className={`flex items-center gap-3 group transition-opacity ${
-        !readOnly && tripLuggages.length > 0 ? 'cursor-move' : ''
-      }`}
-      role="listitem"
-    >
-      <label className="flex items-center gap-3 flex-1 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={item.isPacked}
-          onChange={() => handleToggle(item.id, item.categoryId, item.packingListId, item.isPacked)}
-          disabled={readOnly}
-          className="sr-only peer"
-          aria-label={`${item.quantity > 1 ? item.quantity + ' ' : ''}${item.name}${item.isPacked ? ', packed' : ', not packed'}`}
-        />
-        <div
-          className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${
-            item.isPacked
-              ? 'bg-green-500 border-green-500'
-              : 'border-gray-300'
-          } ${readOnly ? '' : 'peer-hover:border-blue-400'}`}
-          aria-hidden="true"
-        >
-          {item.isPacked && (
-            <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-        </div>
-        <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
-          {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
-          {item.name}
-          {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
-        </span>
-      </label>
-      {!readOnly && (
-        <button
-          onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
-          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
-          aria-label={`Remove ${item.name} from packing list`}
-        >
-          ×
-        </button>
-      )}
-    </div>
-  )
+  const renderItem = (item: typeof allItems[0]) => {
+    const isPacked = getItemPackedState(item)
+    
+    return (
+      <div
+        key={item.id}
+        draggable={!readOnly && tripLuggages.length > 0}
+        onDragStart={(e) => handleDragStart(e, item.id, item.categoryId, item.packingListId)}
+        onDragEnd={handleDragEnd}
+        className={`flex items-center gap-3 group transition-opacity ${
+          !readOnly && tripLuggages.length > 0 ? 'cursor-move' : ''
+        }`}
+        role="listitem"
+      >
+        <label className="flex items-center gap-3 flex-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isPacked}
+            onChange={() => handleToggle(item.id, item.categoryId, item.packingListId, isPacked)}
+            className="sr-only peer"
+            aria-label={`${item.quantity > 1 ? item.quantity + ' ' : ''}${item.name}${isPacked ? ', packed' : ', not packed'}`}
+          />
+          <div
+            className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${
+              isPacked
+                ? 'bg-green-500 border-green-500'
+                : 'border-gray-300'
+            } peer-hover:border-blue-400`}
+            aria-hidden="true"
+          >
+            {isPacked && (
+              <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span className={`flex-1 text-sm ${ isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+            {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+            {item.name}
+            {viewMode === 'luggage' && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
+          </span>
+        </label>
+        {!readOnly && (
+          <button
+            onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
+            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
+            aria-label={`Remove ${item.name} from packing list`}
+          >
+            ×
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -540,7 +587,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
           <div className="space-y-4">
             {tripLuggages.map((tl) => {
               const items = itemsByLuggage[tl.id] || []
-              const packedCount = items.filter(i => i.isPacked).length
+              const packedCount = items.filter(i => getItemPackedState(i)).length
               const isExpanded = expandedGroups[tl.id]
               const isDropTarget = !readOnly && dragOverTarget === tl.id
 
@@ -571,23 +618,22 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         <p className="text-xs text-gray-500 capitalize">
                           {tl.luggage.type}
                           {tl.luggage.capacity && ` • ${tl.luggage.capacity}L`}
-                          {!readOnly && (
+                          {readOnly ? (
+                            <>
+                              {' • '}
+                              {packedCount}/{items.length} checked
+                            </>
+                          ) : (
                             <>
                               {' • '}
                               {packedCount}/{items.length} items packed
-                            </>
-                          )}
-                          {readOnly && items.length > 0 && (
-                            <>
-                              {' • '}
-                              {items.length} item{items.length !== 1 ? 's' : ''}
                             </>
                           )}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {!readOnly && items.length > 0 && (
+                      {items.length > 0 && (
                         <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden" role="progressbar" aria-valuenow={packedCount} aria-valuemin={0} aria-valuemax={items.length} aria-label="Packing progress">
                           <div
                             className="h-2 bg-blue-500 rounded-full transition-all"
@@ -682,58 +728,60 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                       <h4 id={`category-${category.id}-heading`} className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
                         {category.name}
                       </h4>
-                      <span className="text-xs text-gray-400" aria-live="polite" aria-label={`${category.items.filter((i) => i.isPacked).length} of ${category.items.length} items packed`}>
-                        {category.items.filter((i) => i.isPacked).length}/{category.items.length}
+                      <span className="text-xs text-gray-400" aria-live="polite" aria-label={`${category.items.filter((i) => getItemPackedState(i)).length} of ${category.items.length} items packed`}>
+                        {category.items.filter((i) => getItemPackedState(i)).length}/{category.items.length}
                       </span>
                     </div>
                     <ul className="space-y-2" role="list">
-                      {category.items.map((item) => (
-                        <li
-                          key={item.id}
-                          draggable={!readOnly && tripLuggages.length > 0}
-                          onDragStart={(e) => handleDragStart(e, item.id, category.id, list.id)}
-                          onDragEnd={handleDragEnd}
-                          className={`flex items-center gap-3 group transition-opacity ${
-                            !readOnly && tripLuggages.length > 0 ? 'cursor-move' : ''
-                          }`}
-                        >
-                          <label className="flex items-center gap-3 flex-1 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={item.isPacked}
-                              onChange={() => handleToggle(item.id, category.id, list.id, item.isPacked)}
-                              disabled={readOnly}
-                              className="sr-only peer"
-                              aria-label={`${item.quantity > 1 ? item.quantity + ' ' : ''}${item.name}${item.isPacked ? ', packed' : ', not packed'}`}
-                            />
-                            <div
-                              className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${
-                                item.isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300'
-                              } ${readOnly ? '' : 'peer-hover:border-blue-400'}`}
-                              aria-hidden="true"
-                            >
-                              {item.isPacked && (
-                                <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </div>
-                            <span className={`flex-1 text-sm ${ item.isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
-                              {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
-                              {item.name}
-                            </span>
-                          </label>
-                          {!readOnly && (
-                            <button
-                              onClick={() => handleDelete(item.id, category.id, list.id)}
-                              className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
-                              aria-label={`Remove ${item.name} from packing list`}
-                            >
-                              ×
-                            </button>
-                          )}
-                        </li>
-                      ))}
+                      {category.items.map((item) => {
+                        const isPacked = getItemPackedState(item)
+                        return (
+                          <li
+                            key={item.id}
+                            draggable={!readOnly && tripLuggages.length > 0}
+                            onDragStart={(e) => handleDragStart(e, item.id, category.id, list.id)}
+                            onDragEnd={handleDragEnd}
+                            className={`flex items-center gap-3 group transition-opacity ${
+                              !readOnly && tripLuggages.length > 0 ? 'cursor-move' : ''
+                            }`}
+                          >
+                            <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isPacked}
+                                onChange={() => handleToggle(item.id, category.id, list.id, isPacked)}
+                                className="sr-only peer"
+                                aria-label={`${item.quantity > 1 ? item.quantity + ' ' : ''}${item.name}${isPacked ? ', packed' : ', not packed'}`}
+                              />
+                              <div
+                                className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${
+                                  isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                                } peer-hover:border-blue-400`}
+                                aria-hidden="true"
+                              >
+                                {isPacked && (
+                                  <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                              <span className={`flex-1 text-sm ${ isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+                                {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+                                {item.name}
+                              </span>
+                            </label>
+                            {!readOnly && (
+                              <button
+                                onClick={() => handleDelete(item.id, category.id, list.id)}
+                                className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
+                                aria-label={`Remove ${item.name} from packing list`}
+                              >
+                                ×
+                              </button>
+                            )}
+                          </li>
+                        )
+                      })}
                     </ul>
                     {!readOnly && (addingTo === category.id ? (
                       <div className="mt-3 flex gap-2">
@@ -797,4 +845,24 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       )}
     </div>
   )
+}
+
+// Export helper to get localStorage state for a trip (for forking)
+export function getTripLocalStorageState(tripId: string): Record<string, boolean> | null {
+  if (typeof window === 'undefined') return null
+  
+  const storageKey = `${STORAGE_KEY_PREFIX}${tripId}`
+  const saved = localStorage.getItem(storageKey)
+  
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      return parsed.packedItems || null
+    } catch (e) {
+      console.error('Failed to parse localStorage state:', e)
+      return null
+    }
+  }
+  
+  return null
 }
