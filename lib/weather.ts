@@ -3,6 +3,29 @@
  * https://open-meteo.com/
  */
 
+export interface DailyForecast {
+  date: string
+  tempMax: number
+  tempMin: number
+  condition: string
+  icon: string
+  precipitation: number
+  weatherCode: number
+}
+
+export interface DetailedWeatherData {
+  temperature: {
+    min: number
+    max: number
+    avg: number
+  }
+  condition: string
+  icon: string
+  precipitation: number
+  humidity: number
+  daily: DailyForecast[]
+}
+
 interface WeatherData {
   temperature: {
     min: number
@@ -43,6 +66,71 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
     }
   } catch (error) {
     console.error('Geocoding error:', error)
+    return null
+  }
+}
+
+/**
+ * Get detailed weather forecast with daily breakdown
+ */
+export async function getDetailedWeatherForecast(
+  latitude: number,
+  longitude: number,
+  startDate: Date,
+  endDate: Date
+): Promise<DetailedWeatherData | null> {
+  try {
+    const start = startDate.toISOString().split('T')[0]
+    const end = endDate.toISOString().split('T')[0]
+    
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&temperature_unit=fahrenheit&timezone=auto&start_date=${start}&end_date=${end}`
+    )
+    
+    if (!response.ok) return null
+    
+    const data = await response.json()
+    if (!data.daily) return null
+    
+    const temps = data.daily.temperature_2m_max || []
+    const tempsMins = data.daily.temperature_2m_min || []
+    const precip = data.daily.precipitation_sum || []
+    const weatherCodes = data.daily.weathercode || []
+    const dates = data.daily.time || []
+    
+    if (temps.length === 0) return null
+    
+    // Build daily forecast array
+    const daily: DailyForecast[] = dates.map((date: string, index: number) => ({
+      date,
+      tempMax: Math.round(temps[index] || 0),
+      tempMin: Math.round(tempsMins[index] || 0),
+      condition: getWeatherCondition(weatherCodes[index] || 0),
+      icon: getWeatherIcon(weatherCodes[index] || 0),
+      precipitation: Math.round(precip[index] || 0),
+      weatherCode: weatherCodes[index] || 0
+    }))
+    
+    // Calculate averages
+    const avgMax = temps.reduce((a: number, b: number) => a + b, 0) / temps.length
+    const avgMin = tempsMins.reduce((a: number, b: number) => a + b, 0) / tempsMins.length
+    const totalPrecip = precip.reduce((a: number, b: number) => a + b, 0)
+    const dominantWeatherCode = weatherCodes[0] || 0
+    
+    return {
+      temperature: {
+        min: Math.round(avgMin),
+        max: Math.round(avgMax),
+        avg: Math.round((avgMax + avgMin) / 2)
+      },
+      condition: getWeatherCondition(dominantWeatherCode),
+      icon: getWeatherIcon(dominantWeatherCode),
+      precipitation: Math.round(totalPrecip),
+      humidity: 0,
+      daily
+    }
+  } catch (error) {
+    console.error('Weather forecast error:', error)
     return null
   }
 }
@@ -161,4 +249,18 @@ export async function getLocationWeather(
   if (!coords) return null
   
   return await getWeatherForecast(coords.latitude, coords.longitude, startDate, endDate)
+}
+
+/**
+ * Get detailed weather with daily breakdown for a location
+ */
+export async function getDetailedLocationWeather(
+  location: string,
+  startDate: Date,
+  endDate: Date
+): Promise<DetailedWeatherData | null> {
+  const coords = await getCoordinates(location)
+  if (!coords) return null
+  
+  return await getDetailedWeatherForecast(coords.latitude, coords.longitude, startDate, endDate)
 }
