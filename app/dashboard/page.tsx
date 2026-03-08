@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getUserTrips, deleteTrip } from '@/actions/trip.actions'
-import { formatDate, formatDateWithTimezone } from '@/lib/utils'
-import { getTripWeather } from '@/actions/weather.actions'
+import { formatDate } from '@/lib/utils'
 import TripWeather from '@/components/TripWeather'
 import EditTripModal from '@/components/EditTripModal'
 import type { User } from '@supabase/supabase-js'
@@ -55,32 +54,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
-  const [tripTimezones, setTripTimezones] = useState<Record<string, string>>({})
 
   const loadTrips = useCallback(async () => {
     try {
       const result = await getUserTrips()
       if (result.trips) {
-        const tripList = result.trips as Trip[]
-        setTrips(tripList)
-        
-        // Fetch timezones for all trips with destinations
-        const timezones: Record<string, string> = {}
-        await Promise.all(
-          tripList.map(async (trip) => {
-            if (trip.destination && trip.startDate && trip.endDate) {
-              const { weather } = await getTripWeather(
-                trip.destination,
-                trip.startDate,
-                trip.endDate
-              )
-              if (weather?.timezone) {
-                timezones[trip.id] = weather.timezone
-              }
-            }
-          })
-        )
-        setTripTimezones(timezones)
+        setTrips(result.trips as Trip[])
       }
     } catch (e) {
       console.error('Failed to load trips', e)
@@ -211,7 +190,6 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {trips.map((trip) => {
               const { total, packed, percent } = getTripProgress(trip)
-              const timezone = tripTimezones[trip.id]
               
               return (
                 <div key={trip.id} className="relative group">
@@ -230,19 +208,8 @@ export default function DashboardPage() {
                     </h3>
                     <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
                     <div className="text-xs text-gray-400 mb-3">
-                      {trip.startDate && timezone ? (
-                        formatDateWithTimezone(trip.startDate as string, timezone)
-                      ) : trip.startDate ? (
-                        formatDate(trip.startDate as string, { includeTimezone: true })
-                      ) : ''}
-                      {trip.endDate ? (
-                        <>
-                          {' – '}
-                          <span className="inline-block">
-                            {formatDate(trip.endDate as string)}
-                          </span>
-                        </>
-                      ) : ''}
+                      {trip.startDate ? formatDate(trip.startDate as string) : ''}
+                      {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
                     </div>
                     
                     {/* Weather widget */}
