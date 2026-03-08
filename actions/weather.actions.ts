@@ -11,6 +11,7 @@ export interface TripWeather {
   condition: string
   icon: string
   precipitation: number
+  location?: string
 }
 
 export interface DetailedTripWeather extends TripWeather {
