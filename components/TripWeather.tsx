@@ -140,7 +140,9 @@ export default function TripWeather({ destination, startDate, endDate, variant =
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className="text-xl flex-shrink-0">{weather.icon}</span>
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold text-gray-700">Weather Forecast</div>
+            <div className="text-xs font-semibold text-gray-700">
+              {weather.location ? `Weather Forecast of ${weather.location}` : 'Weather Forecast'}
+            </div>
             <div className="text-xs text-gray-600">
               {weather.temperature.min}°-{weather.temperature.max}°F • {weather.condition}
               {weather.precipitation > 0 && ` • 💧${weather.precipitation}mm`}
