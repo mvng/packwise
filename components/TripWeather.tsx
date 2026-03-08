@@ -103,12 +103,24 @@ export default function TripWeather({ destination, startDate, endDate, variant =
     )
   }
 
-  // Detail variant - day-by-day forecast
+  // Detail variant - horizontal scrollable forecast
   const detailedWeather = weather as DetailedTripWeather
   const hasDaily = detailedWeather.daily && detailedWeather.daily.length > 0
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
+    const today = new Date()
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    
+    // Check if it's today or tomorrow
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today'
+    }
+    if (date.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow'
+    }
+    
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
   }
 
@@ -123,36 +135,35 @@ export default function TripWeather({ destination, startDate, endDate, variant =
         <p className="text-xs text-gray-500">Expected conditions for your trip</p>
       </div>
 
-      {/* Day-by-day forecast */}
+      {/* Horizontal scrollable day-by-day forecast */}
       {hasDaily && (
-        <div className="grid gap-2 mb-4">
-          {detailedWeather.daily.slice(0, 7).map((day, index) => (
-            <div 
-              key={day.date}
-              className="bg-white bg-opacity-60 rounded-lg p-3 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3 flex-1">
-                <span className="text-2xl">{day.icon}</span>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">{formatDate(day.date)}</div>
-                  <div className="text-xs text-gray-600">{day.condition}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-semibold text-gray-900">
+        <div className="mb-4 -mx-1">
+          <div className="flex gap-2 overflow-x-auto pb-2 px-1 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-transparent">
+            {detailedWeather.daily.slice(0, 7).map((day) => (
+              <div 
+                key={day.date}
+                className="flex-shrink-0 bg-white bg-opacity-70 rounded-lg p-3 min-w-[110px] text-center backdrop-blur-sm"
+              >
+                <div className="text-xs font-medium text-gray-700 mb-2">{formatDate(day.date)}</div>
+                <div className="text-3xl mb-2">{day.icon}</div>
+                <div className="text-xs font-semibold text-gray-900 mb-0.5">
                   {day.tempMax}°F
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 mb-1">
                   {day.tempMin}°F
                 </div>
+                <div className="text-xs text-gray-600 mb-1 line-clamp-1" title={day.condition}>
+                  {day.condition}
+                </div>
                 {day.precipitation > 0 && (
-                  <div className="text-xs text-blue-600 mt-0.5">
-                    💧 {day.precipitation}mm
+                  <div className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                    <span>💧</span>
+                    <span>{day.precipitation}mm</span>
                   </div>
                 )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
