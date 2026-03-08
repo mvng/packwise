@@ -66,6 +66,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const [draggedItem, setDraggedItem] = useState<{ id: string; categoryId: string; packingListId: string } | null>(null)
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null)
   const [localPackedState, setLocalPackedState] = useState<Record<string, boolean>>({})
+  const [isBagsCardExpanded, setIsBagsCardExpanded] = useState(true)
   const [, startTransition] = useTransition()
 
   const luggageIcons: Record<LuggageType, string> = {
@@ -470,72 +471,92 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             onDragOver={(e) => tripLuggages.length > 0 && handleDragOver(e)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => e.preventDefault()}
-            className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-4"
+            className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 overflow-hidden"
             role="region"
             aria-label="Trip luggage"
           >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700">Bags for this trip</h3>
-              {tripLuggages.length > 0 && (
-                <span className="text-xs text-gray-500" aria-live="polite">{tripLuggages.length} bag{tripLuggages.length !== 1 ? 's' : ''}</span>
-              )}
-            </div>
-            
-            <div className="flex flex-wrap gap-2" role="list">
-              {tripLuggages.map((tl) => {
-                const itemCount = itemsByLuggage[tl.id]?.length || 0
-                const isDropTarget = dragOverTarget === tl.id
-                return (
-                  <div
-                    key={tl.id}
-                    onDragOver={(e) => {
-                      e.stopPropagation()
-                      handleDragOver(e, tl.id)
-                    }}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => {
-                      e.stopPropagation()
-                      handleDrop(e, tl.id)
-                    }}
-                    className={`group relative flex items-center gap-2 px-3 py-2 bg-white border rounded-xl hover:shadow-sm transition-all ${
-                      isDropTarget
-                        ? 'border-blue-500 border-2 bg-blue-50 shadow-md scale-105'
-                        : 'border-gray-200 hover:border-blue-300'
-                    }`}
-                    role="listitem"
-                  >
-                    <span className="text-lg" role="img" aria-hidden="true">{getLuggageIcon(tl)}</span>
-                    <span className="text-sm font-medium text-gray-700">{tl.luggage.name}</span>
-                    {itemCount > 0 && (
-                      <span className="text-xs text-gray-500">({itemCount})</span>
-                    )}
-                    <button
-                      onClick={() => handleRemoveLuggage(tl.id, tl.luggageId)}
-                      className="ml-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
-                      aria-label={`Remove ${tl.luggage.name} from trip`}
-                    >
-                      ×
-                    </button>
-                  </div>
-                )
-              })}
-              
-              <button
-                onClick={() => setShowLuggagePicker(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-dashed border-blue-300 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                aria-label="Add luggage to trip"
+            <button
+              onClick={() => setIsBagsCardExpanded(!isBagsCardExpanded)}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-blue-100/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+              aria-expanded={isBagsCardExpanded}
+              aria-controls="bags-card-content"
+            >
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-gray-700">Bags for this trip</h3>
+                {tripLuggages.length > 0 && (
+                  <span className="text-xs text-gray-500" aria-live="polite">{tripLuggages.length} bag{tripLuggages.length !== 1 ? 's' : ''}</span>
+                )}
+              </div>
+              <svg
+                className={`w-5 h-5 text-gray-400 transition-transform ${isBagsCardExpanded ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
               >
-                + Add bag
-              </button>
-            </div>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
             
-            {tripLuggages.length === 0 ? (
-              <p className="text-sm text-gray-500 mt-2">Add luggage to organize your items by bag</p>
-            ) : (
-              <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
-                <span role="img" aria-label="Tip">💡</span>
-                <span>Drag items to assign them to bags</span>
-              </p>
+            {isBagsCardExpanded && (
+              <div id="bags-card-content" className="px-4 pb-4">
+                <div className="flex flex-wrap gap-2 mb-3" role="list">
+                  {tripLuggages.map((tl) => {
+                    const itemCount = itemsByLuggage[tl.id]?.length || 0
+                    const isDropTarget = dragOverTarget === tl.id
+                    return (
+                      <div
+                        key={tl.id}
+                        onDragOver={(e) => {
+                          e.stopPropagation()
+                          handleDragOver(e, tl.id)
+                        }}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => {
+                          e.stopPropagation()
+                          handleDrop(e, tl.id)
+                        }}
+                        className={`group relative flex items-center gap-2 px-3 py-2 bg-white border rounded-xl hover:shadow-sm transition-all ${
+                          isDropTarget
+                            ? 'border-blue-500 border-2 bg-blue-50 shadow-md scale-105'
+                            : 'border-gray-200 hover:border-blue-300'
+                        }`}
+                        role="listitem"
+                      >
+                        <span className="text-lg" role="img" aria-hidden="true">{getLuggageIcon(tl)}</span>
+                        <span className="text-sm font-medium text-gray-700">{tl.luggage.name}</span>
+                        {itemCount > 0 && (
+                          <span className="text-xs text-gray-500">({itemCount})</span>
+                        )}
+                        <button
+                          onClick={() => handleRemoveLuggage(tl.id, tl.luggageId)}
+                          className="ml-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
+                          aria-label={`Remove ${tl.luggage.name} from trip`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )
+                  })}
+                  
+                  <button
+                    onClick={() => setShowLuggagePicker(true)}
+                    className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-dashed border-blue-300 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    aria-label="Add luggage to trip"
+                  >
+                    + Add bag
+                  </button>
+                </div>
+                
+                {tripLuggages.length === 0 ? (
+                  <p className="text-sm text-gray-500">Add luggage to organize your items by bag</p>
+                ) : (
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <span role="img" aria-label="Tip">💡</span>
+                    <span>Drag items to assign them to bags</span>
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
