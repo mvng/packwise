@@ -159,6 +159,16 @@ export default function DashboardPage() {
           </Link>
         </div>
 
+        {/* Weather availability note */}
+        {trips.length > 0 && (
+          <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 flex items-start gap-2">
+            <span className="text-blue-500 text-sm">🌤️</span>
+            <p className="text-xs text-blue-700 leading-relaxed">
+              Weather forecasts are shown for trips within 14 days of today. Hover over weather info for details.
+            </p>
+          </div>
+        )}
+
         {trips.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🧳</div>
