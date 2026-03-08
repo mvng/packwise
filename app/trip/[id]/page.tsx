@@ -1,40 +1,82 @@
-import { notFound } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { notFound, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import { prisma } from '@/lib/prisma'
+import { createClient } from '@/lib/supabase/client'
 import { getSharedTripById } from '@/actions/trip.actions'
 import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
+import EditTripModal from '@/components/EditTripModal'
 import { formatDate } from '@/lib/utils'
 
 interface TripPageProps {
   params: Promise<{ id: string }>
 }
 
-export default async function TripPage({ params }: TripPageProps) {
-  const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function TripPageClient({ params }: TripPageProps) {
+  const router = useRouter()
+  const [id, setId] = useState<string>('')
+  const [user, setUser] = useState<any>(null)
+  const [trip, setTrip] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [isOwner, setIsOwner] = useState(false)
+  const [editingTrip, setEditingTrip] = useState<any>(null)
 
-  // Use getSharedTripById for public access
-  const { trip, error } = await getSharedTripById(id)
-  if (error || !trip) {
-    notFound()
+  useEffect(() => {
+    async function init() {
+      const resolvedParams = await params
+      setId(resolvedParams.id)
+
+      const supabase = createClient()
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      setUser(authUser)
+
+      // Fetch trip
+      const { trip: fetchedTrip, error } = await getSharedTripById(resolvedParams.id)
+      if (error || !fetchedTrip) {
+        notFound()
+      }
+
+      setTrip(fetchedTrip)
+
+      // Check ownership
+      if (authUser) {
+        const response = await fetch('/api/check-trip-ownership', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tripId: resolvedParams.id, supabaseUserId: authUser.id })
+        })
+        const { isOwner: ownerStatus } = await response.json()
+        setIsOwner(ownerStatus)
+      }
+
+      setLoading(false)
+    }
+
+    init()
+  }, [params])
+
+  const handleEditSuccess = async () => {
+    setEditingTrip(null)
+    // Reload trip data
+    const { trip: fetchedTrip } = await getSharedTripById(id)
+    if (fetchedTrip) {
+      setTrip(fetchedTrip)
+    }
   }
 
-  // Determine if this is the owner or a shared view
-  let isOwner = false
-  if (user) {
-    // Get the Prisma user ID from Supabase user
-    const prismaUser = await prisma.user.findUnique({
-      where: { supabaseId: user.id },
-      select: { id: true }
-    })
-    
-    if (prismaUser) {
-      isOwner = prismaUser.id === trip.userId
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (!trip) {
+    notFound()
   }
 
   const isSharedView = !isOwner
@@ -42,11 +84,11 @@ export default async function TripPage({ params }: TripPageProps) {
   // For shared views, reset all items to unchecked
   const displayTrip = isSharedView ? {
     ...trip,
-    packingLists: trip.packingLists.map(list => ({
+    packingLists: trip.packingLists.map((list: any) => ({
       ...list,
-      categories: list.categories.map(cat => ({
+      categories: list.categories.map((cat: any) => ({
         ...cat,
-        items: cat.items.map(item => ({
+        items: cat.items.map((item: any) => ({
           ...item,
           isPacked: false
         }))
@@ -55,10 +97,10 @@ export default async function TripPage({ params }: TripPageProps) {
   } : trip
 
   const allItems = displayTrip.packingLists.flatMap(
-    (list) => list.categories.flatMap((cat) => cat.items)
+    (list: any) => list.categories.flatMap((cat: any) => cat.items)
   )
   const totalItems = allItems.length
-  const packedItems = allItems.filter((item) => item.isPacked).length
+  const packedItems = allItems.filter((item: any) => item.isPacked).length
   const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
 
   const getTripEmoji = (tripType: string) => {
@@ -192,15 +234,26 @@ export default async function TripPage({ params }: TripPageProps) {
                 )}
               </div>
             </div>
-            {!isSharedView && progress === 100 && (
-              <div className="text-right">
-                <div className="text-3xl mb-1">🎉</div>
-                <p className="text-xs text-green-600 font-medium">All packed!</p>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {!isSharedView && progress === 100 && (
+                <div className="text-right mr-2">
+                  <div className="text-3xl mb-1">🎉</div>
+                  <p className="text-xs text-green-600 font-medium">All packed!</p>
+                </div>
+              )}
+              {!isSharedView && (
+                <button
+                  onClick={() => setEditingTrip(trip)}
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                  aria-label="Edit trip"
+                >
+                  ✏️
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Weather information */}
+          {/* Enhanced Weather information */}
           {trip.destination && trip.startDate && trip.endDate && (
             <div className="mb-4">
               <TripWeather 
@@ -231,6 +284,15 @@ export default async function TripPage({ params }: TripPageProps) {
         {/* Packing lists */}
         <PackingListSection trip={displayTrip} readOnly={isSharedView} />
       </main>
+
+      {/* Edit Trip Modal */}
+      {editingTrip && (
+        <EditTripModal
+          trip={editingTrip}
+          onClose={() => setEditingTrip(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
     </div>
   )
 }
