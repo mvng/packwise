@@ -11,6 +11,7 @@ export interface DailyForecast {
   icon: string
   precipitation: number
   weatherCode: number
+  isExtended?: boolean  // Day is beyond trip end date
 }
 
 export interface DetailedWeatherData {
@@ -29,6 +30,8 @@ export interface DetailedWeatherData {
   cappedNote?: string
   availableDays?: number
   totalDays?: number
+  tripDays?: number  // Actual days of trip
+  extendedDays?: number  // Extra days fetched beyond trip
 }
 
 interface WeatherData {
@@ -131,7 +134,8 @@ export async function getCoordinates(location: string): Promise<GeocodingResult 
 
 /**
  * Get detailed weather forecast with daily breakdown
- * Automatically caps at 14 days from today
+ * Always fetches 14 days from start date (or until max forecast limit)
+ * Marks days beyond trip end date as "extended"
  */
 export async function getDetailedWeatherForecast(
   latitude: number,
@@ -141,28 +145,38 @@ export async function getDetailedWeatherForecast(
   locationName?: string
 ): Promise<DetailedWeatherData | null> {
   try {
-    // Cap end date at 14 days from today
+    // Calculate trip length
+    const tripDays = getDaysBetween(startDate, endDate)
+    
+    // Always try to fetch 14 days from start, or until max forecast limit
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const maxDate = new Date(today)
     maxDate.setDate(today.getDate() + MAX_FORECAST_DAYS)
     
+    // Fetch end date: 14 days from start, or maxDate, whichever is earlier
+    const idealFetchEnd = new Date(startDate)
+    idealFetchEnd.setDate(startDate.getDate() + MAX_FORECAST_DAYS - 1)
+    const fetchEndDate = idealFetchEnd < maxDate ? idealFetchEnd : maxDate
+    
     const originalEndDate = new Date(endDate)
-    const cappedEndDate = endDate > maxDate ? maxDate : endDate
-    const isCapped = endDate > maxDate
+    const isCapped = originalEndDate > maxDate
     
     const totalDays = getDaysBetween(startDate, originalEndDate)
-    const availableDays = getDaysBetween(startDate, cappedEndDate)
+    const availableDays = getDaysBetween(startDate, fetchEndDate)
+    const extendedDays = Math.max(0, getDaysBetween(originalEndDate, fetchEndDate) - 1)
     
     if (isCapped) {
-      console.log('[Weather] Trip extends beyond 14-day forecast. Capping to:', cappedEndDate.toISOString().split('T')[0])
+      console.log('[Weather] Trip extends beyond 14-day forecast. Capping to:', fetchEndDate.toISOString().split('T')[0])
+    } else {
+      console.log('[Weather] Fetching full 14-day forecast for', tripDays, 'day trip')
     }
     
     const start = startDate.toISOString().split('T')[0]
-    const end = cappedEndDate.toISOString().split('T')[0]
+    const end = fetchEndDate.toISOString().split('T')[0]
     
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&temperature_unit=fahrenheit&timezone=auto&start_date=${start}&end_date=${end}`
-    console.log('[Weather] Fetching detailed forecast:', { location: locationName, start, end, isCapped })
+    console.log('[Weather] Fetching detailed forecast:', { location: locationName, start, end, tripDays, extendedDays })
     
     const response = await fetch(url)
     
@@ -188,23 +202,31 @@ export async function getDetailedWeatherForecast(
       return null
     }
     
-    console.log('[Weather] Received', dates.length, 'days of forecast')
+    console.log('[Weather] Received', dates.length, 'days of forecast (', tripDays, 'trip days +', extendedDays, 'extended)')
     
-    // Build daily forecast array
-    const daily: DailyForecast[] = dates.map((date: string, index: number) => ({
-      date,
-      tempMax: Math.round(temps[index] || 0),
-      tempMin: Math.round(tempsMins[index] || 0),
-      condition: getWeatherCondition(weatherCodes[index] || 0),
-      icon: getWeatherIcon(weatherCodes[index] || 0),
-      precipitation: Math.round(precip[index] || 0),
-      weatherCode: weatherCodes[index] || 0
-    }))
+    // Build daily forecast array with extended marking
+    const daily: DailyForecast[] = dates.map((date: string, index: number) => {
+      const isExtended = new Date(date) > originalEndDate
+      return {
+        date,
+        tempMax: Math.round(temps[index] || 0),
+        tempMin: Math.round(tempsMins[index] || 0),
+        condition: getWeatherCondition(weatherCodes[index] || 0),
+        icon: getWeatherIcon(weatherCodes[index] || 0),
+        precipitation: Math.round(precip[index] || 0),
+        weatherCode: weatherCodes[index] || 0,
+        isExtended
+      }
+    })
     
-    // Calculate averages
-    const avgMax = temps.reduce((a: number, b: number) => a + b, 0) / temps.length
-    const avgMin = tempsMins.reduce((a: number, b: number) => a + b, 0) / tempsMins.length
-    const totalPrecip = precip.reduce((a: number, b: number) => a + b, 0)
+    // Calculate averages ONLY for trip days (not extended)
+    const tripDaily = daily.filter(d => !d.isExtended)
+    const tripTempsMax = tripDaily.map(d => d.tempMax)
+    const tripTempsMin = tripDaily.map(d => d.tempMin)
+    const tripPrecip = tripDaily.reduce((sum, d) => sum + d.precipitation, 0)
+    
+    const avgMax = tripTempsMax.reduce((a, b) => a + b, 0) / tripTempsMax.length
+    const avgMin = tripTempsMin.reduce((a, b) => a + b, 0) / tripTempsMin.length
     const dominantWeatherCode = weatherCodes[0] || 0
     
     const result: DetailedWeatherData = {
@@ -215,20 +237,22 @@ export async function getDetailedWeatherForecast(
       },
       condition: getWeatherCondition(dominantWeatherCode),
       icon: getWeatherIcon(dominantWeatherCode),
-      precipitation: Math.round(totalPrecip),
+      precipitation: Math.round(tripPrecip),
       humidity: 0,
       daily,
       location: locationName,
       isCapped,
       availableDays,
-      totalDays
+      totalDays,
+      tripDays,
+      extendedDays
     }
     
     if (isCapped) {
       result.cappedNote = `Weather forecast available for first ${availableDays} of ${totalDays} days`
     }
     
-    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '')
+    console.log('[Weather] Success:', result.temperature, result.condition, isCapped ? '(capped)' : '', `+ ${extendedDays} extended days`)
     return result
   } catch (error) {
     console.error('[Weather] Exception:', error)
