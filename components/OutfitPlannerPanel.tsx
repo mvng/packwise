@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import OutfitPlanner, { calcOutfitSummary, OutfitSummary } from './OutfitPlanner'
+import OutfitPlanner, { calcOutfitSummary, OutfitSummary, DayActivity } from './OutfitPlanner'
 import LaundryToggle from './LaundryToggle'
 import LuggageFitCheck from './LuggageFitCheck'
 import SmartOutfitSuggestions from './SmartOutfitSuggestions'
@@ -28,7 +28,7 @@ export default function OutfitPlannerPanel({
   avgTempF,
   tripType,
 }: OutfitPlannerPanelProps) {
-  const [days, setDays] = useState<any[]>([])
+  const [days, setDays] = useState<DayActivity[]>([])
   const [hasLaundry, setHasLaundry] = useState(false)
   const [laundryMidpoint, setLaundryMidpoint] = useState<string | undefined>()
 

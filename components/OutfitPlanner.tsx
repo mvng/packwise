@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 
-type ActivityType = 'casual' | 'outdoor' | 'formal'
+export type ActivityType = 'casual' | 'outdoor' | 'formal'
 
-interface DayActivity {
+export interface DayActivity {
   date: string
   label: string
-  type: ActivityType
+  types: ActivityType[]  // multiple activities per day
 }
 
 interface OutfitPlannerProps {
@@ -16,10 +16,10 @@ interface OutfitPlannerProps {
   onChange?: (days: DayActivity[]) => void
 }
 
-const ACTIVITY_OPTIONS: { type: ActivityType; label: string; emoji: string; color: string }[] = [
-  { type: 'casual', label: 'Casual', emoji: '👕', color: 'bg-gray-100 text-gray-700 border-gray-300' },
-  { type: 'outdoor', label: 'Outdoor / Sweaty', emoji: '🏃', color: 'bg-green-100 text-green-700 border-green-300' },
-  { type: 'formal', label: 'Formal / Event', emoji: '👔', color: 'bg-purple-100 text-purple-700 border-purple-300' },
+const ACTIVITY_OPTIONS: { type: ActivityType; label: string; emoji: string; activeColor: string }[] = [
+  { type: 'casual',  label: 'Casual',          emoji: '👕', activeColor: 'bg-gray-100 text-gray-700 border-gray-400' },
+  { type: 'outdoor', label: 'Outdoor / Sweaty', emoji: '🏃', activeColor: 'bg-green-100 text-green-700 border-green-400' },
+  { type: 'formal',  label: 'Formal / Event',   emoji: '👔', activeColor: 'bg-purple-100 text-purple-700 border-purple-400' },
 ]
 
 function getDaysBetween(start: string, end: string): string[] {
@@ -46,26 +46,32 @@ export interface OutfitSummary {
   totalDays: number
 }
 
-export function calcOutfitSummary(days: DayActivity[], hasLaundry: boolean, laundryMidpoint?: string): OutfitSummary {
+export function calcOutfitSummary(
+  days: DayActivity[],
+  hasLaundry: boolean,
+  laundryMidpoint?: string
+): OutfitSummary {
   const totalDays = days.length
-  let outdoor = days.filter(d => d.type === 'outdoor').length
-  let formal = days.filter(d => d.type === 'formal').length
-  let casual = days.filter(d => d.type === 'casual').length
+
+  // Count each activity type across all days (a day with outdoor+formal = 1 outdoor + 1 formal)
+  let outdoor = days.reduce((sum, d) => sum + (d.types.includes('outdoor') ? 1 : 0), 0)
+  let formal  = days.reduce((sum, d) => sum + (d.types.includes('formal')  ? 1 : 0), 0)
+  // Casual = days that have casual OR no formal/outdoor (pure casual days)
+  let casual  = days.reduce((sum, d) => sum + (d.types.includes('casual')  ? 1 : 0), 0)
 
   if (hasLaundry && laundryMidpoint) {
-    // Days after laundry can re-use, so halve casual & outdoor counts for that portion
     const afterLaundry = days.filter(d => d.date > laundryMidpoint)
-    const outdoorAfter = afterLaundry.filter(d => d.type === 'outdoor').length
-    const casualAfter = afterLaundry.filter(d => d.type === 'casual').length
+    const outdoorAfter = afterLaundry.filter(d => d.types.includes('outdoor')).length
+    const casualAfter  = afterLaundry.filter(d => d.types.includes('casual')).length
     outdoor = outdoor - Math.floor(outdoorAfter / 2)
-    casual = casual - Math.floor(casualAfter / 2)
+    casual  = casual  - Math.floor(casualAfter  / 2)
   }
 
   return {
-    casual: Math.max(1, casual),
-    outdoor: Math.max(0, outdoor),
-    formal: Math.max(0, formal),
-    underwear: totalDays + 1,
+    casual:     Math.max(1, casual),
+    outdoor:    Math.max(0, outdoor),
+    formal:     Math.max(0, formal),
+    underwear:  totalDays + 1,
     totalDays,
   }
 }
@@ -73,7 +79,7 @@ export function calcOutfitSummary(days: DayActivity[], hasLaundry: boolean, laun
 export default function OutfitPlanner({ startDate, endDate, onChange }: OutfitPlannerProps) {
   const dates = getDaysBetween(startDate, endDate)
   const [days, setDays] = useState<DayActivity[]>(
-    dates.map(date => ({ date, label: formatDayLabel(date), type: 'casual' }))
+    dates.map(date => ({ date, label: formatDayLabel(date), types: ['casual'] }))
   )
   const [expanded, setExpanded] = useState(false)
 
@@ -81,14 +87,26 @@ export default function OutfitPlanner({ startDate, endDate, onChange }: OutfitPl
     onChange?.(days)
   }, [days])
 
-  const setDayType = (index: number, type: ActivityType) => {
-    setDays(prev => prev.map((d, i) => i === index ? { ...d, type } : d))
+  const toggleDayType = (index: number, type: ActivityType) => {
+    setDays(prev => prev.map((d, i) => {
+      if (i !== index) return d
+      const has = d.types.includes(type)
+      let next: ActivityType[]
+      if (has) {
+        // Don't allow removing the last activity
+        next = d.types.length > 1 ? d.types.filter(t => t !== type) : d.types
+      } else {
+        next = [...d.types, type]
+      }
+      return { ...d, types: next }
+    }))
   }
 
+  const totalOutfits = days.reduce((sum, d) => sum + d.types.length, 0)
   const counts = {
-    casual: days.filter(d => d.type === 'casual').length,
-    outdoor: days.filter(d => d.type === 'outdoor').length,
-    formal: days.filter(d => d.type === 'formal').length,
+    casual:  days.filter(d => d.types.includes('casual')).length,
+    outdoor: days.filter(d => d.types.includes('outdoor')).length,
+    formal:  days.filter(d => d.types.includes('formal')).length,
   }
 
   return (
@@ -102,9 +120,10 @@ export default function OutfitPlanner({ startDate, endDate, onChange }: OutfitPl
           <div>
             <h3 className="font-semibold text-gray-900">Activity Day Planner</h3>
             <p className="text-xs text-gray-500">
-              {counts.outdoor > 0 && `${counts.outdoor} outdoor · `}
-              {counts.formal > 0 && `${counts.formal} formal · `}
-              {counts.casual} casual
+              {totalOutfits} outfit{totalOutfits !== 1 ? 's' : ''} total
+              {counts.outdoor > 0 && ` · ${counts.outdoor} outdoor`}
+              {counts.formal  > 0 && ` · ${counts.formal} formal`}
+              {counts.casual  > 0 && ` · ${counts.casual} casual`}
             </p>
           </div>
         </div>
@@ -112,24 +131,33 @@ export default function OutfitPlanner({ startDate, endDate, onChange }: OutfitPl
       </button>
 
       {expanded && (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-3">
+          <p className="text-xs text-gray-400">Select all activity types for each day — multiple allowed</p>
           {days.map((day, i) => (
-            <div key={day.date} className="flex items-center gap-3">
-              <span className="text-xs text-gray-500 w-28 shrink-0">{day.label}</span>
+            <div key={day.date} className="flex items-start gap-3">
+              <span className="text-xs text-gray-500 w-28 shrink-0 pt-1">{day.label}</span>
               <div className="flex gap-2 flex-wrap">
-                {ACTIVITY_OPTIONS.map(opt => (
-                  <button
-                    key={opt.type}
-                    onClick={() => setDayType(i, opt.type)}
-                    className={`px-3 py-1 text-xs rounded-full border font-medium transition-all ${
-                      day.type === opt.type
-                        ? opt.color + ' ring-2 ring-offset-1 ring-current'
-                        : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'
-                    }`}
-                  >
-                    {opt.emoji} {opt.label}
-                  </button>
-                ))}
+                {ACTIVITY_OPTIONS.map(opt => {
+                  const active = day.types.includes(opt.type)
+                  return (
+                    <button
+                      key={opt.type}
+                      onClick={() => toggleDayType(i, opt.type)}
+                      className={`px-3 py-1 text-xs rounded-full border font-medium transition-all ${
+                        active
+                          ? opt.activeColor + ' ring-2 ring-offset-1 ring-current'
+                          : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'
+                      }`}
+                    >
+                      {opt.emoji} {opt.label}
+                    </button>
+                  )
+                })}
+                {day.types.length > 1 && (
+                  <span className="text-xs text-gray-400 self-center">
+                    {day.types.length} outfits
+                  </span>
+                )}
               </div>
             </div>
           ))}
