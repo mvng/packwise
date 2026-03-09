@@ -117,16 +117,18 @@ model InventoryItem {
 }
 
 model Luggage {
-  id           String        @id @default(uuid())
-  userId       String        @map("user_id")
-  name         String
-  type         String
-  icon         String?
-  capacity     Int?
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tripLuggages TripLuggage[]
+  id             String        @id @default(uuid())
+  userId         String        @map("user_id")
+  name           String
+  type           String
+  icon           String?
+  capacity       Int?
+  // capacityLiters: volume in liters used by the Outfit Planner fit check
+  capacityLiters Float?        @map("capacity_liters")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tripLuggages   TripLuggage[]
 
   @@index([userId])
   @@map("luggage")
