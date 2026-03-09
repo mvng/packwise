@@ -10,6 +10,7 @@ import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
 import EditTripModal from '@/components/EditTripModal'
+import OutfitPlannerPanel from '@/components/OutfitPlannerPanel'
 import { formatDate } from '@/lib/utils'
 
 interface TripPageProps {
@@ -71,6 +72,7 @@ export default function TripPageClient({ params }: TripPageProps) {
   const [isOwner, setIsOwner] = useState(false)
   const [editingTrip, setEditingTrip] = useState<any>(null)
   const [tripTimezone, setTripTimezone] = useState<string | null>(null)
+  const [avgTempF, setAvgTempF] = useState<number | undefined>(undefined)
 
   useEffect(() => {
     async function init() {
@@ -89,7 +91,7 @@ export default function TripPageClient({ params }: TripPageProps) {
 
       setTrip(fetchedTrip)
 
-      // Fetch timezone if destination exists
+      // Fetch timezone and avg temp if destination exists
       if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
         const { weather } = await getTripWeather(
           fetchedTrip.destination,
@@ -98,6 +100,16 @@ export default function TripPageClient({ params }: TripPageProps) {
         )
         if (weather?.timezone) {
           setTripTimezone(weather.timezone)
+        }
+        // Extract avg temp for outfit suggestions
+        if (weather?.daily?.temperature_2m_max && weather?.daily?.temperature_2m_min) {
+          const maxTemps: number[] = weather.daily.temperature_2m_max
+          const minTemps: number[] = weather.daily.temperature_2m_min
+          const avgMax = maxTemps.reduce((a: number, b: number) => a + b, 0) / maxTemps.length
+          const avgMin = minTemps.reduce((a: number, b: number) => a + b, 0) / minTemps.length
+          // Convert Celsius to Fahrenheit
+          const avgCelsius = (avgMax + avgMin) / 2
+          setAvgTempF(Math.round(avgCelsius * 9 / 5 + 32))
         }
       }
 
@@ -379,6 +391,19 @@ export default function TripPageClient({ params }: TripPageProps) {
             </div>
           )}
         </div>
+
+        {/* Outfit Planner Panel - owner only */}
+        {!isSharedView && trip.startDate && trip.endDate && (
+          <div className="mb-6">
+            <OutfitPlannerPanel
+              startDate={trip.startDate}
+              endDate={trip.endDate}
+              tripLuggages={trip.tripLuggages}
+              avgTempF={avgTempF}
+              tripType={trip.tripType}
+            />
+          </div>
+        )}
 
         {/* Packing lists */}
         <PackingListSection 
