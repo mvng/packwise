@@ -12,7 +12,6 @@ import TripWeather from '@/components/TripWeather'
 import EditTripModal from '@/components/EditTripModal'
 import OutfitPlannerPanel from '@/components/OutfitPlannerPanel'
 import { formatDate } from '@/lib/utils'
-import type { AssignableItem } from '@/components/OutfitItemAssigner'
 
 interface TripPageProps {
   params: Promise<{ id: string }>
@@ -158,22 +157,6 @@ export default function TripPageClient({ params }: TripPageProps) {
   const packedItems = allItems.filter((item: any) => item.isPacked).length
   const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
 
-  // Flatten all packing items for OutfitItemAssigner (owner only, exclude packLast items)
-  const assignableItems: AssignableItem[] = !isSharedView
-    ? trip.packingLists.flatMap((list: any) =>
-        list.categories.flatMap((cat: any) =>
-          cat.items
-            .filter((item: any) => !item.packLast)
-            .map((item: any) => ({
-              id: item.id,
-              name: item.name,
-              quantity: item.quantity,
-              categoryName: cat.name,
-            }))
-        )
-      )
-    : []
-
   const getTripEmoji = (tripType: string) => {
     const icons: Record<string, string> = {
       beach: '🏖️', hiking: '🥾', city: '🏙️',
@@ -198,7 +181,6 @@ export default function TripPageClient({ params }: TripPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -257,7 +239,6 @@ export default function TripPageClient({ params }: TripPageProps) {
           </div>
         )}
 
-        {/* Trip info */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -324,22 +305,18 @@ export default function TripPageClient({ params }: TripPageProps) {
           )}
         </div>
 
-        {/* Outfit Planner Panel - owner only */}
         {!isSharedView && trip.startDate && trip.endDate && (
           <div className="mb-6">
             <OutfitPlannerPanel
-              tripId={id}
               startDate={trip.startDate}
               endDate={trip.endDate}
               tripLuggages={trip.tripLuggages}
               avgTempF={avgTempF}
               tripType={trip.tripType}
-              packingItems={assignableItems}
             />
           </div>
         )}
 
-        {/* Packing lists */}
         <PackingListSection
           trip={displayTrip}
           readOnly={isSharedView}
