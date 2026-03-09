@@ -12,6 +12,7 @@ import TripWeather from '@/components/TripWeather'
 import EditTripModal from '@/components/EditTripModal'
 import OutfitPlannerPanel from '@/components/OutfitPlannerPanel'
 import { formatDate } from '@/lib/utils'
+import type { AssignableItem } from '@/components/OutfitItemAssigner'
 
 interface TripPageProps {
   params: Promise<{ id: string }>
@@ -83,9 +84,7 @@ export default function TripPageClient({ params }: TripPageProps) {
           fetchedTrip.startDate,
           fetchedTrip.endDate
         )
-        if (weather?.timezone) {
-          setTripTimezone(weather.timezone)
-        }
+        if (weather?.timezone) setTripTimezone(weather.timezone)
         if (weather?.daily?.temperature_2m_max && weather?.daily?.temperature_2m_min) {
           const maxTemps: number[] = weather.daily.temperature_2m_max
           const minTemps: number[] = weather.daily.temperature_2m_min
@@ -137,10 +136,7 @@ export default function TripPageClient({ params }: TripPageProps) {
     )
   }
 
-  // Render 404 via state flag instead of calling notFound() inside useEffect
-  if (isNotFound || !trip) {
-    return notFound()
-  }
+  if (isNotFound || !trip) return notFound()
 
   const isSharedView = !isOwner
 
@@ -162,15 +158,26 @@ export default function TripPageClient({ params }: TripPageProps) {
   const packedItems = allItems.filter((item: any) => item.isPacked).length
   const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
 
+  // Flatten all packing items for OutfitItemAssigner (owner only, exclude packLast items)
+  const assignableItems: AssignableItem[] = !isSharedView
+    ? trip.packingLists.flatMap((list: any) =>
+        list.categories.flatMap((cat: any) =>
+          cat.items
+            .filter((item: any) => !item.packLast)
+            .map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              quantity: item.quantity,
+              categoryName: cat.name,
+            }))
+        )
+      )
+    : []
+
   const getTripEmoji = (tripType: string) => {
     const icons: Record<string, string> = {
-      beach: '🏖️',
-      hiking: '🥾',
-      city: '🏙️',
-      skiing: '⛷️',
-      ski: '⛷️',
-      business: '💼',
-      leisure: '🌴',
+      beach: '🏖️', hiking: '🥾', city: '🏙️',
+      skiing: '⛷️', ski: '⛷️', business: '💼', leisure: '🌴',
     }
     return icons[tripType] || '✈️'
   }
@@ -321,11 +328,13 @@ export default function TripPageClient({ params }: TripPageProps) {
         {!isSharedView && trip.startDate && trip.endDate && (
           <div className="mb-6">
             <OutfitPlannerPanel
+              tripId={id}
               startDate={trip.startDate}
               endDate={trip.endDate}
               tripLuggages={trip.tripLuggages}
               avgTempF={avgTempF}
               tripType={trip.tripType}
+              packingItems={assignableItems}
             />
           </div>
         )}
