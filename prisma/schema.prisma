@@ -76,6 +76,7 @@ model PackingItem {
   quantity      Int          @default(1)
   isPacked      Boolean      @default(false) @map("is_packed")
   isCustom      Boolean      @default(false) @map("is_custom")
+  packLast      Boolean      @default(false) @map("pack_last")
   order         Int          @default(0)
   tripLuggageId String?      @map("trip_luggage_id")
   category      Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -123,7 +124,6 @@ model Luggage {
   type           String
   icon           String?
   capacity       Int?
-  // capacityLiters: volume in liters used by the Outfit Planner fit check
   capacityLiters Float?        @map("capacity_liters")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
