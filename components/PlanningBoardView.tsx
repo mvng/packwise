@@ -24,7 +24,7 @@ import type { DayPlan, DayPlanItem } from '@/types'
 import type { InventoryItemData } from '@/types/inventory'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
 
-// ─── API helpers ─────────────────────────────────────────────────────────────────
+// ─── API helpers ──────────────────────────────────────────────────────────────
 
 async function apiUpsertDayPlan(tripId: string, date: string, label?: string) {
   const res = await fetch(`/api/day-plans/${tripId}`, {
@@ -76,7 +76,7 @@ async function apiSaveDayPlanItemsToInventory(dayPlanId: string) {
   return res.json()
 }
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PlanningBoardViewProps {
   trip: {
@@ -125,7 +125,7 @@ function formatColumnDate(date: Date): string {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-// ─── DraggableCard ──────────────────────────────────────────────────────────
+// ─── DraggableCard ────────────────────────────────────────────────────────────
 
 function DraggableCard({
   item,
@@ -150,36 +150,36 @@ function DraggableCard({
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white border border-gray-100 rounded-xl px-3 py-2 shadow-sm group cursor-grab active:cursor-grabbing relative"
+      className="bg-white border border-gray-100 rounded-lg px-2.5 py-1.5 shadow-sm group cursor-grab active:cursor-grabbing"
     >
-      <div className="flex items-start justify-between gap-1">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {item.quantity > 1 && (
-              <span className="text-xs text-gray-400 font-medium flex-shrink-0">{item.quantity}x</span>
-            )}
-            <span className="text-sm font-medium text-gray-800 truncate">{item.name}</span>
-          </div>
+      <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {item.quantity > 1 && (
+            <span className="text-[11px] text-gray-400 font-medium flex-shrink-0">{item.quantity}×</span>
+          )}
+          <span className="text-xs font-medium text-gray-800 truncate">{item.name}</span>
           {item.category && (
-            <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-1 ${getCategoryColor(item.category)}`}>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${getCategoryColor(item.category)}`}>
               {item.category}
             </span>
           )}
-          {item.notes && <p className="text-xs text-gray-400 mt-0.5 truncate">{item.notes}</p>}
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
-          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-opacity text-base leading-none flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
+          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-opacity text-sm leading-none flex-shrink-0 focus:outline-none rounded ml-1"
           aria-label="Delete item"
         >
           ×
         </button>
       </div>
+      {item.notes && (
+        <p className="text-[11px] text-gray-400 truncate mt-0.5 pl-0.5">{item.notes}</p>
+      )}
     </div>
   )
 }
 
-// ─── AddItemForm ────────────────────────────────────────────────────────────
+// ─── AddItemForm ──────────────────────────────────────────────────────────────
 
 function AddItemForm({
   onAdd,
@@ -210,45 +210,45 @@ function AddItemForm({
     }
   }
 
-  const inputCls = 'text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full'
+  const inputCls = 'text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full'
 
   if (!open) {
     return (
-      <div className="space-y-1">
-        <button onClick={() => setOpen(true)} className="text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+      <div className="flex items-center gap-3 pt-1">
+        <button onClick={() => setOpen(true)} className="text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none rounded">
           + Add item
         </button>
-        <div>
-          <button onClick={onOpenInventory} className="text-xs text-gray-400 hover:text-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
-            ＋ From Inventory
-          </button>
-        </div>
+        <button onClick={onOpenInventory} className="text-xs text-gray-400 hover:text-blue-500 transition-colors focus:outline-none rounded">
+          + From Inventory
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5 pt-1">
       {error && <p className="text-xs text-red-500">{error}</p>}
       <input autoFocus type="text" placeholder="Item name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }} className={inputCls} />
-      <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
-        <option>Outfit</option>
-        <option>Gear</option>
-        <option>Toiletries</option>
-        <option>Accessories</option>
-        <option>Other</option>
-      </select>
-      <input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className={inputCls} />
+      <div className="flex gap-1.5">
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
+          <option>Outfit</option>
+          <option>Gear</option>
+          <option>Toiletries</option>
+          <option>Accessories</option>
+          <option>Other</option>
+        </select>
+        <input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className={`${inputCls} w-16`} />
+      </div>
       <input type="text" placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} />
       <div className="flex items-center gap-2">
-        <button onClick={handleSubmit} className="bg-blue-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">Add</button>
+        <button onClick={handleSubmit} className="bg-blue-500 text-white rounded-lg px-2.5 py-1 text-xs font-medium hover:bg-blue-600 focus:outline-none">Add</button>
         <button onClick={() => { setOpen(false); setError(null) }} className="text-xs text-gray-400 hover:text-gray-600 focus:outline-none">Cancel</button>
       </div>
     </div>
   )
 }
 
-// ─── DayColumn ───────────────────────────────────────────────────────────────────
+// ─── DayColumn ────────────────────────────────────────────────────────────────
 
 function DayColumn({
   date,
@@ -318,7 +318,7 @@ function DayColumn({
     startTransition(async () => {
       const result = await apiSaveDayPlanItemsToInventory(dayPlan.id)
       if (result.saved != null) {
-        setToast('Saved to inventory ✓')
+        setToast('Saved ✓')
         setTimeout(() => setToast(null), 2500)
       }
     })
@@ -334,27 +334,45 @@ function DayColumn({
 
   return (
     <>
-      <div className="min-w-[85vw] sm:w-[268px] flex-shrink-0 flex flex-col">
-        <div className="bg-gray-100 rounded-t-2xl px-4 py-3">
-          <p className="text-sm font-semibold text-gray-800">{formatColumnDate(date)}</p>
-          <p className="text-xs text-gray-400">Day {dayIndex + 1}</p>
+      <div className="w-[200px] flex-shrink-0 flex flex-col">
+        {/* Column header */}
+        <div className="bg-gray-50 border border-gray-200 rounded-t-xl px-3 py-2">
+          <div className="flex items-baseline justify-between gap-1">
+            <p className="text-xs font-semibold text-gray-700 truncate">{formatColumnDate(date)}</p>
+            <span className="text-[10px] text-gray-400 flex-shrink-0">Day {dayIndex + 1}</span>
+          </div>
           {editingLabel ? (
-            <input autoFocus type="text" value={labelInput} onChange={(e) => setLabelInput(e.target.value)} onBlur={saveLabel} onKeyDown={(e) => { if (e.key === 'Enter') saveLabel() }} className="mt-1 text-xs w-full bg-white border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input
+              autoFocus
+              type="text"
+              value={labelInput}
+              onChange={(e) => setLabelInput(e.target.value)}
+              onBlur={saveLabel}
+              onKeyDown={(e) => { if (e.key === 'Enter') saveLabel() }}
+              className="mt-1 text-[11px] w-full bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           ) : (
-            <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+            <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none rounded">
               {dayPlan?.label
-                ? <span className="text-xs text-gray-600 font-medium">{dayPlan.label}</span>
-                : <span className="text-xs text-gray-300 italic">+ Add label</span>}
+                ? <span className="text-[11px] text-gray-500 font-medium">{dayPlan.label}</span>
+                : <span className="text-[11px] text-gray-300 italic">+ label</span>}
             </button>
           )}
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-b-2xl shadow-sm flex flex-col flex-1">
-          <div className="flex-1 overflow-y-auto max-h-[58vh] p-3 space-y-2">
+        {/* Column body */}
+        <div className="bg-white border border-t-0 border-gray-200 rounded-b-xl flex flex-col flex-1">
+          <div className="flex-1 overflow-y-auto max-h-[55vh] p-2 space-y-1">
             <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <AnimatePresence initial={false}>
                 {items.map((item) => (
-                  <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.15 }}>
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.1 }}
+                  >
                     <DraggableCard item={item} onDelete={handleDeleteItem} />
                   </motion.div>
                 ))}
@@ -362,12 +380,12 @@ function DayColumn({
             </SortableContext>
           </div>
 
-          <div className="px-3 pb-3 space-y-2">
+          <div className="px-2 pb-2">
             {items.length > 0 && (
-              <div>
+              <div className="mb-1">
                 {toast
-                  ? <p className="text-xs text-indigo-500 py-1">{toast}</p>
-                  : <button onClick={handleSaveToInventory} className="text-xs text-gray-400 hover:text-indigo-600 font-medium transition-colors w-full text-left py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">↓ Save to Inventory</button>
+                  ? <p className="text-[11px] text-indigo-500">{toast}</p>
+                  : <button onClick={handleSaveToInventory} className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors focus:outline-none">↓ Save to inventory</button>
                 }
               </div>
             )}
@@ -388,7 +406,7 @@ function DayColumn({
   )
 }
 
-// ─── PlanningBoardView ───────────────────────────────────────────────────────
+// ─── PlanningBoardView ────────────────────────────────────────────────────────
 
 export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
   const days = generateDays(trip.startDate, trip.endDate)
@@ -471,7 +489,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="w-full overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
-        <div className="inline-flex gap-3 pb-4 px-1 min-w-max">
+        <div className="inline-flex gap-2 pb-4 px-1 min-w-max">
           {days.map((date, index) => {
             const key = toDateKey(date)
             return (
@@ -489,8 +507,8 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
       </div>
       <DragOverlay>
         {activeItem ? (
-          <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg opacity-90 w-[240px]">
-            <span className="text-sm font-medium text-gray-800">{activeItem.name}</span>
+          <div className="bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-lg opacity-90 w-[180px]">
+            <span className="text-xs font-medium text-gray-800">{activeItem.name}</span>
           </div>
         ) : null}
       </DragOverlay>
