@@ -22,15 +22,59 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import type { DayPlan, DayPlanItem } from '@/types'
 import type { InventoryItemData } from '@/types/inventory'
-import {
-  upsertDayPlan,
-  addDayPlanItem,
-  deleteDayPlanItem,
-  reorderDayPlanItems,
-  moveDayPlanItem,
-  saveDayPlanItemsToInventory,
-} from '@/actions/day-plan.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
+
+// ─── API helpers ─────────────────────────────────────────────────────────────────
+
+async function apiUpsertDayPlan(tripId: string, date: string, label?: string) {
+  const res = await fetch(`/api/day-plans/${tripId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date, label }),
+  })
+  return res.json()
+}
+
+async function apiAddDayPlanItem(
+  dayPlanId: string,
+  item: { name: string; category?: string | null; quantity?: number; notes?: string | null }
+) {
+  const res = await fetch('/api/day-plan-items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dayPlanId, ...item }),
+  })
+  return res.json()
+}
+
+async function apiDeleteDayPlanItem(itemId: string) {
+  await fetch(`/api/day-plan-items/${itemId}`, { method: 'DELETE' })
+}
+
+async function apiReorderDayPlanItems(dayPlanId: string, orderedIds: string[]) {
+  await fetch('/api/day-plan-items/reorder', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dayPlanId, orderedIds }),
+  })
+}
+
+async function apiMoveDayPlanItem(itemId: string, dayPlanId: string, order: number) {
+  await fetch(`/api/day-plan-items/${itemId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dayPlanId, order }),
+  })
+}
+
+async function apiSaveDayPlanItemsToInventory(dayPlanId: string) {
+  const res = await fetch('/api/day-plan-items/save-to-inventory', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dayPlanId }),
+  })
+  return res.json()
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -57,14 +101,13 @@ function getCategoryColor(category?: string | null) {
     : 'bg-gray-100 text-gray-600'
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function generateDays(startDate: Date | string, endDate: Date | string): Date[] {
   const start = new Date(startDate)
   start.setHours(0, 0, 0, 0)
   const end = new Date(endDate)
   end.setHours(0, 0, 0, 0)
-
   const days: Date[] = []
   const cursor = new Date(start)
   while (cursor <= end) {
@@ -82,15 +125,13 @@ function formatColumnDate(date: Date): string {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-// ─── DraggableCard ────────────────────────────────────────────────────────────
+// ─── DraggableCard ──────────────────────────────────────────────────────────
 
 function DraggableCard({
   item,
-  tripId,
   onDelete,
 }: {
   item: DayPlanItem
-  tripId: string
   onDelete: (itemId: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -115,30 +156,19 @@ function DraggableCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             {item.quantity > 1 && (
-              <span className="text-xs text-gray-400 font-medium flex-shrink-0">
-                {item.quantity}x
-              </span>
+              <span className="text-xs text-gray-400 font-medium flex-shrink-0">{item.quantity}x</span>
             )}
             <span className="text-sm font-medium text-gray-800 truncate">{item.name}</span>
           </div>
           {item.category && (
-            <span
-              className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-1 ${getCategoryColor(
-                item.category
-              )}`}
-            >
+            <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-1 ${getCategoryColor(item.category)}`}>
               {item.category}
             </span>
           )}
-          {item.notes && (
-            <p className="text-xs text-gray-400 mt-0.5 truncate">{item.notes}</p>
-          )}
+          {item.notes && <p className="text-xs text-gray-400 mt-0.5 truncate">{item.notes}</p>}
         </div>
         <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(item.id)
-          }}
+          onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
           className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-opacity text-base leading-none flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
           aria-label="Delete item"
         >
@@ -149,7 +179,7 @@ function DraggableCard({
   )
 }
 
-// ─── AddItemForm ───────────────────────────────────────────────────────────────
+// ─── AddItemForm ────────────────────────────────────────────────────────────
 
 function AddItemForm({
   onAdd,
@@ -180,23 +210,16 @@ function AddItemForm({
     }
   }
 
-  const inputCls =
-    'text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full'
+  const inputCls = 'text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full'
 
   if (!open) {
     return (
       <div className="space-y-1">
-        <button
-          onClick={() => setOpen(true)}
-          className="text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-        >
+        <button onClick={() => setOpen(true)} className="text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
           + Add item
         </button>
         <div>
-          <button
-            onClick={onOpenInventory}
-            className="text-xs text-gray-400 hover:text-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-          >
+          <button onClick={onOpenInventory} className="text-xs text-gray-400 hover:text-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
             ＋ From Inventory
           </button>
         </div>
@@ -207,64 +230,25 @@ function AddItemForm({
   return (
     <div className="space-y-2">
       {error && <p className="text-xs text-red-500">{error}</p>}
-      <input
-        autoFocus
-        type="text"
-        placeholder="Item name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSubmit()
-        }}
-        className={inputCls}
-      />
-      <select
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-        className={inputCls}
-      >
+      <input autoFocus type="text" placeholder="Item name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }} className={inputCls} />
+      <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
         <option>Outfit</option>
         <option>Gear</option>
         <option>Toiletries</option>
         <option>Accessories</option>
         <option>Other</option>
       </select>
-      <input
-        type="number"
-        min={1}
-        value={quantity}
-        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-        className={inputCls}
-      />
-      <input
-        type="text"
-        placeholder="Notes (optional)"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        className={inputCls}
-      />
+      <input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className={inputCls} />
+      <input type="text" placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} />
       <div className="flex items-center gap-2">
-        <button
-          onClick={handleSubmit}
-          className="bg-blue-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          Add
-        </button>
-        <button
-          onClick={() => {
-            setOpen(false)
-            setError(null)
-          }}
-          className="text-xs text-gray-400 hover:text-gray-600 focus:outline-none"
-        >
-          Cancel
-        </button>
+        <button onClick={handleSubmit} className="bg-blue-500 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">Add</button>
+        <button onClick={() => { setOpen(false); setError(null) }} className="text-xs text-gray-400 hover:text-gray-600 focus:outline-none">Cancel</button>
       </div>
     </div>
   )
 }
 
-// ─── DayColumn ────────────────────────────────────────────────────────────────
+// ─── DayColumn ───────────────────────────────────────────────────────────────────
 
 function DayColumn({
   date,
@@ -292,75 +276,48 @@ function DayColumn({
 
   async function saveLabel() {
     setEditingLabel(false)
-    const result = await upsertDayPlan(tripId, dateKey, labelInput || undefined)
-    if ('dayPlan' in result) {
-      onDayPlanChange(dateKey, result.dayPlan as unknown as DayPlan)
-    }
+    const result = await apiUpsertDayPlan(tripId, dateKey, labelInput || undefined)
+    if (result.dayPlan) onDayPlanChange(dateKey, result.dayPlan)
   }
 
-  async function handleAddItem(
-    item: Omit<DayPlanItem, 'id' | 'dayPlanId' | 'order'>
-  ) {
+  async function handleAddItem(item: Omit<DayPlanItem, 'id' | 'dayPlanId' | 'order'>) {
     let targetDayPlan = dayPlan
 
     if (!targetDayPlan) {
-      const result = await upsertDayPlan(tripId, dateKey)
-      if ('error' in result) throw new Error(result.error)
-      targetDayPlan = result.dayPlan as unknown as DayPlan
+      const result = await apiUpsertDayPlan(tripId, dateKey)
+      if (result.error) throw new Error(result.error)
+      targetDayPlan = result.dayPlan
       onDayPlanChange(dateKey, targetDayPlan)
     }
 
     const tempId = `temp-${Date.now()}`
-    const tempItem: DayPlanItem = {
-      id: tempId,
-      dayPlanId: targetDayPlan.id,
-      order: targetDayPlan.items?.length ?? 0,
-      ...item,
-    }
-
     const optimistic: DayPlan = {
       ...targetDayPlan,
-      items: [...(targetDayPlan.items ?? []), tempItem],
+      items: [...(targetDayPlan.items ?? []), { id: tempId, dayPlanId: targetDayPlan.id, order: targetDayPlan.items?.length ?? 0, ...item }],
     }
     onDayPlanChange(dateKey, optimistic)
 
     startTransition(async () => {
-      const result = await addDayPlanItem(targetDayPlan!.id, item)
-      if ('error' in result) {
-        const rollback: DayPlan = {
-          ...optimistic,
-          items: optimistic.items.filter((i) => i.id !== tempId),
-        }
-        onDayPlanChange(dateKey, rollback)
+      const result = await apiAddDayPlanItem(targetDayPlan!.id, item)
+      if (result.error) {
+        onDayPlanChange(dateKey, { ...optimistic, items: optimistic.items.filter((i) => i.id !== tempId) })
         return
       }
-      const withReal: DayPlan = {
-        ...optimistic,
-        items: optimistic.items.map((i) =>
-          i.id === tempId ? (result.item as unknown as DayPlanItem) : i
-        ),
-      }
-      onDayPlanChange(dateKey, withReal)
+      onDayPlanChange(dateKey, { ...optimistic, items: optimistic.items.map((i) => i.id === tempId ? result.item : i) })
     })
   }
 
   function handleDeleteItem(itemId: string) {
     if (!dayPlan) return
-    const optimistic: DayPlan = {
-      ...dayPlan,
-      items: dayPlan.items.filter((i) => i.id !== itemId),
-    }
-    onDayPlanChange(dateKey, optimistic)
-    startTransition(async () => {
-      await deleteDayPlanItem(itemId, tripId)
-    })
+    onDayPlanChange(dateKey, { ...dayPlan, items: dayPlan.items.filter((i) => i.id !== itemId) })
+    startTransition(async () => { await apiDeleteDayPlanItem(itemId) })
   }
 
   function handleSaveToInventory() {
     if (!dayPlan) return
     startTransition(async () => {
-      const result = await saveDayPlanItemsToInventory(dayPlan.id)
-      if ('saved' in result) {
+      const result = await apiSaveDayPlanItemsToInventory(dayPlan.id)
+      if (result.saved != null) {
         setToast('Saved to inventory ✓')
         setTimeout(() => setToast(null), 2500)
       }
@@ -369,12 +326,7 @@ function DayColumn({
 
   async function handleInventoryItems(invItems: InventoryItemData[]) {
     for (const item of invItems) {
-      await handleAddItem({
-        name: item.name,
-        category: null,
-        quantity: item.quantity,
-        notes: item.notes ?? null,
-      })
+      await handleAddItem({ name: item.name, category: null, quantity: item.quantity, notes: item.notes ?? null })
     }
   }
 
@@ -383,84 +335,43 @@ function DayColumn({
   return (
     <>
       <div className="min-w-[85vw] sm:w-[268px] flex-shrink-0 flex flex-col">
-        {/* Column header */}
         <div className="bg-gray-100 rounded-t-2xl px-4 py-3">
           <p className="text-sm font-semibold text-gray-800">{formatColumnDate(date)}</p>
           <p className="text-xs text-gray-400">Day {dayIndex + 1}</p>
           {editingLabel ? (
-            <input
-              autoFocus
-              type="text"
-              value={labelInput}
-              onChange={(e) => setLabelInput(e.target.value)}
-              onBlur={saveLabel}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveLabel()
-              }}
-              className="mt-1 text-xs w-full bg-white border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <input autoFocus type="text" value={labelInput} onChange={(e) => setLabelInput(e.target.value)} onBlur={saveLabel} onKeyDown={(e) => { if (e.key === 'Enter') saveLabel() }} className="mt-1 text-xs w-full bg-white border border-gray-200 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           ) : (
-            <button
-              onClick={() => setEditingLabel(true)}
-              className="mt-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-            >
-              {dayPlan?.label ? (
-                <span className="text-xs text-gray-600 font-medium">{dayPlan.label}</span>
-              ) : (
-                <span className="text-xs text-gray-300 italic">+ Add label</span>
-              )}
+            <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
+              {dayPlan?.label
+                ? <span className="text-xs text-gray-600 font-medium">{dayPlan.label}</span>
+                : <span className="text-xs text-gray-300 italic">+ Add label</span>}
             </button>
           )}
         </div>
 
-        {/* Column body */}
         <div className="bg-white border border-gray-100 rounded-b-2xl shadow-sm flex flex-col flex-1">
-          {/* Card list */}
           <div className="flex-1 overflow-y-auto max-h-[58vh] p-3 space-y-2">
-            <SortableContext
-              items={items.map((i) => i.id)}
-              strategy={verticalListSortingStrategy}
-            >
+            <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <AnimatePresence initial={false}>
                 {items.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    <DraggableCard
-                      item={item}
-                      tripId={tripId}
-                      onDelete={handleDeleteItem}
-                    />
+                  <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.15 }}>
+                    <DraggableCard item={item} onDelete={handleDeleteItem} />
                   </motion.div>
                 ))}
               </AnimatePresence>
             </SortableContext>
           </div>
 
-          {/* Footer */}
           <div className="px-3 pb-3 space-y-2">
             {items.length > 0 && (
               <div>
-                {toast ? (
-                  <p className="text-xs text-indigo-500 py-1">{toast}</p>
-                ) : (
-                  <button
-                    onClick={handleSaveToInventory}
-                    className="text-xs text-gray-400 hover:text-indigo-600 font-medium transition-colors w-full text-left py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-                  >
-                    ↓ Save to Inventory
-                  </button>
-                )}
+                {toast
+                  ? <p className="text-xs text-indigo-500 py-1">{toast}</p>
+                  : <button onClick={handleSaveToInventory} className="text-xs text-gray-400 hover:text-indigo-600 font-medium transition-colors w-full text-left py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">↓ Save to Inventory</button>
+                }
               </div>
             )}
-            <AddItemForm
-              onAdd={handleAddItem}
-              onOpenInventory={() => setShowInventoryPicker(true)}
-            />
+            <AddItemForm onAdd={handleAddItem} onOpenInventory={() => setShowInventoryPicker(true)} />
           </div>
         </div>
       </div>
@@ -477,7 +388,7 @@ function DayColumn({
   )
 }
 
-// ─── PlanningBoardView ────────────────────────────────────────────────────────
+// ─── PlanningBoardView ───────────────────────────────────────────────────────
 
 export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
   const days = generateDays(trip.startDate, trip.endDate)
@@ -508,9 +419,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     setDayPlans((prev) => ({ ...prev, [dateKey]: updated }))
   }, [])
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  )
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   function findColumnKeyForItem(itemId: string): string | null {
     for (const [key, dp] of Object.entries(dayPlans)) {
@@ -530,71 +439,38 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
 
     const sourceKey = findColumnKeyForItem(active.id as string)
     const destKey = findColumnKeyForItem(over.id as string)
-
     if (!sourceKey) return
+
     const sourcePlan = dayPlans[sourceKey]
 
     if (!destKey || sourceKey === destKey) {
       const oldIndex = sourcePlan.items.findIndex((i) => i.id === active.id)
       const newIndex = sourcePlan.items.findIndex((i) => i.id === over.id)
       if (oldIndex === -1 || newIndex === -1) return
-
-      const reordered = arrayMove(sourcePlan.items, oldIndex, newIndex).map((item, idx) => ({
-        ...item,
-        order: idx,
-      }))
-      setDayPlans((prev) => ({
-        ...prev,
-        [sourceKey]: { ...sourcePlan, items: reordered },
-      }))
-      startTransition(async () => {
-        await reorderDayPlanItems(sourcePlan.id, reordered.map((i) => i.id), trip.id)
-      })
+      const reordered = arrayMove(sourcePlan.items, oldIndex, newIndex).map((item, idx) => ({ ...item, order: idx }))
+      setDayPlans((prev) => ({ ...prev, [sourceKey]: { ...sourcePlan, items: reordered } }))
+      startTransition(async () => { await apiReorderDayPlanItems(sourcePlan.id, reordered.map((i) => i.id)) })
     } else {
       const destPlan = dayPlans[destKey]
       const movingItem = sourcePlan.items.find((i) => i.id === active.id)
       if (!movingItem || !destPlan) return
-
       const newOrder = destPlan.items.length
-      const updatedSource: DayPlan = {
-        ...sourcePlan,
-        items: sourcePlan.items.filter((i) => i.id !== active.id),
-      }
-      const updatedDest: DayPlan = {
-        ...destPlan,
-        items: [
-          ...destPlan.items,
-          { ...movingItem, dayPlanId: destPlan.id, order: newOrder },
-        ],
-      }
       setDayPlans((prev) => ({
         ...prev,
-        [sourceKey]: updatedSource,
-        [destKey]: updatedDest,
+        [sourceKey]: { ...sourcePlan, items: sourcePlan.items.filter((i) => i.id !== active.id) },
+        [destKey]: { ...destPlan, items: [...destPlan.items, { ...movingItem, dayPlanId: destPlan.id, order: newOrder }] },
       }))
-      startTransition(async () => {
-        await moveDayPlanItem(active.id as string, destPlan.id, newOrder, trip.id)
-      })
+      startTransition(async () => { await apiMoveDayPlanItem(active.id as string, destPlan.id, newOrder) })
     }
   }
 
   const activeItem = activeId
-    ? Object.values(dayPlans)
-        .flatMap((dp) => dp.items)
-        .find((i) => i.id === activeId)
+    ? Object.values(dayPlans).flatMap((dp) => dp.items).find((i) => i.id === activeId)
     : null
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div
-        className="w-full overflow-x-auto"
-        style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
-      >
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="w-full overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
         <div className="inline-flex gap-3 pb-4 px-1 min-w-max">
           {days.map((date, index) => {
             const key = toDateKey(date)
@@ -611,7 +487,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
           })}
         </div>
       </div>
-
       <DragOverlay>
         {activeItem ? (
           <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg opacity-90 w-[240px]">
