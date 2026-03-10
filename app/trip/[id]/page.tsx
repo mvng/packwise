@@ -226,31 +226,20 @@ export default function TripPageClient({ params }: TripPageProps) {
                     )}
                   </div>
                 )}
-                {totalItems > 0 && (
-                  <p className="text-xs text-gray-400 mt-1">{totalItems} item{totalItems !== 1 ? 's' : ''} in this list</p>
-                )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {!isSharedView && progress === 100 && (
-                <div className="text-right mr-2">
-                  <div className="text-3xl mb-1">🎉</div>
-                  <p className="text-xs text-green-600 font-medium">All packed!</p>
-                </div>
-              )}
-              {!isSharedView && (
-                <button
-                  onClick={() => setEditingTrip(trip)}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <circle cx="10" cy="3" r="1.5" />
-                    <circle cx="10" cy="10" r="1.5" />
-                    <circle cx="10" cy="17" r="1.5" />
-                  </svg>
-                </button>
-              )}
-            </div>
+            {!isSharedView && (
+              <button
+                onClick={() => setEditingTrip(trip)}
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <circle cx="10" cy="3" r="1.5" />
+                  <circle cx="10" cy="10" r="1.5" />
+                  <circle cx="10" cy="17" r="1.5" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Countdown banner */}
@@ -261,21 +250,7 @@ export default function TripPageClient({ params }: TripPageProps) {
           )}
 
           {trip.destination && trip.startDate && trip.endDate && (
-            <div className="mb-4">
-              <TripWeather destination={trip.destination} startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
-            </div>
-          )}
-
-          {!isSharedView && totalItems > 0 && (
-            <div>
-              <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                <span>Packing progress</span>
-                <span className="font-medium text-gray-700">{progress}%</span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-2 bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
-              </div>
-            </div>
+            <TripWeather destination={trip.destination} startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
           )}
         </div>
 
