@@ -287,6 +287,7 @@ function DayColumn({
       const result = await apiUpsertDayPlan(tripId, dateKey)
       if (result.error) throw new Error(result.error)
       targetDayPlan = result.dayPlan
+      if (!targetDayPlan) throw new Error('Day plan not returned from server')
       onDayPlanChange(dateKey, targetDayPlan)
     }
 
