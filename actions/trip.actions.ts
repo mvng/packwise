@@ -5,34 +5,19 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { generatePackingList } from '@/utils/packingGenerator'
-import { CreateTripInput, TripType } from '@/types'
+import { CreateTripInput, TripType, TransportMode } from '@/types'
 import { getTripDuration } from '@/lib/utils'
 
-/**
- * Returns the PRISMA User.id (not the Supabase auth UUID) so that the
- * Trip.userId foreign key constraint is satisfied.
- *
- * Priority:
- * 1. supabase.auth.getUser()  — validates JWT with Supabase API (most secure)
- * 2. supabase.auth.getSession() — reads local cookie, no network call
- *    (fallback when Supabase project is paused or API is unreachable)
- * 3. guest_user_id cookie      — for demo/guest users
- *
- * When a Supabase user is found, a Prisma User row is upserted so that
- * the Trip.userId FK constraint (which references User.id) is satisfied.
- */
 async function getUserId(): Promise<string | null> {
   const supabase = await createClient()
 
   let authUser: any = null
 
-  // 1. Try getUser() — validates with Supabase API
   try {
     const { data: { user } } = await supabase.auth.getUser()
     authUser = user
   } catch {}
 
-  // 2. Fall back to getSession() if getUser() failed (e.g. project paused)
   if (!authUser) {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -41,8 +26,6 @@ async function getUserId(): Promise<string | null> {
   }
 
   if (authUser) {
-    // Upsert the Prisma User row so Trip.userId FK constraint is satisfied.
-    // Trip.userId references User.id (Prisma UUID), not supabase user.id.
     const prismaUser = await prisma.user.upsert({
       where: { supabaseId: authUser.id },
       create: {
@@ -61,7 +44,6 @@ async function getUserId(): Promise<string | null> {
     return prismaUser.id
   }
 
-  // 3. Fall back to guest mode
   const cookieStore = await cookies()
   const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
   if (isGuestMode) {
@@ -79,6 +61,7 @@ export async function createTrip(input: CreateTripInput) {
     const startDate = input.startDate ?? new Date()
     const endDate = input.endDate ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     const tripType = input.tripType as TripType
+    const transportMode = (input.transportMode ?? null) as TransportMode | null
 
     const trip = await prisma.trip.create({
       data: {
@@ -88,13 +71,14 @@ export async function createTrip(input: CreateTripInput) {
         startDate,
         endDate,
         tripType,
+        transportMode,
         notes: input.notes,
       },
     })
 
     if (input.generateSuggestions) {
       const duration = getTripDuration(startDate, endDate)
-      const categories = generatePackingList(tripType, duration)
+      const categories = generatePackingList(tripType, duration, transportMode)
 
       const packingList = await prisma.packingList.create({
         data: { tripId: trip.id, name: 'Main Packing List' },
@@ -116,11 +100,9 @@ export async function createTrip(input: CreateTripInput) {
     return { success: true, tripId: trip.id }
   } catch (error: any) {
     console.error('Create trip error:', error)
-
     if (error.code === 'P2003') {
       return { error: 'Failed to create trip due to a database configuration issue. Please try again or contact support.' }
     }
-
     return { error: error.message || 'Failed to create trip' }
   }
 }
@@ -133,6 +115,7 @@ export async function updateTrip(
     startDate?: Date | null
     endDate?: Date | null
     tripType?: string | null
+    transportMode?: string | null
     notes?: string | null
   }
 ) {
@@ -140,7 +123,6 @@ export async function updateTrip(
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized' }
 
-    // Verify user owns this trip
     const existingTrip = await prisma.trip.findFirst({
       where: { id: tripId, userId }
     })
@@ -155,6 +137,7 @@ export async function updateTrip(
         startDate: input.startDate ?? undefined,
         endDate: input.endDate ?? undefined,
         tripType: input.tripType ?? undefined,
+        transportMode: input.transportMode ?? null,
         notes: input.notes ?? undefined
       }
     })
@@ -218,44 +201,23 @@ export async function deleteTrip(tripId: string) {
   }
 }
 
-/**
- * Get a trip by ID without authentication requirement (for public sharing).
- * This allows unauthenticated users to view shared trips with luggage assignments and owner info.
- */
 export async function getSharedTripById(tripId: string) {
   try {
     const trip = await prisma.trip.findUnique({
       where: { id: tripId },
       include: {
-        user: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
+        user: { select: { name: true, email: true } },
         tripLuggages: {
-          include: {
-            luggage: true
-          },
-          where: {
-            isActive: true
-          },
-          orderBy: {
-            createdAt: 'asc'
-          }
+          include: { luggage: true },
+          where: { isActive: true },
+          orderBy: { createdAt: 'asc' }
         },
         packingLists: {
           include: {
             categories: {
               include: {
                 items: {
-                  include: {
-                    tripLuggage: {
-                      include: {
-                        luggage: true
-                      }
-                    }
-                  },
+                  include: { tripLuggage: { include: { luggage: true } } },
                   orderBy: { order: 'asc' }
                 }
               },
@@ -274,46 +236,26 @@ export async function getSharedTripById(tripId: string) {
   }
 }
 
-/**
- * Fork (copy) a trip from another user to the current user's account.
- * All packing lists, categories, and items are duplicated.
- * Luggage assignments are not copied.
- * 
- * @param sourceTripId - The ID of the trip to copy
- * @param localStorageState - Optional: localStorage state from anonymous viewer with item IDs mapped to packed status
- */
 export async function forkTrip(
-  sourceTripId: string, 
+  sourceTripId: string,
   localStorageState?: Record<string, boolean> | null
 ) {
   try {
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized', requiresAuth: true }
 
-    // Fetch the source trip without user restriction (public access)
     const sourceTrip = await prisma.trip.findUnique({
       where: { id: sourceTripId },
       include: {
         packingLists: {
-          include: {
-            categories: {
-              include: {
-                items: true
-              }
-            }
-          }
+          include: { categories: { include: { items: true } } }
         }
       }
     })
 
     if (!sourceTrip) return { error: 'Trip not found' }
+    if (sourceTrip.userId === userId) return { error: 'You already own this trip', alreadyOwned: true }
 
-    // Check if user already owns this trip
-    if (sourceTrip.userId === userId) {
-      return { error: 'You already own this trip', alreadyOwned: true }
-    }
-
-    // Create a new trip for the current user
     const newTrip = await prisma.trip.create({
       data: {
         userId,
@@ -322,42 +264,31 @@ export async function forkTrip(
         startDate: sourceTrip.startDate,
         endDate: sourceTrip.endDate,
         tripType: sourceTrip.tripType,
+        transportMode: sourceTrip.transportMode,
         notes: sourceTrip.notes,
       }
     })
 
-    // Copy all packing lists, categories, and items
     for (const sourceList of sourceTrip.packingLists) {
       const newList = await prisma.packingList.create({
-        data: {
-          tripId: newTrip.id,
-          name: sourceList.name
-        }
+        data: { tripId: newTrip.id, name: sourceList.name }
       })
 
       for (const sourceCategory of sourceList.categories) {
         const newCategory = await prisma.category.create({
-          data: {
-            packingListId: newList.id,
-            name: sourceCategory.name,
-            order: sourceCategory.order
-          }
+          data: { packingListId: newList.id, name: sourceCategory.name, order: sourceCategory.order }
         })
 
-        // Copy items with isPacked from localStorage if provided, otherwise reset to false
         for (const sourceItem of sourceCategory.items) {
-          // Check if localStorage has a packed state for this item
           const isPacked = localStorageState?.[sourceItem.id] ?? false
-          
           await prisma.packingItem.create({
             data: {
               categoryId: newCategory.id,
               name: sourceItem.name,
               quantity: sourceItem.quantity,
-              isPacked, // Use localStorage state if available
+              isPacked,
               isCustom: sourceItem.isCustom,
               order: sourceItem.order
-              // Note: tripLuggageId is intentionally omitted (no luggage copied)
             }
           })
         }
@@ -365,16 +296,14 @@ export async function forkTrip(
     }
 
     revalidatePath('/dashboard')
-    
+
     const hasLocalStorageState = localStorageState && Object.keys(localStorageState).length > 0
-    const message = hasLocalStorageState 
-      ? 'Trip copied to your account with your checked items!'
-      : 'Trip copied to your account successfully!'
-    
-    return { 
-      success: true, 
+    return {
+      success: true,
       tripId: newTrip.id,
-      message
+      message: hasLocalStorageState
+        ? 'Trip copied to your account with your checked items!'
+        : 'Trip copied to your account successfully!'
     }
   } catch (error: any) {
     console.error('Fork trip error:', error)
