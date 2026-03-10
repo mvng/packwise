@@ -10,13 +10,13 @@ async function getUserId(): Promise<string | null> {
   let authUser: any = null
 
   try {
-    const {  { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     authUser = user
   } catch {}
 
   if (!authUser) {
     try {
-      const {  { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession()
       authUser = session?.user ?? null
     } catch {}
   }

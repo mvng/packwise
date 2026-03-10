@@ -96,20 +96,27 @@ export async function createTrip(input: CreateTripInput) {
       const duration = getTripDuration(startDate, endDate)
       const categories = generatePackingList(tripType, duration)
 
-      const packingList = await prisma.packingList.create({
-        data: { tripId: trip.id, name: 'Main Packing List' },
+      await prisma.packingList.create({
+        data: {
+          tripId: trip.id,
+          name: 'Main Packing List',
+          categories: {
+            create: categories.map((category) => ({
+              name: category.name,
+              order: category.order,
+              items: {
+                create: category.items.map((item, index) => ({
+                  name: item,
+                  quantity: 1,
+                  isPacked: false,
+                  isCustom: false,
+                  order: index,
+                })),
+              },
+            })),
+          },
+        },
       })
-
-      for (const category of categories) {
-        const cat = await prisma.category.create({
-          data: { packingListId: packingList.id, name: category.name, order: category.order },
-        })
-        await prisma.packingItem.createMany({
-          data: category.items.map((item, index) => ({
-            categoryId: cat.id, name: item, quantity: 1, isPacked: false, isCustom: false, order: index,
-          })),
-        })
-      }
     }
 
     revalidatePath('/dashboard')
@@ -313,7 +320,7 @@ export async function forkTrip(
       return { error: 'You already own this trip', alreadyOwned: true }
     }
 
-    // Create a new trip for the current user
+    // Create a new trip for the current user, along with all nested packing lists, categories, and items
     const newTrip = await prisma.trip.create({
       data: {
         userId,
@@ -323,46 +330,28 @@ export async function forkTrip(
         endDate: sourceTrip.endDate,
         tripType: sourceTrip.tripType,
         notes: sourceTrip.notes,
-      }
+        packingLists: {
+          create: sourceTrip.packingLists.map((sourceList) => ({
+            name: sourceList.name,
+            categories: {
+              create: sourceList.categories.map((sourceCategory) => ({
+                name: sourceCategory.name,
+                order: sourceCategory.order,
+                items: {
+                  create: sourceCategory.items.map((sourceItem) => ({
+                    name: sourceItem.name,
+                    quantity: sourceItem.quantity,
+                    isPacked: localStorageState?.[sourceItem.id] ?? false,
+                    isCustom: sourceItem.isCustom,
+                    order: sourceItem.order,
+                  })),
+                },
+              })),
+            },
+          })),
+        },
+      },
     })
-
-    // Copy all packing lists, categories, and items
-    for (const sourceList of sourceTrip.packingLists) {
-      const newList = await prisma.packingList.create({
-        data: {
-          tripId: newTrip.id,
-          name: sourceList.name
-        }
-      })
-
-      for (const sourceCategory of sourceList.categories) {
-        const newCategory = await prisma.category.create({
-          data: {
-            packingListId: newList.id,
-            name: sourceCategory.name,
-            order: sourceCategory.order
-          }
-        })
-
-        // Copy items with isPacked from localStorage if provided, otherwise reset to false
-        for (const sourceItem of sourceCategory.items) {
-          // Check if localStorage has a packed state for this item
-          const isPacked = localStorageState?.[sourceItem.id] ?? false
-          
-          await prisma.packingItem.create({
-            data: {
-              categoryId: newCategory.id,
-              name: sourceItem.name,
-              quantity: sourceItem.quantity,
-              isPacked, // Use localStorage state if available
-              isCustom: sourceItem.isCustom,
-              order: sourceItem.order
-              // Note: tripLuggageId is intentionally omitted (no luggage copied)
-            }
-          })
-        }
-      }
-    }
 
     revalidatePath('/dashboard')
     
