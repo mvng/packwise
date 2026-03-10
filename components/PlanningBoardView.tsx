@@ -89,14 +89,16 @@ async function apiUpdateDayPlanItemNotes(itemId: string, notes: string | null) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Only sort by time when NOT dragging — sorting mid-drag breaks dnd-kit's
-// internal position tracking and prevents items from being reordered.
-function sortItemsByTime(items: DayPlanItem[], isDragging: boolean): DayPlanItem[] {
-  if (isDragging) return items
+// Sort timed inline tags by time; untimed and non-tag items keep relative order.
+// Only called explicitly (on time change or initial load), never during render.
+function applyTimeSort(items: DayPlanItem[]): DayPlanItem[] {
   return [...items].sort((a, b) => {
     const aTime = a.category === TAG_CATEGORY ? a.notes ?? null : null
     const bTime = b.category === TAG_CATEGORY ? b.notes ?? null : null
     if (aTime && bTime) return aTime.localeCompare(bTime)
+    // Timed item floats above untimed
+    if (aTime && !bTime) return -1
+    if (!aTime && bTime) return 1
     return 0
   })
 }
@@ -354,14 +356,13 @@ function AddItemForm({ onAdd, onOpenInventory }: {
 // ─── DayColumn ────────────────────────────────────────────────────────────────
 
 function DayColumn({
-  date, dayIndex, tripId, dayPlan, isTagOver, activeId, onDayPlanChange,
+  date, dayIndex, tripId, dayPlan, isTagOver, onDayPlanChange,
 }: {
   date: Date
   dayIndex: number
   tripId: string
   dayPlan: DayPlan | undefined
   isTagOver: boolean
-  activeId: string | null   // passed from parent so we can freeze sort during drag
   onDayPlanChange: (dateKey: string, updated: DayPlan) => void
 }) {
   const dateKey = toDateKey(date)
@@ -375,10 +376,9 @@ function DayColumn({
 
   useEffect(() => { setLabelInput(dayPlan?.label ?? '') }, [dayPlan?.label])
 
-  const rawItems = dayPlan?.items ?? []
-  // Freeze sort while any drag is active — re-sorting mid-drag breaks dnd-kit
-  const isDragging = activeId !== null
-  const items = sortItemsByTime(rawItems.map(decodeItem), isDragging)
+  // Render items in the order stored in state — no sort on render.
+  // applyTimeSort is called explicitly only when a time changes.
+  const items = (dayPlan?.items ?? []).map(decodeItem)
 
   const allDayTag = getTagById(dayPlan?.label)
   const dropping = isTagOver || isOver
@@ -421,9 +421,15 @@ function DayColumn({
 
   function handleTimeChange(itemId: string, time: string | null) {
     if (!dayPlan) return
+    // Update the time on the item, then re-sort by time
     const updated = dayPlan.items.map((i) => i.id === itemId ? { ...i, notes: time } : i)
-    onDayPlanChange(dateKey, { ...dayPlan, items: updated })
-    startTransition(async () => { await apiUpdateDayPlanItemNotes(itemId, time) })
+    const sorted = applyTimeSort(updated)
+    onDayPlanChange(dateKey, { ...dayPlan, items: sorted })
+    startTransition(async () => {
+      await apiUpdateDayPlanItemNotes(itemId, time)
+      // Persist the new order to DB after sort
+      await apiReorderDayPlanItems(dayPlan.id, sorted.map((i) => i.id))
+    })
   }
 
   function handleSaveToInventory() {
@@ -522,7 +528,7 @@ function DayColumn({
         <InventoryPickerModal
           tripId={tripId}
           onClose={() => setShowInventoryPicker(false)}
-          onSuccess={() => {}}
+          onSuccess={() =>{}}
           onAddItems={handleInventoryItems}
         />
       )}
@@ -548,7 +554,8 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
         const map: DayPlanMap = {}
         for (const dp of data.dayPlans ?? []) {
           const key = new Date(dp.date).toISOString().split('T')[0]
-          map[key] = dp as DayPlan
+          // Apply time sort once on initial load so persisted order is correct
+          map[key] = { ...(dp as DayPlan), items: applyTimeSort((dp as DayPlan).items ?? []) }
         }
         setDayPlans(map)
       } catch (e) { console.error('Failed to load day plans', e) }
@@ -682,6 +689,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
 
     if (active.id === over.id) return
 
+    // Regular item reorder / cross-column move
     const sourceKey = findColumnKeyForItem(active.id as string)
     const destKey = findColumnKeyForItem(over.id as string)
     if (!sourceKey) return
@@ -746,7 +754,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
                   tripId={trip.id}
                   dayPlan={dayPlans[key]}
                   isTagOver={tagOverColumn === key}
-                  activeId={activeId}
                   onDayPlanChange={handleDayPlanChange}
                 />
               )
