@@ -1,7 +1,7 @@
 // npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
 'use client'
 
-import { useState, useEffect, useTransition, useCallback, useRef } from 'react'
+import { useState, useEffect, useTransition, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   DndContext,
@@ -11,6 +11,7 @@ import {
   useSensors,
   DragOverlay,
   useDroppable,
+  useDraggable,
   type DragEndEvent,
   type DragStartEvent,
   type DragOverEvent,
@@ -84,71 +85,20 @@ export interface DayTag {
   id: string
   label: string
   icon: string
-  // Tailwind classes: [header bg, header text, column border, column bg tint]
   colors: { headerBg: string; headerText: string; border: string; bodyBg: string; chip: string }
 }
 
 export const DAY_TAGS: DayTag[] = [
-  {
-    id: 'travel',
-    label: 'Travel Day',
-    icon: '✈️',
-    colors: { headerBg: 'bg-sky-500', headerText: 'text-white', border: 'border-sky-300', bodyBg: 'bg-sky-50', chip: 'bg-sky-100 text-sky-700' },
-  },
-  {
-    id: 'workout',
-    label: 'Workout',
-    icon: '🏋️',
-    colors: { headerBg: 'bg-orange-500', headerText: 'text-white', border: 'border-orange-300', bodyBg: 'bg-orange-50', chip: 'bg-orange-100 text-orange-700' },
-  },
-  {
-    id: 'laundry',
-    label: 'Laundry Day',
-    icon: '🧺',
-    colors: { headerBg: 'bg-teal-500', headerText: 'text-white', border: 'border-teal-300', bodyBg: 'bg-teal-50', chip: 'bg-teal-100 text-teal-700' },
-  },
-  {
-    id: 'rest',
-    label: 'Rest Day',
-    icon: '😴',
-    colors: { headerBg: 'bg-indigo-400', headerText: 'text-white', border: 'border-indigo-200', bodyBg: 'bg-indigo-50', chip: 'bg-indigo-100 text-indigo-600' },
-  },
-  {
-    id: 'adventure',
-    label: 'Adventure',
-    icon: '🧗',
-    colors: { headerBg: 'bg-emerald-500', headerText: 'text-white', border: 'border-emerald-300', bodyBg: 'bg-emerald-50', chip: 'bg-emerald-100 text-emerald-700' },
-  },
-  {
-    id: 'beach',
-    label: 'Beach Day',
-    icon: '🏖️',
-    colors: { headerBg: 'bg-yellow-400', headerText: 'text-yellow-900', border: 'border-yellow-300', bodyBg: 'bg-yellow-50', chip: 'bg-yellow-100 text-yellow-700' },
-  },
-  {
-    id: 'sightseeing',
-    label: 'Sightseeing',
-    icon: '🗺️',
-    colors: { headerBg: 'bg-violet-500', headerText: 'text-white', border: 'border-violet-300', bodyBg: 'bg-violet-50', chip: 'bg-violet-100 text-violet-700' },
-  },
-  {
-    id: 'dining',
-    label: 'Dining Out',
-    icon: '🍽️',
-    colors: { headerBg: 'bg-rose-500', headerText: 'text-white', border: 'border-rose-300', bodyBg: 'bg-rose-50', chip: 'bg-rose-100 text-rose-700' },
-  },
-  {
-    id: 'spa',
-    label: 'Spa / Wellness',
-    icon: '🧖',
-    colors: { headerBg: 'bg-pink-400', headerText: 'text-white', border: 'border-pink-200', bodyBg: 'bg-pink-50', chip: 'bg-pink-100 text-pink-600' },
-  },
-  {
-    id: 'shopping',
-    label: 'Shopping',
-    icon: '🛍️',
-    colors: { headerBg: 'bg-fuchsia-500', headerText: 'text-white', border: 'border-fuchsia-300', bodyBg: 'bg-fuchsia-50', chip: 'bg-fuchsia-100 text-fuchsia-700' },
-  },
+  { id: 'travel', label: 'Travel Day', icon: '✈️', colors: { headerBg: 'bg-sky-500', headerText: 'text-white', border: 'border-sky-300', bodyBg: 'bg-sky-50', chip: 'bg-sky-100 text-sky-700' } },
+  { id: 'workout', label: 'Workout', icon: '🏋️', colors: { headerBg: 'bg-orange-500', headerText: 'text-white', border: 'border-orange-300', bodyBg: 'bg-orange-50', chip: 'bg-orange-100 text-orange-700' } },
+  { id: 'laundry', label: 'Laundry Day', icon: '🧺', colors: { headerBg: 'bg-teal-500', headerText: 'text-white', border: 'border-teal-300', bodyBg: 'bg-teal-50', chip: 'bg-teal-100 text-teal-700' } },
+  { id: 'rest', label: 'Rest Day', icon: '😴', colors: { headerBg: 'bg-indigo-400', headerText: 'text-white', border: 'border-indigo-200', bodyBg: 'bg-indigo-50', chip: 'bg-indigo-100 text-indigo-600' } },
+  { id: 'adventure', label: 'Adventure', icon: '🧗', colors: { headerBg: 'bg-emerald-500', headerText: 'text-white', border: 'border-emerald-300', bodyBg: 'bg-emerald-50', chip: 'bg-emerald-100 text-emerald-700' } },
+  { id: 'beach', label: 'Beach Day', icon: '🏖️', colors: { headerBg: 'bg-yellow-400', headerText: 'text-yellow-900', border: 'border-yellow-300', bodyBg: 'bg-yellow-50', chip: 'bg-yellow-100 text-yellow-700' } },
+  { id: 'sightseeing', label: 'Sightseeing', icon: '🗺️', colors: { headerBg: 'bg-violet-500', headerText: 'text-white', border: 'border-violet-300', bodyBg: 'bg-violet-50', chip: 'bg-violet-100 text-violet-700' } },
+  { id: 'dining', label: 'Dining Out', icon: '🍽️', colors: { headerBg: 'bg-rose-500', headerText: 'text-white', border: 'border-rose-300', bodyBg: 'bg-rose-50', chip: 'bg-rose-100 text-rose-700' } },
+  { id: 'spa', label: 'Spa / Wellness', icon: '🧖', colors: { headerBg: 'bg-pink-400', headerText: 'text-white', border: 'border-pink-200', bodyBg: 'bg-pink-50', chip: 'bg-pink-100 text-pink-600' } },
+  { id: 'shopping', label: 'Shopping', icon: '🛍️', colors: { headerBg: 'bg-fuchsia-500', headerText: 'text-white', border: 'border-fuchsia-300', bodyBg: 'bg-fuchsia-50', chip: 'bg-fuchsia-100 text-fuchsia-700' } },
 ]
 
 function getTagById(id: string | null | undefined): DayTag | null {
@@ -156,13 +106,18 @@ function getTagById(id: string | null | undefined): DayTag | null {
   return DAY_TAGS.find((t) => t.id === id || t.label === id) ?? null
 }
 
-// ─── Drag ID helpers ──────────────────────────────────────────────────────────
-// Tag drags use id format: "tag::{tagId}"
-// Item drags use plain item uuid
-
-function makeTagDragId(tagId: string) { return `tag::${tagId}` }
+// Tag drag IDs: "tag::{tagId}" — item drag IDs are plain UUIDs
+const TAG_PREFIX = 'tag::'
+function makeTagDragId(tagId: string) { return `${TAG_PREFIX}${tagId}` }
 function parseTagDragId(id: string): string | null {
-  return id.startsWith('tag::') ? id.slice(5) : null
+  return id.startsWith(TAG_PREFIX) ? id.slice(TAG_PREFIX.length) : null
+}
+
+// Column drop IDs: "col::{dateKey}"
+const COL_PREFIX = 'col::'
+function makeColDropId(dateKey: string) { return `${COL_PREFIX}${dateKey}` }
+function parseColDropId(id: string): string | null {
+  return id.startsWith(COL_PREFIX) ? id.slice(COL_PREFIX.length) : null
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -170,7 +125,6 @@ function parseTagDragId(id: string): string | null {
 interface PlanningBoardViewProps {
   trip: { id: string; startDate: Date | string; endDate: Date | string }
 }
-
 type DayPlanMap = Record<string, DayPlan>
 
 const ITEM_CATEGORY_COLORS: Record<string, string> = {
@@ -179,44 +133,38 @@ const ITEM_CATEGORY_COLORS: Record<string, string> = {
   Toiletries: 'bg-blue-100 text-blue-700',
   Accessories: 'bg-yellow-100 text-yellow-700',
 }
-
-function getItemCategoryColor(category?: string | null) {
-  return category && ITEM_CATEGORY_COLORS[category]
-    ? ITEM_CATEGORY_COLORS[category]
-    : 'bg-gray-100 text-gray-600'
+function getItemCategoryColor(cat?: string | null) {
+  return cat && ITEM_CATEGORY_COLORS[cat] ? ITEM_CATEGORY_COLORS[cat] : 'bg-gray-100 text-gray-600'
 }
 
-function generateDays(startDate: Date | string, endDate: Date | string): Date[] {
-  const start = new Date(startDate); start.setHours(0, 0, 0, 0)
-  const end = new Date(endDate); end.setHours(0, 0, 0, 0)
+function generateDays(start: Date | string, end: Date | string): Date[] {
+  const s = new Date(start); s.setHours(0, 0, 0, 0)
+  const e = new Date(end); e.setHours(0, 0, 0, 0)
   const days: Date[] = []
-  const cursor = new Date(start)
-  while (cursor <= end) { days.push(new Date(cursor)); cursor.setDate(cursor.getDate() + 1) }
+  const c = new Date(s)
+  while (c <= e) { days.push(new Date(c)); c.setDate(c.getDate() + 1) }
   return days
 }
-
-function toDateKey(date: Date): string { return date.toISOString().split('T')[0] }
-
-function formatColumnDate(date: Date): string {
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+function toDateKey(d: Date) { return d.toISOString().split('T')[0] }
+function formatColumnDate(d: Date) {
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-// ─── Draggable Tag Chip (sidebar) ─────────────────────────────────────────────
+// ─── Draggable Tag Chip (uses useDraggable, NOT useSortable) ─────────────────────
 
 function DraggableTagChip({ tag }: { tag: DayTag }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: makeTagDragId(tag.id),
-    // Don't actually sort — just drag out
-    data: { type: 'tag', tag },
+    data: { type: 'tag', tagId: tag.id },
   })
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
       {...listeners}
-      className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-grab active:cursor-grabbing select-none transition-all ${
+      {...attributes}
+      className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-grab active:cursor-grabbing select-none transition-all ${
         isDragging ? 'opacity-40 scale-95' : 'hover:shadow-sm hover:-translate-y-0.5'
-      } ${tag.colors.chip} border-transparent`}
+      } ${tag.colors.chip}`}
     >
       <span className="text-base leading-none">{tag.icon}</span>
       <span className="text-xs font-medium whitespace-nowrap">{tag.label}</span>
@@ -224,34 +172,18 @@ function DraggableTagChip({ tag }: { tag: DayTag }) {
   )
 }
 
-// ─── Tag Drop Zone (column header area) ──────────────────────────────────────
-
-function TagDropZone({ dateKey, isOver }: { dateKey: string; isOver: boolean }) {
-  return (
-    <div className={`absolute inset-0 rounded-t-xl transition-all pointer-events-none ${
-      isOver ? 'ring-2 ring-white ring-opacity-80 bg-white bg-opacity-20' : ''
-    }`} />
-  )
-}
-
-// ─── DraggableCard ────────────────────────────────────────────────────────────
+// ─── DraggableCard (item, uses useSortable) ───────────────────────────────────
 
 function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}
       className="bg-white border border-gray-100 rounded-lg px-3 py-2 shadow-sm group cursor-grab active:cursor-grabbing"
     >
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {item.quantity > 1 && (
-            <span className="text-[11px] text-gray-400 font-medium flex-shrink-0">{item.quantity}×</span>
-          )}
+          {item.quantity > 1 && <span className="text-[11px] text-gray-400 font-medium flex-shrink-0">{item.quantity}×</span>}
           <span className="text-xs font-medium text-gray-800 truncate">{item.name}</span>
           {item.category && (
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${getItemCategoryColor(item.category)}`}>
@@ -341,12 +273,13 @@ function DayColumn({
   const [showInventoryPicker, setShowInventoryPicker] = useState(false)
   const [, startTransition] = useTransition()
 
-  // droppable for tag drops
-  const { setNodeRef: setDropRef } = useDroppable({ id: `col::${dateKey}` })
+  // Make the header a drop target for tags
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: makeColDropId(dateKey) })
 
   useEffect(() => { setLabelInput(dayPlan?.label ?? '') }, [dayPlan?.label])
 
   const tag = getTagById(dayPlan?.label)
+  const dropping = isTagOver || isOver
 
   async function saveLabel(value: string) {
     setEditingLabel(false)
@@ -364,7 +297,10 @@ function DayColumn({
       onDayPlanChange(dateKey, plan)
     }
     const tempId = `temp-${Date.now()}`
-    const optimistic: DayPlan = { ...plan, items: [...(plan.items ?? []), { id: tempId, dayPlanId: plan.id, order: plan.items?.length ?? 0, ...item }] }
+    const optimistic: DayPlan = {
+      ...plan,
+      items: [...(plan.items ?? []), { id: tempId, dayPlanId: plan.id, order: plan.items?.length ?? 0, ...item }],
+    }
     onDayPlanChange(dateKey, optimistic)
     startTransition(async () => {
       const result = await apiAddDayPlanItem(plan!.id, item)
@@ -394,39 +330,36 @@ function DayColumn({
   }
 
   const items = dayPlan?.items ?? []
-
-  const headerBg = tag ? tag.colors.headerBg : isTagOver ? 'bg-gray-200' : 'bg-gray-50'
+  const headerBg = tag ? tag.colors.headerBg : dropping ? 'bg-blue-100' : 'bg-gray-50'
   const headerText = tag ? tag.colors.headerText : 'text-gray-700'
-  const borderColor = tag ? tag.colors.border : 'border-gray-200'
+  const borderColor = tag ? tag.colors.border : dropping ? 'border-blue-400' : 'border-gray-200'
   const bodyBg = tag ? tag.colors.bodyBg : 'bg-white'
 
   return (
     <>
-      <div className={`w-[240px] flex-shrink-0 flex flex-col rounded-xl border-2 transition-colors ${borderColor}`}>
-        {/* Column header */}
-        <div ref={setDropRef} className={`relative ${headerBg} rounded-t-xl px-3 py-2.5 transition-colors`}>
-          <TagDropZone dateKey={dateKey} isOver={isTagOver} />
+      <div className={`w-[248px] flex-shrink-0 flex flex-col rounded-xl border-2 transition-all duration-150 ${borderColor}`}>
+        {/* Column header — tag drop zone */}
+        <div
+          ref={setDropRef}
+          className={`relative rounded-t-xl px-3 py-2.5 transition-colors duration-150 ${headerBg} ${dropping && !tag ? 'ring-2 ring-blue-400 ring-inset' : ''}`}
+        >
           <div className="flex items-baseline justify-between gap-1">
             <p className={`text-xs font-bold truncate ${headerText}`}>{formatColumnDate(date)}</p>
-            <span className={`text-[10px] flex-shrink-0 opacity-70 ${headerText}`}>Day {dayIndex + 1}</span>
+            <span className={`text-[10px] flex-shrink-0 opacity-60 ${headerText}`}>Day {dayIndex + 1}</span>
           </div>
 
-          {/* Tag chip or label */}
           {tag ? (
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-sm">{tag.icon}</span>
               <span className={`text-[11px] font-semibold ${headerText} opacity-90`}>{tag.label}</span>
               <button
                 onClick={() => saveLabel('')}
-                className={`ml-auto text-[10px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none`}
+                className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none leading-none`}
                 title="Remove tag"
               >✕</button>
             </div>
           ) : editingLabel ? (
-            <input
-              autoFocus
-              type="text"
-              value={labelInput}
+            <input autoFocus type="text" value={labelInput}
               onChange={(e) => setLabelInput(e.target.value)}
               onBlur={() => saveLabel(labelInput)}
               onKeyDown={(e) => { if (e.key === 'Enter') saveLabel(labelInput) }}
@@ -436,18 +369,23 @@ function DayColumn({
             <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none rounded w-full text-left">
               {dayPlan?.label
                 ? <span className="text-[11px] text-gray-500 font-medium">{dayPlan.label}</span>
-                : <span className="text-[11px] opacity-40 italic">drop a tag or add label</span>}
+                : <span className={`text-[11px] italic ${ dropping ? 'text-blue-400' : 'text-gray-300' }`}>
+                    {dropping ? 'Drop to assign tag' : 'drop tag or add label'}
+                  </span>}
             </button>
           )}
         </div>
 
         {/* Column body */}
-        <div className={`${bodyBg} rounded-b-xl flex flex-col flex-1 transition-colors`}>
+        <div className={`${bodyBg} rounded-b-xl flex flex-col flex-1 transition-colors duration-150`}>
           <div className="flex-1 overflow-y-auto max-h-[52vh] p-2.5 space-y-1.5">
             <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <AnimatePresence initial={false}>
                 {items.map((item) => (
-                  <motion.div key={item.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.1 }}>
+                  <motion.div key={item.id}
+                    initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.1 }}
+                  >
                     <DraggableCard item={item} onDelete={handleDeleteItem} />
                   </motion.div>
                 ))}
@@ -530,11 +468,8 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     const { active, over } = event
     const tagId = parseTagDragId(active.id as string)
     if (!tagId) { setTagOverColumn(null); return }
-    if (over && (over.id as string).startsWith('col::')) {
-      setTagOverColumn((over.id as string).slice(5))
-    } else {
-      setTagOverColumn(null)
-    }
+    const colKey = over ? parseColDropId(over.id as string) : null
+    setTagOverColumn(colKey)
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -545,11 +480,18 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
 
     const tagId = parseTagDragId(active.id as string)
 
-    // Tag dropped onto column header
-    if (tagId && (over.id as string).startsWith('col::')) {
-      const dateKey = (over.id as string).slice(5)
+    // ── Tag dropped onto a column header ──────────────────────────────────────
+    if (tagId) {
+      const dateKey = parseColDropId(over.id as string)
+      if (!dateKey) return
       const tag = getTagById(tagId)
       if (!tag) return
+      // Optimistically update label
+      setDayPlans((prev) => {
+        const existing = prev[dateKey]
+        if (existing) return { ...prev, [dateKey]: { ...existing, label: tag.label } }
+        return prev
+      })
       startTransition(async () => {
         const result = await apiUpsertDayPlan(trip.id, dateKey, tag.label)
         if (result.dayPlan) handleDayPlanChange(dateKey, result.dayPlan)
@@ -559,7 +501,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
 
     if (active.id === over.id) return
 
-    // Item reorder / move
+    // ── Item reorder / move between columns ───────────────────────────────────
     const sourceKey = findColumnKeyForItem(active.id as string)
     const destKey = findColumnKeyForItem(over.id as string)
     if (!sourceKey) return
@@ -586,38 +528,37 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     }
   }
 
-  const activeItem = activeId && !parseTagDragId(activeId)
+  const activeTag = activeId ? getTagById(parseTagDragId(activeId)) : null
+  const activeItem = activeId && !activeTag
     ? Object.values(dayPlans).flatMap((dp) => dp.items).find((i) => i.id === activeId)
     : null
-  const activeTag = activeId ? getTagById(parseTagDragId(activeId)) : null
 
   return (
-    <div className="flex gap-6 h-full">
-      {/* ── Tags Sidebar ─────────────────────────────────────────── */}
-      <div className="w-44 flex-shrink-0">
-        <div className="bg-white rounded-xl border border-gray-200 p-3 sticky top-4">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Day Tags</p>
-          <p className="text-[10px] text-gray-300 mb-3 leading-tight">Drag onto a day to set its theme</p>
-          <SortableContext items={DAY_TAGS.map((t) => makeTagDragId(t.id))} strategy={verticalListSortingStrategy}>
+    // Single DndContext wraps BOTH the sidebar and the board
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex gap-5">
+        {/* ── Tags Sidebar ───────────────────────────────────────── */}
+        <div className="w-40 flex-shrink-0">
+          <div className="bg-white rounded-xl border border-gray-200 p-3 sticky top-4">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Day Tags</p>
+            <p className="text-[10px] text-gray-300 mb-3 leading-tight">Drag onto a day column</p>
             <div className="space-y-1.5">
               {DAY_TAGS.map((tag) => (
                 <DraggableTagChip key={tag.id} tag={tag} />
               ))}
             </div>
-          </SortableContext>
+          </div>
         </div>
-      </div>
 
-      {/* ── Board ────────────────────────────────────────────────── */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
+        {/* ── Board ───────────────────────────────────────────────── */}
         <div className="flex-1 overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
-          <div className="inline-flex gap-3 pb-4 px-1 min-w-max">
+          <div className="inline-flex gap-3 pb-4 min-w-max">
             {days.map((date, index) => {
               const key = toDateKey(date)
               return (
@@ -634,20 +575,21 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
             })}
           </div>
         </div>
+      </div>
 
-        <DragOverlay>
-          {activeTag ? (
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg ${activeTag.colors.chip}`}>
-              <span className="text-base">{activeTag.icon}</span>
-              <span className="text-xs font-semibold">{activeTag.label}</span>
-            </div>
-          ) : activeItem ? (
-            <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg opacity-95 w-[220px]">
-              <span className="text-xs font-medium text-gray-800">{activeItem.name}</span>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-    </div>
+      {/* Drag overlay */}
+      <DragOverlay>
+        {activeTag ? (
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg cursor-grabbing ${activeTag.colors.chip}`}>
+            <span className="text-base">{activeTag.icon}</span>
+            <span className="text-xs font-semibold">{activeTag.label}</span>
+          </div>
+        ) : activeItem ? (
+          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg w-[240px] cursor-grabbing">
+            <span className="text-xs font-medium text-gray-800">{activeItem.name}</span>
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   )
 }

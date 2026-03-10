@@ -21,15 +21,9 @@ interface TripPageProps {
 
 function getTimezoneAbbreviation(timezone: string, date: Date): string {
   try {
-    const dateStr = date.toLocaleDateString('en-US', {
-      day: '2-digit',
-      timeZoneName: 'short',
-      timeZone: timezone
-    })
+    const dateStr = date.toLocaleDateString('en-US', { day: '2-digit', timeZoneName: 'short', timeZone: timezone })
     return dateStr.split(', ')[1] || ''
-  } catch {
-    return ''
-  }
+  } catch { return '' }
 }
 
 function getTimezoneOffsetDifference(destinationTimezone: string): string {
@@ -43,10 +37,7 @@ function getTimezoneOffsetDifference(destinationTimezone: string): string {
     if (diffHours === 0) return 'Same timezone as you'
     if (diffHours > 0) return `${diffHours} hour${Math.abs(diffHours) !== 1 ? 's' : ''} ahead of you`
     return `${Math.abs(diffHours)} hour${Math.abs(diffHours) !== 1 ? 's' : ''} behind you`
-  } catch (error) {
-    console.error('Error calculating timezone difference:', error)
-    return ''
-  }
+  } catch { return '' }
 }
 
 export default function TripPageClient({ params }: TripPageProps) {
@@ -73,20 +64,12 @@ export default function TripPageClient({ params }: TripPageProps) {
       setUser(authUser)
 
       const { trip: fetchedTrip, error } = await getSharedTripById(resolvedParams.id)
-      if (error || !fetchedTrip) {
-        setIsNotFound(true)
-        setLoading(false)
-        return
-      }
+      if (error || !fetchedTrip) { setIsNotFound(true); setLoading(false); return }
 
       setTrip(fetchedTrip)
 
       if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
-        const { weather } = await getTripWeather(
-          fetchedTrip.destination,
-          fetchedTrip.startDate,
-          fetchedTrip.endDate
-        )
+        const { weather } = await getTripWeather(fetchedTrip.destination, fetchedTrip.startDate, fetchedTrip.endDate)
         if (weather?.timezone) setTripTimezone(weather.timezone)
       }
 
@@ -94,7 +77,7 @@ export default function TripPageClient({ params }: TripPageProps) {
         const response = await fetch('/api/check-trip-ownership', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tripId: resolvedParams.id, supabaseUserId: authUser.id })
+          body: JSON.stringify({ tripId: resolvedParams.id, supabaseUserId: authUser.id }),
         })
         const { isOwner: ownerStatus } = await response.json()
         setIsOwner(ownerStatus)
@@ -102,7 +85,6 @@ export default function TripPageClient({ params }: TripPageProps) {
 
       setLoading(false)
     }
-
     init()
   }, [params])
 
@@ -112,28 +94,21 @@ export default function TripPageClient({ params }: TripPageProps) {
     if (fetchedTrip) {
       setTrip(fetchedTrip)
       if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
-        const { weather } = await getTripWeather(
-          fetchedTrip.destination,
-          fetchedTrip.startDate,
-          fetchedTrip.endDate
-        )
+        const { weather } = await getTripWeather(fetchedTrip.destination, fetchedTrip.startDate, fetchedTrip.endDate)
         if (weather?.timezone) setTripTimezone(weather.timezone)
       }
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+    </div>
+  )
 
   if (isNotFound || !trip) return notFound()
 
   const isSharedView = !isOwner
-
   const displayTrip = isSharedView ? {
     ...trip,
     packingLists: trip.packingLists.map((list: any) => ({
@@ -145,18 +120,13 @@ export default function TripPageClient({ params }: TripPageProps) {
     }))
   } : trip
 
-  const allItems = displayTrip.packingLists.flatMap(
-    (list: any) => list.categories.flatMap((cat: any) => cat.items)
-  )
+  const allItems = displayTrip.packingLists.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items))
   const totalItems = allItems.length
   const packedItems = allItems.filter((item: any) => item.isPacked).length
   const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
 
   const getTripEmoji = (tripType: string) => {
-    const icons: Record<string, string> = {
-      beach: '🏖️', hiking: '🥾', city: '🏙️',
-      skiing: '⛷️', ski: '⛷️', business: '💼', leisure: '🌴',
-    }
+    const icons: Record<string, string> = { beach: '🏖️', hiking: '🦵', city: '🏙️', skiing: '⛷️', ski: '⛷️', business: '💼', leisure: '🌴' }
     return icons[tripType] || '✈️'
   }
 
@@ -174,14 +144,16 @@ export default function TripPageClient({ params }: TripPageProps) {
   const timezoneDifference = tripTimezone ? getTimezoneOffsetDifference(tripTimezone) : ''
   const timezoneTooltip = timezoneAbbr && timezoneDifference ? `${timezoneAbbr} • ${timezoneDifference}` : timezoneDifference
 
+  // In plan mode, use full-width layout; pack mode keeps the narrower centered layout
+  const isPlanMode = !isSharedView && viewMode === 'plan'
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {user && (
-              <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 text-lg">←</Link>
-            )}
+            {user && <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 text-lg">←</Link>}
             {user ? (
               <Link href="/dashboard" className="hover:opacity-70 transition-opacity">
                 <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
@@ -215,7 +187,7 @@ export default function TripPageClient({ params }: TripPageProps) {
         )}
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className={`${ isPlanMode ? 'max-w-[1600px]' : 'max-w-5xl' } mx-auto px-6 py-8 transition-all`}>
         {isSharedView && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 mb-6">
             <div className="flex items-start justify-between gap-6 flex-col lg:flex-row">
@@ -234,6 +206,7 @@ export default function TripPageClient({ params }: TripPageProps) {
           </div>
         )}
 
+        {/* Trip meta card */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -269,7 +242,6 @@ export default function TripPageClient({ params }: TripPageProps) {
                 <button
                   onClick={() => setEditingTrip(trip)}
                   className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                  aria-label="Edit trip"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <circle cx="10" cy="3" r="1.5" />
@@ -300,15 +272,14 @@ export default function TripPageClient({ params }: TripPageProps) {
           )}
         </div>
 
+        {/* View toggle */}
         {!isSharedView && (
           <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit mb-6">
             <button
               disabled={isSyncing}
               onClick={() => setViewMode('plan')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                viewMode === 'plan'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none ${
+                viewMode === 'plan' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               🗓 Plan
@@ -332,10 +303,8 @@ export default function TripPageClient({ params }: TripPageProps) {
                   setViewMode('pack')
                 }
               }}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                viewMode === 'pack'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none ${
+                viewMode === 'pack' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               {isSyncing ? 'Syncing…' : '✅ Pack'}
@@ -343,6 +312,7 @@ export default function TripPageClient({ params }: TripPageProps) {
           </div>
         )}
 
+        {/* Content */}
         {!isSharedView && viewMode === 'plan' ? (
           <PlanningBoardView trip={displayTrip} />
         ) : (
