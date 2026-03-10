@@ -53,6 +53,18 @@ async function getUserId(): Promise<string | null> {
   return null
 }
 
+async function getUserHomeCityById(userId: string): Promise<string | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { homeCity: true },
+    })
+    return user?.homeCity ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function createTrip(input: CreateTripInput) {
   try {
     const userId = await getUserId()
@@ -73,12 +85,18 @@ export async function createTrip(input: CreateTripInput) {
         tripType,
         transportMode,
         notes: input.notes,
+        hotelConfirmationUrl: input.hotelConfirmationUrl ?? null,
       },
     })
 
     if (input.generateSuggestions) {
       const duration = getTripDuration(startDate, endDate)
-      const categories = generatePackingList(tripType, duration, transportMode)
+      const homeCity = await getUserHomeCityById(userId)
+      const categories = generatePackingList(tripType, duration, transportMode, {
+        homeCity,
+        destination: input.destination,
+        hotelConfirmationUrl: input.hotelConfirmationUrl,
+      })
 
       const packingList = await prisma.packingList.create({
         data: { tripId: trip.id, name: 'Main Packing List' },
@@ -117,6 +135,7 @@ export async function updateTrip(
     tripType?: string | null
     transportMode?: string | null
     notes?: string | null
+    hotelConfirmationUrl?: string | null
   }
 ) {
   try {
@@ -138,7 +157,8 @@ export async function updateTrip(
         endDate: input.endDate ?? undefined,
         tripType: input.tripType ?? undefined,
         transportMode: input.transportMode ?? null,
-        notes: input.notes ?? undefined
+        notes: input.notes ?? undefined,
+        hotelConfirmationUrl: input.hotelConfirmationUrl ?? null,
       }
     })
 

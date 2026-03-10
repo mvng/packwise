@@ -15,6 +15,8 @@ model User {
   avatarUrl           String?             @map("avatar_url")
   authProvider        String              @default("email") @map("auth_provider")
   supabaseId          String              @unique @map("supabase_id")
+  homeCity            String?             @map("home_city")
+  homeCountry         String?             @map("home_country")
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
   inventoryCategories InventoryCategory[]
@@ -25,22 +27,23 @@ model User {
 }
 
 model Trip {
-  id             String        @id @default(uuid())
-  userId         String?       @map("user_id")
-  name           String?
-  destination    String
-  startDate      DateTime      @map("start_date")
-  endDate        DateTime      @map("end_date")
-  tripType       String        @map("trip_type")
-  transportMode  String?       @map("transport_mode")
-  weather        Json?
-  notes          String?
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  dayPlans       DayPlan[]
-  packingLists   PackingList[]
-  tripLuggages   TripLuggage[]
-  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String        @id @default(uuid())
+  userId               String?       @map("user_id")
+  name                 String?
+  destination          String
+  startDate            DateTime      @map("start_date")
+  endDate              DateTime      @map("end_date")
+  tripType             String        @map("trip_type")
+  transportMode        String?       @map("transport_mode")
+  weather              Json?
+  notes                String?
+  hotelConfirmationUrl String?       @map("hotel_confirmation_url")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  dayPlans             DayPlan[]
+  packingLists         PackingList[]
+  tripLuggages         TripLuggage[]
+  user                 User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([startDate])

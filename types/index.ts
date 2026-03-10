@@ -12,6 +12,7 @@ export interface Trip {
   transportMode?: TransportMode | null
   weather?: WeatherData
   notes?: string
+  hotelConfirmationUrl?: string | null
   createdAt: Date
   updatedAt: Date
   packingLists?: PackingList[]
@@ -85,6 +86,7 @@ export interface CreateTripInput {
   transportMode?: TransportMode | null
   generateSuggestions: boolean
   notes?: string
+  hotelConfirmationUrl?: string | null
 }
 
 export interface DayPlan {
@@ -103,4 +105,9 @@ export interface DayPlanItem {
   category?: string | null
   notes?: string | null
   order: number
+}
+
+export interface UserSettings {
+  homeCity: string | null
+  homeCountry: string | null
 }
