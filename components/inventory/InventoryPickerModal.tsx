@@ -8,12 +8,14 @@ interface InventoryPickerModalProps {
   tripId: string
   onClose: () => void
   onSuccess: (count: number) => void
+  onAddItems?: (items: InventoryItemData[]) => void
 }
 
 export default function InventoryPickerModal({
   tripId,
   onClose,
   onSuccess,
+  onAddItems,
 }: InventoryPickerModalProps) {
   const [categories, setCategories] = useState<InventoryCategoryData[] | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -81,6 +83,16 @@ export default function InventoryPickerModal({
   function handleAdd() {
     if (selected.size === 0) return
     setError(null)
+
+    if (onAddItems) {
+      const selectedItems = (categories ?? [])
+        .flatMap((c) => c.items)
+        .filter((item) => selected.has(item.id))
+      onAddItems(selectedItems)
+      onClose()
+      return
+    }
+
     startTransition(async () => {
       const result = await addInventoryItemsToTrip(tripId, Array.from(selected))
       if ('error' in result) {

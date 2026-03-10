@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getUserTrips, deleteTrip } from '@/actions/trip.actions'
 import { formatDate } from '@/lib/utils'
+import TripWeather from '@/components/TripWeather'
+import EditTripModal from '@/components/EditTripModal'
 import type { User } from '@supabase/supabase-js'
 
 type Trip = {
@@ -15,6 +17,7 @@ type Trip = {
   startDate: Date | string | null
   endDate: Date | string | null
   tripType: string | null
+  notes: string | null
   createdAt: Date | string
   packingLists?: Array<{
     categories: Array<{
@@ -50,6 +53,7 @@ export default function DashboardPage() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
 
   const loadTrips = useCallback(async () => {
     try {
@@ -108,6 +112,16 @@ export default function DashboardPage() {
     setDeletingId(null)
   }
 
+  const handleEditTrip = (e: React.MouseEvent, trip: Trip) => {
+    e.preventDefault()
+    setEditingTrip(trip)
+  }
+
+  const handleEditSuccess = () => {
+    setEditingTrip(null)
+    loadTrips()
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -117,7 +131,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -144,7 +158,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="flex-1 max-w-7xl mx-auto px-6 py-8 w-full">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Trips</h1>
@@ -176,6 +190,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {trips.map((trip) => {
               const { total, packed, percent } = getTripProgress(trip)
+              
               return (
                 <div key={trip.id} className="relative group">
                   <Link
@@ -196,8 +211,16 @@ export default function DashboardPage() {
                       {trip.startDate ? formatDate(trip.startDate as string) : ''}
                       {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
                     </div>
+                    
+                    {/* Weather widget */}
+                    <TripWeather 
+                      destination={trip.destination}
+                      startDate={trip.startDate}
+                      endDate={trip.endDate}
+                    />
+                    
                     {total > 0 && (
-                      <div>
+                      <div className="mt-3">
                         <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
                           <span>{packed}/{total} packed</span>
                           <span>{percent}%</span>
@@ -213,20 +236,51 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </Link>
-                  <button
-                    onClick={(e) => handleDeleteTrip(e, trip.id)}
-                    disabled={deletingId === trip.id}
-                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
-                    aria-label="Delete trip"
-                  >
-                    {deletingId === trip.id ? '…' : '🗑️'}
-                  </button>
+                  
+                  {/* Action buttons */}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                    <button
+                      onClick={(e) => handleEditTrip(e, trip)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                      aria-label="Edit trip"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteTrip(e, trip.id)}
+                      disabled={deletingId === trip.id}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                      aria-label="Delete trip"
+                    >
+                      {deletingId === trip.id ? '…' : '🗑️'}
+                    </button>
+                  </div>
                 </div>
               )
             })}
           </div>
         )}
       </main>
+
+      {/* Footer with weather disclaimer */}
+      {trips.length > 0 && (
+        <footer className="border-t border-gray-200 bg-white mt-12">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <p className="text-xs text-gray-400 text-center">
+              Weather forecasts shown for trips within 14 days. Forecasts are estimates and may change.
+            </p>
+          </div>
+        </footer>
+      )}
+
+      {/* Edit Trip Modal */}
+      {editingTrip && (
+        <EditTripModal
+          trip={editingTrip}
+          onClose={() => setEditingTrip(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
     </div>
   )
 }

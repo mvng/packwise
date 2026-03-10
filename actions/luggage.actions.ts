@@ -28,13 +28,39 @@ async function getAuthenticatedUserId(): Promise<string | null> {
   return null
 }
 
+async function ensureUserExists(userId: string): Promise<string> {
+  // Check if user exists by supabaseId (the unique constraint field)
+  const existingUser = await prisma.user.findUnique({ 
+    where: { supabaseId: userId } 
+  })
+  
+  if (existingUser) {
+    // Return the actual user.id from database
+    return existingUser.id
+  }
+
+  // Create user if doesn't exist (for guest mode or new auth users)
+  const newUser = await prisma.user.create({
+    data: {
+      email: `guest-${userId.slice(0, 8)}@packwise.app`,
+      name: 'Guest User',
+      supabaseId: userId,
+    },
+  })
+  
+  return newUser.id
+}
+
 export async function getUserLuggage() {
   try {
-    const userId = await getAuthenticatedUserId()
-    if (!userId) return { error: 'Unauthorized' }
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
+
+    // Get the actual database user ID
+    const dbUserId = await ensureUserExists(supabaseUserId)
 
     const luggage = await prisma.luggage.findMany({
-      where: { userId },
+      where: { userId: dbUserId },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -46,14 +72,18 @@ export async function getUserLuggage() {
 
 export async function createLuggage(input: CreateLuggageInput) {
   try {
-    const userId = await getAuthenticatedUserId()
-    if (!userId) return { error: 'Unauthorized' }
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
+
+    // Ensure user exists and get the database user ID
+    const dbUserId = await ensureUserExists(supabaseUserId)
 
     const luggage = await prisma.luggage.create({
       data: {
-        userId,
+        userId: dbUserId,
         name: input.name,
         type: input.type,
+        icon: input.icon,
         capacity: input.capacity,
       },
     })
@@ -61,17 +91,20 @@ export async function createLuggage(input: CreateLuggageInput) {
     revalidatePath('/luggage')
     return { success: true, luggage }
   } catch (error) {
+    console.error('Failed to create luggage:', error)
     return { error: 'Failed to create luggage' }
   }
 }
 
 export async function updateLuggage(id: string, input: UpdateLuggageInput) {
   try {
-    const userId = await getAuthenticatedUserId()
-    if (!userId) return { error: 'Unauthorized' }
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
+
+    const dbUserId = await ensureUserExists(supabaseUserId)
 
     const luggage = await prisma.luggage.findUnique({ where: { id } })
-    if (!luggage || luggage.userId !== userId) {
+    if (!luggage || luggage.userId !== dbUserId) {
       return { error: 'Luggage not found' }
     }
 
@@ -89,11 +122,13 @@ export async function updateLuggage(id: string, input: UpdateLuggageInput) {
 
 export async function deleteLuggage(id: string) {
   try {
-    const userId = await getAuthenticatedUserId()
-    if (!userId) return { error: 'Unauthorized' }
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
+
+    const dbUserId = await ensureUserExists(supabaseUserId)
 
     const luggage = await prisma.luggage.findUnique({ where: { id } })
-    if (!luggage || luggage.userId !== userId) {
+    if (!luggage || luggage.userId !== dbUserId) {
       return { error: 'Luggage not found' }
     }
 
@@ -108,8 +143,8 @@ export async function deleteLuggage(id: string) {
 
 export async function getTripLuggage(tripId: string) {
   try {
-    const userId = await getAuthenticatedUserId()
-    if (!userId) return { error: 'Unauthorized' }
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
 
     const tripLuggages = await prisma.tripLuggage.findMany({
       where: { tripId, isActive: true },
@@ -127,8 +162,8 @@ export async function getTripLuggage(tripId: string) {
 
 export async function addLuggageToTrip(tripId: string, luggageId: string) {
   try {
-    const userId = await getAuthenticatedUserId()
-    if (!userId) return { error: 'Unauthorized' }
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
 
     const existing = await prisma.tripLuggage.findUnique({
       where: { tripId_luggageId: { tripId, luggageId } },
@@ -156,10 +191,56 @@ export async function addLuggageToTrip(tripId: string, luggageId: string) {
   }
 }
 
+export async function addLuggagesToTrip(tripId: string, luggageIds: string[]) {
+  try {
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
+
+    // Find which ones already exist
+    const existing = await prisma.tripLuggage.findMany({
+      where: {
+        tripId,
+        luggageId: { in: luggageIds },
+      },
+      select: { luggageId: true },
+    })
+
+    const existingIds = existing.map((e) => e.luggageId)
+    const newIds = luggageIds.filter((id) => !existingIds.includes(id))
+
+    if (existingIds.length > 0) {
+      await prisma.tripLuggage.updateMany({
+        where: {
+          tripId,
+          luggageId: { in: existingIds },
+        },
+        data: { isActive: true },
+      })
+    }
+
+    if (newIds.length > 0) {
+      await prisma.tripLuggage.createMany({
+        data: newIds.map((luggageId) => ({
+          tripId,
+          luggageId,
+          isActive: true,
+        })),
+        skipDuplicates: true,
+      })
+    }
+
+    revalidatePath(`/trip/${tripId}`)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to add luggages to trip:', error)
+    return { error: 'Failed to add luggages to trip' }
+  }
+}
+
 export async function removeLuggageFromTrip(tripId: string, luggageId: string) {
   try {
-    const userId = await getAuthenticatedUserId()
-    if (!userId) return { error: 'Unauthorized' }
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
 
     await prisma.tripLuggage.updateMany({
       where: { tripId, luggageId },
@@ -175,8 +256,8 @@ export async function removeLuggageFromTrip(tripId: string, luggageId: string) {
 
 export async function assignItemToLuggage(packingItemId: string, tripLuggageId: string | null, tripId?: string) {
   try {
-    const userId = await getAuthenticatedUserId()
-    if (!userId) return { error: 'Unauthorized' }
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
 
     await prisma.packingItem.update({
       where: { id: packingItemId },
