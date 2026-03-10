@@ -1,4 +1,3 @@
-// npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
 'use client'
 
 import { useState, useEffect, useTransition, useCallback } from 'react'
