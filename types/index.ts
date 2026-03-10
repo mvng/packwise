@@ -1,4 +1,5 @@
 export type TripType = 'beach' | 'business' | 'hiking' | 'city' | 'skiing' | 'leisure'
+export type TransportMode = 'flight' | 'car' | 'train' | 'cruise'
 
 export interface Trip {
   id: string
@@ -8,6 +9,7 @@ export interface Trip {
   startDate: Date
   endDate: Date
   tripType: TripType
+  transportMode?: TransportMode | null
   weather?: WeatherData
   notes?: string
   createdAt: Date
@@ -80,6 +82,7 @@ export interface CreateTripInput {
   startDate?: Date
   endDate?: Date
   tripType: string
+  transportMode?: TransportMode | null
   generateSuggestions: boolean
   notes?: string
 }

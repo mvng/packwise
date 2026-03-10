@@ -1,4 +1,4 @@
-import { TripType } from '@/types'
+import { TripType, TransportMode } from '@/types'
 
 interface PackingCategory {
   name: string
@@ -6,9 +6,65 @@ interface PackingCategory {
   items: string[]
 }
 
+const TRANSPORT_ITEMS: Record<TransportMode, string[]> = {
+  flight: [
+    'Boarding pass / e-ticket',
+    'Passport / ID',
+    'Travel pillow',
+    'Noise-cancelling headphones',
+    'Eye mask',
+    'Earplugs',
+    'Snacks for flight',
+    'Reusable water bottle (empty for security)',
+    'Lip balm',
+    'Hand sanitizer',
+    'Carry-on toiletries (100ml or less)',
+    'TSA-approved liquids bag',
+  ],
+  car: [
+    'Driver\'s license',
+    'Car insurance & registration',
+    'Road trip snacks',
+    'Reusable water bottles',
+    'Phone car mount',
+    'Car charger / USB adapter',
+    'Sunglasses',
+    'Roadside emergency kit',
+    'Paper maps / offline maps downloaded',
+    'Trash bag for car',
+    'Blanket',
+  ],
+  train: [
+    'Train tickets / rail pass',
+    'Passport / ID',
+    'Neck pillow',
+    'Headphones',
+    'Snacks',
+    'Reusable water bottle',
+    'Book / e-reader',
+    'Power bank',
+    'Small day bag',
+  ],
+  cruise: [
+    'Passport',
+    'Cruise booking confirmation',
+    'Formal dinner outfit',
+    'Seasickness medication',
+    'Sunscreen SPF 50+',
+    'Swimsuit (multiple)',
+    'Waterproof sandals',
+    'Lanyard for cruise card',
+    'Reusable water bottle',
+    'Power strip (no surge protector)',
+    'Insulated tumbler',
+    'Day bag for port excursions',
+  ],
+}
+
 export function generatePackingList(
   tripType: TripType,
-  duration: number
+  duration: number,
+  transportMode?: TransportMode | null
 ): PackingCategory[] {
   const base: PackingCategory[] = [
     {
@@ -105,5 +161,21 @@ export function generatePackingList(
     ],
   }
 
-  return [...base, ...specific[tripType]]
+  const categories = [...base, ...specific[tripType]]
+
+  if (transportMode && TRANSPORT_ITEMS[transportMode]) {
+    const label: Record<TransportMode, string> = {
+      flight: 'Flight Essentials',
+      car: 'Road Trip Essentials',
+      train: 'Train Essentials',
+      cruise: 'Cruise Essentials',
+    }
+    categories.push({
+      name: label[transportMode],
+      order: categories.length,
+      items: TRANSPORT_ITEMS[transportMode],
+    })
+  }
+
+  return categories
 }
