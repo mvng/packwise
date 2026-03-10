@@ -87,17 +87,16 @@ async function apiUpdateDayPlanItemNotes(itemId: string, notes: string | null) {
   })
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Sort items: timed tag items float to their correct position by time,
-// untimed items keep their manual order.
-function sortItemsByTime(items: DayPlanItem[]): DayPlanItem[] {
+// Only sort by time when NOT dragging — sorting mid-drag breaks dnd-kit's
+// internal position tracking and prevents items from being reordered.
+function sortItemsByTime(items: DayPlanItem[], isDragging: boolean): DayPlanItem[] {
+  if (isDragging) return items
   return [...items].sort((a, b) => {
     const aTime = a.category === TAG_CATEGORY ? a.notes ?? null : null
     const bTime = b.category === TAG_CATEGORY ? b.notes ?? null : null
-    // Both timed → sort by time string (HH:MM lexicographic is fine)
     if (aTime && bTime) return aTime.localeCompare(bTime)
-    // Only a timed → keep relative order to b by original order
     return 0
   })
 }
@@ -171,7 +170,7 @@ function formatColumnDate(d: Date) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-// ─── DraggableTagChip ───────────────────────────────────────────────────────
+// ─── DraggableTagChip ─────────────────────────────────────────────────────────
 
 function DraggableTagChip({ tag }: { tag: DayTag }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -193,7 +192,7 @@ function DraggableTagChip({ tag }: { tag: DayTag }) {
   )
 }
 
-// ─── InlineTagCard ────────────────────────────────────────────────────────
+// ─── InlineTagCard ────────────────────────────────────────────────────────────
 
 function InlineTagCard({
   item,
@@ -208,7 +207,6 @@ function InlineTagCard({
   const [editingTime, setEditingTime] = useState(false)
   const [timeInput, setTimeInput] = useState(item.time ?? '')
 
-  // Keep local input in sync if item.time changes from parent (e.g. after API save)
   useEffect(() => { setTimeInput(item.time ?? '') }, [item.time])
 
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
@@ -284,7 +282,7 @@ function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: s
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {item.quantity > 1 && <span className="text-[11px] text-gray-400 font-medium flex-shrink-0">{item.quantity}×</span>}
           <span className="text-xs font-medium text-gray-800 truncate">{item.name}</span>
-          {item.category && (
+          {item.category && item.category !== TAG_CATEGORY && (
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${getItemCategoryColor(item.category)}`}>
               {item.category}
             </span>
@@ -356,13 +354,14 @@ function AddItemForm({ onAdd, onOpenInventory }: {
 // ─── DayColumn ────────────────────────────────────────────────────────────────
 
 function DayColumn({
-  date, dayIndex, tripId, dayPlan, isTagOver, onDayPlanChange,
+  date, dayIndex, tripId, dayPlan, isTagOver, activeId, onDayPlanChange,
 }: {
   date: Date
   dayIndex: number
   tripId: string
   dayPlan: DayPlan | undefined
   isTagOver: boolean
+  activeId: string | null   // passed from parent so we can freeze sort during drag
   onDayPlanChange: (dateKey: string, updated: DayPlan) => void
 }) {
   const dateKey = toDateKey(date)
@@ -377,8 +376,9 @@ function DayColumn({
   useEffect(() => { setLabelInput(dayPlan?.label ?? '') }, [dayPlan?.label])
 
   const rawItems = dayPlan?.items ?? []
-  // Decode then sort: timed inline tags sort by time, rest keep manual order
-  const items = sortItemsByTime(rawItems.map(decodeItem))
+  // Freeze sort while any drag is active — re-sorting mid-drag breaks dnd-kit
+  const isDragging = activeId !== null
+  const items = sortItemsByTime(rawItems.map(decodeItem), isDragging)
 
   const allDayTag = getTagById(dayPlan?.label)
   const dropping = isTagOver || isOver
@@ -421,10 +421,8 @@ function DayColumn({
 
   function handleTimeChange(itemId: string, time: string | null) {
     if (!dayPlan) return
-    // Update notes (time) on the item then re-sort
     const updated = dayPlan.items.map((i) => i.id === itemId ? { ...i, notes: time } : i)
     onDayPlanChange(dateKey, { ...dayPlan, items: updated })
-    // Persist to DB — notes field now accepted by PATCH route
     startTransition(async () => { await apiUpdateDayPlanItemNotes(itemId, time) })
   }
 
@@ -587,7 +585,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     setTagOverColumn(colKey)
   }
 
-  // Given a dateKey, get or create (optimistic) a day plan and return it
   function getOrSeedPlan(dateKey: string): DayPlan {
     return dayPlans[dateKey] ?? {
       id: `pending-${dateKey}`,
@@ -610,7 +607,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
       const tag = getTagById(tagId)
       if (!tag) return
 
-      // ── Dropped on column header → all-day tag
       const dateKey = parseColDropId(over.id as string)
       if (dateKey) {
         setDayPlans((prev) => {
@@ -625,16 +621,10 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
         return
       }
 
-      // ── Dropped on an item inside a column → inline tag
-      // Also handles empty columns: overItemKey may be null if column is empty
       const overItemKey = findColumnKeyForItem(over.id as string)
 
-      // If over.id looks like a col:: id that we already handled above, stop
       if (!overItemKey) {
-        // Could be hovering the empty space of a column whose col:: droppable
-        // wasn’t the exact target — check tagOverColumn as fallback
         if (!tagOverColumn) return
-        // Append inline tag to the bottom of whichever column was highlighted
         const fallbackKey = tagOverColumn
         const plan = getOrSeedPlan(fallbackKey)
         const encoded = encodeTagItem(tag.id)
@@ -681,8 +671,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
           setDayPlans((prev) => {
             const plan = prev[overItemKey]
             if (!plan) return prev
-            const finalItems = plan.items.map((i) => i.id === tempId ? result.item : i)
-            return { ...prev, [overItemKey]: { ...plan, items: finalItems } }
+            return { ...prev, [overItemKey]: { ...plan, items: plan.items.map((i) => i.id === tempId ? result.item : i) } }
           })
           const finalIds = newItems.map((i) => i.id === tempId ? result.item.id : i.id)
           await apiReorderDayPlanItems(overPlan.id, finalIds)
@@ -693,7 +682,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
 
     if (active.id === over.id) return
 
-    // ── Regular item reorder / cross-column move
     const sourceKey = findColumnKeyForItem(active.id as string)
     const destKey = findColumnKeyForItem(over.id as string)
     if (!sourceKey) return
@@ -758,6 +746,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
                   tripId={trip.id}
                   dayPlan={dayPlans[key]}
                   isTagOver={tagOverColumn === key}
+                  activeId={activeId}
                   onDayPlanChange={handleDayPlanChange}
                 />
               )
