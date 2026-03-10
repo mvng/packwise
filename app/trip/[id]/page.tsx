@@ -12,7 +12,6 @@ import TripWeather from '@/components/TripWeather'
 import EditTripModal from '@/components/EditTripModal'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
-import { syncDayPlansToPackingList } from '@/actions/day-plan.actions'
 
 const PlanningBoardView = dynamic(() => import('@/components/PlanningBoardView'), { ssr: false })
 
@@ -320,7 +319,11 @@ export default function TripPageClient({ params }: TripPageProps) {
                 if (viewMode === 'plan') {
                   setIsSyncing(true)
                   startTransition(async () => {
-                    await syncDayPlansToPackingList(trip.id)
+                    await fetch('/api/day-plans/sync', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ tripId: trip.id }),
+                    })
                     setIsSyncing(false)
                     setViewMode('pack')
                     window.location.reload()
