@@ -84,14 +84,9 @@ export default function TripPageClient({ params }: TripPageProps) {
           fetchedTrip.endDate
         )
         if (weather?.timezone) setTripTimezone(weather.timezone)
-        if (weather?.daily?.temperature_2m_max && weather?.daily?.temperature_2m_min) {
-          const maxTemps: number[] = weather.daily.temperature_2m_max
-          const minTemps: number[] = weather.daily.temperature_2m_min
-          const avgCelsius = (
-            maxTemps.reduce((a: number, b: number) => a + b, 0) / maxTemps.length +
-            minTemps.reduce((a: number, b: number) => a + b, 0) / minTemps.length
-          ) / 2
-          setAvgTempF(Math.round(avgCelsius * 9 / 5 + 32))
+        if (weather?.temperature?.avg != null) {
+          // temperature.avg is in Celsius
+          setAvgTempF(Math.round(weather.temperature.avg * 9 / 5 + 32))
         }
       }
 
