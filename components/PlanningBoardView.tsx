@@ -23,7 +23,6 @@ import { CSS } from '@dnd-kit/utilities'
 import type { DayPlan, DayPlanItem } from '@/types'
 import type { InventoryItemData } from '@/types/inventory'
 import {
-  getDayPlansForTrip,
   upsertDayPlan,
   addDayPlanItem,
   deleteDayPlanItem,
@@ -33,7 +32,7 @@ import {
 } from '@/actions/day-plan.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
 
-// ─── Types ─────────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface PlanningBoardViewProps {
   trip: {
@@ -83,7 +82,7 @@ function formatColumnDate(date: Date): string {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-// ─── DraggableCard ────────────────────────────────────────────────────────────────
+// ─── DraggableCard ────────────────────────────────────────────────────────────
 
 function DraggableCard({
   item,
@@ -150,7 +149,7 @@ function DraggableCard({
   )
 }
 
-// ─── AddItemForm ───────────────────────────────────────────────────────────────────
+// ─── AddItemForm ───────────────────────────────────────────────────────────────
 
 function AddItemForm({
   onAdd,
@@ -265,7 +264,7 @@ function AddItemForm({
   )
 }
 
-// ─── DayColumn ───────────────────────────────────────────────────────────────────────
+// ─── DayColumn ────────────────────────────────────────────────────────────────
 
 function DayColumn({
   date,
@@ -478,7 +477,7 @@ function DayColumn({
   )
 }
 
-// ─── PlanningBoardView ───────────────────────────────────────────────────────────────
+// ─── PlanningBoardView ────────────────────────────────────────────────────────
 
 export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
   const days = generateDays(trip.startDate, trip.endDate)
@@ -487,16 +486,22 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
   const [, startTransition] = useTransition()
 
   useEffect(() => {
-    getDayPlansForTrip(trip.id).then((result) => {
-      if ('dayPlans' in result) {
+    async function load() {
+      try {
+        const res = await fetch(`/api/day-plans/${trip.id}`)
+        if (!res.ok) return
+        const data = await res.json()
         const map: DayPlanMap = {}
-        for (const dp of result.dayPlans) {
+        for (const dp of data.dayPlans ?? []) {
           const key = new Date(dp.date).toISOString().split('T')[0]
-          map[key] = dp as unknown as DayPlan
+          map[key] = dp as DayPlan
         }
         setDayPlans(map)
+      } catch (e) {
+        console.error('Failed to load day plans', e)
       }
-    })
+    }
+    load()
   }, [trip.id])
 
   const handleDayPlanChange = useCallback((dateKey: string, updated: DayPlan) => {
@@ -530,7 +535,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     const sourcePlan = dayPlans[sourceKey]
 
     if (!destKey || sourceKey === destKey) {
-      // Reorder within same column
       const oldIndex = sourcePlan.items.findIndex((i) => i.id === active.id)
       const newIndex = sourcePlan.items.findIndex((i) => i.id === over.id)
       if (oldIndex === -1 || newIndex === -1) return
@@ -547,7 +551,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
         await reorderDayPlanItems(sourcePlan.id, reordered.map((i) => i.id), trip.id)
       })
     } else {
-      // Move between columns
       const destPlan = dayPlans[destKey]
       const movingItem = sourcePlan.items.find((i) => i.id === active.id)
       if (!movingItem || !destPlan) return
