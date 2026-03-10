@@ -303,6 +303,7 @@ export default function TripPageClient({ params }: TripPageProps) {
         {!isSharedView && trip.startDate && trip.endDate && (
           <div className="mb-6">
             <OutfitPlannerPanel
+              tripId={id}
               startDate={trip.startDate}
               endDate={trip.endDate}
               tripLuggages={trip.tripLuggages}
