@@ -14,13 +14,13 @@ export async function DELETE(
   }
 }
 
-// PATCH /api/day-plan-items/[itemId] — move or reorder
+// PATCH /api/day-plan-items/[itemId] — move, reorder, or update notes/time
 export async function PATCH(
   req: Request,
   { params }: { params: { itemId: string } }
 ) {
   const body = await req.json()
-  const { dayPlanId, order } = body
+  const { dayPlanId, order, notes } = body
 
   try {
     const item = await prisma.dayPlanItem.update({
@@ -28,6 +28,9 @@ export async function PATCH(
       data: {
         ...(dayPlanId != null ? { dayPlanId } : {}),
         ...(order != null ? { order } : {}),
+        // notes stores the time string for inline tag items (e.g. '19:00')
+        // explicitly allow null to clear the time
+        ...('notes' in body ? { notes: notes ?? null } : {}),
       },
     })
     return NextResponse.json({ item })

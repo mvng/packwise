@@ -79,16 +79,27 @@ async function apiSaveDayPlanItemsToInventory(dayPlanId: string) {
   return res.json()
 }
 
-async function apiUpdateDayPlanItem(
-  itemId: string,
-  data: { notes?: string | null }
-) {
-  const res = await fetch(`/api/day-plan-items/${itemId}`, {
+async function apiUpdateDayPlanItemNotes(itemId: string, notes: string | null) {
+  await fetch(`/api/day-plan-items/${itemId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ notes }),
   })
-  return res.json()
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+// Sort items: timed tag items float to their correct position by time,
+// untimed items keep their manual order.
+function sortItemsByTime(items: DayPlanItem[]): DayPlanItem[] {
+  return [...items].sort((a, b) => {
+    const aTime = a.category === TAG_CATEGORY ? a.notes ?? null : null
+    const bTime = b.category === TAG_CATEGORY ? b.notes ?? null : null
+    // Both timed → sort by time string (HH:MM lexicographic is fine)
+    if (aTime && bTime) return aTime.localeCompare(bTime)
+    // Only a timed → keep relative order to b by original order
+    return 0
+  })
 }
 
 // ─── Day Function Tags ────────────────────────────────────────────────────────
@@ -182,7 +193,7 @@ function DraggableTagChip({ tag }: { tag: DayTag }) {
   )
 }
 
-// ─── InlineTagCard (sortable, time-editable) ────────────────────────────────
+// ─── InlineTagCard ────────────────────────────────────────────────────────
 
 function InlineTagCard({
   item,
@@ -197,6 +208,9 @@ function InlineTagCard({
   const [editingTime, setEditingTime] = useState(false)
   const [timeInput, setTimeInput] = useState(item.time ?? '')
 
+  // Keep local input in sync if item.time changes from parent (e.g. after API save)
+  useEffect(() => { setTimeInput(item.time ?? '') }, [item.time])
+
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const tag = getTagById(item.tagId ?? null)
   const c = tag?.colors
@@ -207,7 +221,6 @@ function InlineTagCard({
     onTimeChange(item.id, val)
   }
 
-  // Format display time: "19:00" → "7:00 PM"
   function fmtTime(t: string) {
     try {
       const [h, m] = t.split(':').map(Number)
@@ -224,7 +237,6 @@ function InlineTagCard({
         c ? `${c.inlineBg} ${c.inlineBorder} ${c.inlineText}` : 'bg-gray-50 border-gray-200 text-gray-600'
       }`}
     >
-      {/* Drag handle */}
       <span {...attributes} {...listeners} className="flex-shrink-0 cursor-grab active:cursor-grabbing">
         <span className="text-sm">{tag?.icon ?? '📍'}</span>
       </span>
@@ -259,7 +271,7 @@ function InlineTagCard({
   )
 }
 
-// ─── DraggableCard (outfit / regular item) ─────────────────────────────────
+// ─── DraggableCard ────────────────────────────────────────────────────────────
 
 function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
@@ -364,9 +376,9 @@ function DayColumn({
 
   useEffect(() => { setLabelInput(dayPlan?.label ?? '') }, [dayPlan?.label])
 
-  // Decode items so inline tags render correctly
   const rawItems = dayPlan?.items ?? []
-  const items = rawItems.map(decodeItem)
+  // Decode then sort: timed inline tags sort by time, rest keep manual order
+  const items = sortItemsByTime(rawItems.map(decodeItem))
 
   const allDayTag = getTagById(dayPlan?.label)
   const dropping = isTagOver || isOver
@@ -409,12 +421,11 @@ function DayColumn({
 
   function handleTimeChange(itemId: string, time: string | null) {
     if (!dayPlan) return
-    // Persist time to notes field
-    onDayPlanChange(dateKey, {
-      ...dayPlan,
-      items: dayPlan.items.map((i) => i.id === itemId ? { ...i, notes: time } : i),
-    })
-    startTransition(async () => { await apiUpdateDayPlanItem(itemId, { notes: time }) })
+    // Update notes (time) on the item then re-sort
+    const updated = dayPlan.items.map((i) => i.id === itemId ? { ...i, notes: time } : i)
+    onDayPlanChange(dateKey, { ...dayPlan, items: updated })
+    // Persist to DB — notes field now accepted by PATCH route
+    startTransition(async () => { await apiUpdateDayPlanItemNotes(itemId, time) })
   }
 
   function handleSaveToInventory() {
@@ -439,7 +450,6 @@ function DayColumn({
   return (
     <>
       <div className={`w-[248px] flex-shrink-0 flex flex-col rounded-xl border-2 transition-all duration-150 ${borderColor}`}>
-        {/* Column header — all-day tag drop zone */}
         <div
           ref={setDropRef}
           className={`relative rounded-t-xl px-3 py-2.5 transition-colors duration-150 ${headerBg} ${dropping && !allDayTag ? 'ring-2 ring-blue-400 ring-inset' : ''}`}
@@ -454,10 +464,7 @@ function DayColumn({
               <span className="text-sm">{allDayTag.icon}</span>
               <span className={`text-[11px] font-semibold ${headerText} opacity-90`}>{allDayTag.label}</span>
               <span className={`text-[10px] ml-0.5 opacity-50 ${headerText}`}>— all day</span>
-              <button
-                onClick={() => saveLabel('')}
-                className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none leading-none`}
-              >✕</button>
+              <button onClick={() => saveLabel('')} className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none leading-none`}>✕</button>
             </div>
           ) : editingLabel ? (
             <input autoFocus type="text" value={labelInput}
@@ -470,14 +477,13 @@ function DayColumn({
             <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none rounded w-full text-left">
               {dayPlan?.label
                 ? <span className="text-[11px] text-gray-500 font-medium">{dayPlan.label}</span>
-                : <span className={`text-[11px] italic ${ dropping ? 'text-blue-400' : 'text-gray-300' }`}>
+                : <span className={`text-[11px] italic ${dropping ? 'text-blue-400' : 'text-gray-300'}`}>
                     {dropping ? 'Drop for all-day tag' : 'drop tag or add label…'}
                   </span>}
             </button>
           )}
         </div>
 
-        {/* Column body */}
         <div className={`${bodyBg} rounded-b-xl flex flex-col flex-1 transition-colors duration-150`}>
           <div className="flex-1 overflow-y-auto max-h-[52vh] p-2.5 space-y-1.5">
             <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
@@ -501,7 +507,7 @@ function DayColumn({
             )}
           </div>
           <div className="px-2.5 pb-2.5">
-            {items.length > 0 && (
+            {items.filter(i => i.itemType !== 'tag').length > 0 && (
               <div className="mb-1.5">
                 {toast
                   ? <p className="text-[11px] text-indigo-500">{toast}</p>
@@ -573,16 +579,23 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     const { active, over } = event
     const tagId = parseTagDragId(active.id as string)
     if (!tagId) { setTagOverColumn(null); return }
-    // Highlight column whether hovering header or an item inside it
     let colKey: string | null = null
     if (over) {
       colKey = parseColDropId(over.id as string)
-      if (!colKey) {
-        // over an item inside a column
-        colKey = findColumnKeyForItem(over.id as string)
-      }
+      if (!colKey) colKey = findColumnKeyForItem(over.id as string)
     }
     setTagOverColumn(colKey)
+  }
+
+  // Given a dateKey, get or create (optimistic) a day plan and return it
+  function getOrSeedPlan(dateKey: string): DayPlan {
+    return dayPlans[dateKey] ?? {
+      id: `pending-${dateKey}`,
+      tripId: trip.id,
+      date: dateKey as any,
+      label: null,
+      items: [],
+    }
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -597,14 +610,13 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
       const tag = getTagById(tagId)
       if (!tag) return
 
-      // ── Dropped onto the column header → all-day tag ─────────────────────
+      // ── Dropped on column header → all-day tag
       const dateKey = parseColDropId(over.id as string)
       if (dateKey) {
         setDayPlans((prev) => {
           const existing = prev[dateKey]
           if (existing) return { ...prev, [dateKey]: { ...existing, label: tag.label } }
-          const placeholder: DayPlan = { id: `pending-${dateKey}`, tripId: trip.id, date: dateKey as any, label: tag.label, items: [] }
-          return { ...prev, [dateKey]: placeholder }
+          return { ...prev, [dateKey]: { id: `pending-${dateKey}`, tripId: trip.id, date: dateKey as any, label: tag.label, items: [] } }
         })
         startTransition(async () => {
           const result = await apiUpsertDayPlan(trip.id, dateKey, tag.label)
@@ -613,24 +625,49 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
         return
       }
 
-      // ── Dropped onto an item inside a column → inline tag card ──────────
+      // ── Dropped on an item inside a column → inline tag
+      // Also handles empty columns: overItemKey may be null if column is empty
       const overItemKey = findColumnKeyForItem(over.id as string)
-      if (!overItemKey) return
+
+      // If over.id looks like a col:: id that we already handled above, stop
+      if (!overItemKey) {
+        // Could be hovering the empty space of a column whose col:: droppable
+        // wasn’t the exact target — check tagOverColumn as fallback
+        if (!tagOverColumn) return
+        // Append inline tag to the bottom of whichever column was highlighted
+        const fallbackKey = tagOverColumn
+        const plan = getOrSeedPlan(fallbackKey)
+        const encoded = encodeTagItem(tag.id)
+        const tempId = `temp-tag-${Date.now()}`
+        const newItem: DayPlanItem = { id: tempId, dayPlanId: plan.id, order: plan.items.length, ...encoded }
+        const withNew = { ...plan, items: [...plan.items, newItem] }
+        setDayPlans((prev) => ({ ...prev, [fallbackKey]: withNew }))
+        startTransition(async () => {
+          let realPlan = dayPlans[fallbackKey]
+          if (!realPlan || realPlan.id.startsWith('pending-')) {
+            const r = await apiUpsertDayPlan(trip.id, fallbackKey)
+            if (!r.dayPlan) return
+            realPlan = r.dayPlan
+            handleDayPlanChange(fallbackKey, realPlan)
+          }
+          const result = await apiAddDayPlanItem(realPlan.id, encoded)
+          if (result.item) {
+            setDayPlans((prev) => {
+              const p = prev[fallbackKey]
+              if (!p) return prev
+              return { ...prev, [fallbackKey]: { ...p, items: p.items.map((i) => i.id === tempId ? result.item : i) } }
+            })
+          }
+        })
+        return
+      }
 
       const overPlan = dayPlans[overItemKey]
       const overIndex = overPlan.items.findIndex((i) => i.id === over.id)
       const insertIndex = overIndex >= 0 ? overIndex : overPlan.items.length
-
       const encoded = encodeTagItem(tag.id)
       const tempId = `temp-tag-${Date.now()}`
-      const newTagItem: DayPlanItem = {
-        id: tempId,
-        dayPlanId: overPlan.id,
-        order: insertIndex,
-        ...encoded,
-      }
-
-      // Splice into items at insertIndex
+      const newTagItem: DayPlanItem = { id: tempId, dayPlanId: overPlan.id, order: insertIndex, ...encoded }
       const newItems = [
         ...overPlan.items.slice(0, insertIndex),
         newTagItem,
@@ -638,22 +675,15 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
       ].map((item, idx) => ({ ...item, order: idx }))
 
       setDayPlans((prev) => ({ ...prev, [overItemKey]: { ...overPlan, items: newItems } }))
-
       startTransition(async () => {
         const result = await apiAddDayPlanItem(overPlan.id, encoded)
         if (result.item) {
           setDayPlans((prev) => {
             const plan = prev[overItemKey]
             if (!plan) return prev
-            return {
-              ...prev,
-              [overItemKey]: {
-                ...plan,
-                items: plan.items.map((i) => i.id === tempId ? result.item : i),
-              },
-            }
+            const finalItems = plan.items.map((i) => i.id === tempId ? result.item : i)
+            return { ...prev, [overItemKey]: { ...plan, items: finalItems } }
           })
-          // Reorder in DB to match new positions
           const finalIds = newItems.map((i) => i.id === tempId ? result.item.id : i.id)
           await apiReorderDayPlanItems(overPlan.id, finalIds)
         }
@@ -663,7 +693,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
 
     if (active.id === over.id) return
 
-    // ── Item / inline-tag reorder or move between columns ───────────────────
+    // ── Regular item reorder / cross-column move
     const sourceKey = findColumnKeyForItem(active.id as string)
     const destKey = findColumnKeyForItem(over.id as string)
     if (!sourceKey) return
@@ -690,7 +720,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     }
   }
 
-  // Active drag: is it a sidebar tag chip or a list item?
   const activeTag = activeId ? getTagById(parseTagDragId(activeId)) : null
   const allItems = Object.values(dayPlans).flatMap((dp) => dp.items.map(decodeItem))
   const activeItem = activeId && !activeTag ? allItems.find((i) => i.id === activeId) : null
@@ -704,7 +733,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-5">
-        {/* ── Tags Sidebar */}
         <div className="w-40 flex-shrink-0">
           <div className="bg-white rounded-xl border border-gray-200 p-3 sticky top-4">
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Day Tags</p>
@@ -718,7 +746,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
           </div>
         </div>
 
-        {/* ── Board */}
         <div className="flex-1 overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
           <div className="inline-flex gap-3 pb-4 min-w-max">
             {days.map((date, index) => {
@@ -747,7 +774,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
           </div>
         ) : activeItem?.itemType === 'tag' ? (
           <div className={`flex items-center gap-2 px-2.5 py-2 rounded-lg shadow-lg border border-dashed w-[240px] cursor-grabbing ${
-            activeItem.tagId ? (getTagById(activeItem.tagId)?.colors.inlineBg ?? 'bg-gray-50') : 'bg-gray-50'
+            getTagById(activeItem.tagId ?? null)?.colors.inlineBg ?? 'bg-gray-50'
           }`}>
             <span>{getTagById(activeItem.tagId ?? null)?.icon ?? '📍'}</span>
             <span className="text-xs font-semibold">{getTagById(activeItem.tagId ?? null)?.label ?? activeItem.name}</span>
