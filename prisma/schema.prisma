@@ -16,9 +16,9 @@ model User {
   supabaseId          String              @unique @map("supabase_id")
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
-  trips               Trip[]
   inventoryCategories InventoryCategory[]
   luggage             Luggage[]
+  trips               Trip[]
 
   @@map("users")
 }
@@ -35,9 +35,9 @@ model Trip {
   notes        String?
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
-  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   packingLists PackingList[]
   tripLuggages TripLuggage[]
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([startDate])
@@ -50,8 +50,8 @@ model PackingList {
   name       String     @default("Main Packing List")
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @updatedAt @map("updated_at")
-  trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
   categories Category[]
+  trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([tripId])
   @@map("packing_lists")
@@ -76,11 +76,11 @@ model PackingItem {
   quantity      Int          @default(1)
   isPacked      Boolean      @default(false) @map("is_packed")
   isCustom      Boolean      @default(false) @map("is_custom")
-  packLast      Boolean      @default(false) @map("pack_last")
   order         Int          @default(0)
   tripLuggageId String?      @map("trip_luggage_id")
+  packLast      Boolean      @default(false) @map("pack_last")
   category      Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  tripLuggage   TripLuggage? @relation(fields: [tripLuggageId], references: [id], onDelete: SetNull)
+  tripLuggage   TripLuggage? @relation(fields: [tripLuggageId], references: [id])
 
   @@index([categoryId])
   @@index([tripLuggageId])
@@ -122,11 +122,11 @@ model Luggage {
   userId         String        @map("user_id")
   name           String
   type           String
-  icon           String?
   capacity       Int?
-  capacityLiters Float?        @map("capacity_liters")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
+  icon           String?
+  capacityLiters Float?        @map("capacity_liters")
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   tripLuggages   TripLuggage[]
 
@@ -141,9 +141,9 @@ model TripLuggage {
   isActive     Boolean       @default(true) @map("is_active")
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
-  trip         Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  luggage      Luggage       @relation(fields: [luggageId], references: [id], onDelete: Cascade)
   packingItems PackingItem[]
+  luggage      Luggage       @relation(fields: [luggageId], references: [id], onDelete: Cascade)
+  trip         Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@unique([tripId, luggageId])
   @@index([tripId])

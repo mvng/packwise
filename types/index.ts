@@ -83,3 +83,21 @@ export interface CreateTripInput {
   generateSuggestions: boolean
   notes?: string
 }
+
+export interface DayPlan {
+  id: string
+  tripId: string
+  date: Date
+  label?: string | null
+  items: DayPlanItem[]
+}
+
+export interface DayPlanItem {
+  id: string
+  dayPlanId: string
+  name: string
+  quantity: number
+  category?: string | null
+  notes?: string | null
+  order: number
+}

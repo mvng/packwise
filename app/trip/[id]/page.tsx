@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { notFound, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -11,6 +11,10 @@ import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
 import EditTripModal from '@/components/EditTripModal'
 import { formatDate } from '@/lib/utils'
+import dynamic from 'next/dynamic'
+import { syncDayPlansToPackingList } from '@/actions/day-plan.actions'
+
+const PlanningBoardView = dynamic(() => import('@/components/PlanningBoardView'), { ssr: false })
 
 interface TripPageProps {
   params: Promise<{ id: string }>
@@ -56,6 +60,9 @@ export default function TripPageClient({ params }: TripPageProps) {
   const [isOwner, setIsOwner] = useState(false)
   const [editingTrip, setEditingTrip] = useState<any>(null)
   const [tripTimezone, setTripTimezone] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'plan' | 'pack'>('pack')
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [, startTransition] = useTransition()
 
   useEffect(() => {
     async function init() {
@@ -294,11 +301,54 @@ export default function TripPageClient({ params }: TripPageProps) {
           )}
         </div>
 
-        <PackingListSection
-          trip={displayTrip}
-          readOnly={isSharedView}
-          sharedTripLuggages={isSharedView ? trip.tripLuggages : undefined}
-        />
+        {!isSharedView && (
+          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit mb-6">
+            <button
+              disabled={isSyncing}
+              onClick={() => setViewMode('plan')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                viewMode === 'plan'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🗓 Plan
+            </button>
+            <button
+              disabled={isSyncing}
+              onClick={() => {
+                if (viewMode === 'plan') {
+                  setIsSyncing(true)
+                  startTransition(async () => {
+                    await syncDayPlansToPackingList(trip.id)
+                    setIsSyncing(false)
+                    setViewMode('pack')
+                    window.location.reload()
+                  })
+                } else {
+                  setViewMode('pack')
+                }
+              }}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                viewMode === 'pack'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {isSyncing ? 'Syncing…' : '✅ Pack'}
+            </button>
+          </div>
+        )}
+
+        {!isSharedView && viewMode === 'plan' ? (
+          <PlanningBoardView trip={displayTrip} />
+        ) : (
+          <PackingListSection
+            trip={displayTrip}
+            readOnly={isSharedView}
+            sharedTripLuggages={isSharedView ? trip.tripLuggages : undefined}
+          />
+        )}
       </main>
 
       {editingTrip && (
