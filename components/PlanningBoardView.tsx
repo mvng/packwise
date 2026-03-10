@@ -150,7 +150,7 @@ function formatColumnDate(d: Date) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-// ─── Draggable Tag Chip (uses useDraggable, NOT useSortable) ─────────────────────
+// ─── Draggable Tag Chip ───────────────────────────────────────────────────────
 
 function DraggableTagChip({ tag }: { tag: DayTag }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -172,7 +172,7 @@ function DraggableTagChip({ tag }: { tag: DayTag }) {
   )
 }
 
-// ─── DraggableCard (item, uses useSortable) ───────────────────────────────────
+// ─── DraggableCard ────────────────────────────────────────────────────────────
 
 function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
@@ -273,7 +273,6 @@ function DayColumn({
   const [showInventoryPicker, setShowInventoryPicker] = useState(false)
   const [, startTransition] = useTransition()
 
-  // Make the header a drop target for tags
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: makeColDropId(dateKey) })
 
   useEffect(() => { setLabelInput(dayPlan?.label ?? '') }, [dayPlan?.label])
@@ -338,7 +337,6 @@ function DayColumn({
   return (
     <>
       <div className={`w-[248px] flex-shrink-0 flex flex-col rounded-xl border-2 transition-all duration-150 ${borderColor}`}>
-        {/* Column header — tag drop zone */}
         <div
           ref={setDropRef}
           className={`relative rounded-t-xl px-3 py-2.5 transition-colors duration-150 ${headerBg} ${dropping && !tag ? 'ring-2 ring-blue-400 ring-inset' : ''}`}
@@ -376,7 +374,6 @@ function DayColumn({
           )}
         </div>
 
-        {/* Column body */}
         <div className={`${bodyBg} rounded-b-xl flex flex-col flex-1 transition-colors duration-150`}>
           <div className="flex-1 overflow-y-auto max-h-[52vh] p-2.5 space-y-1.5">
             <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
@@ -480,18 +477,34 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
 
     const tagId = parseTagDragId(active.id as string)
 
-    // ── Tag dropped onto a column header ──────────────────────────────────────
+    // ── Tag dropped onto a column ─────────────────────────────────────────────
     if (tagId) {
       const dateKey = parseColDropId(over.id as string)
       if (!dateKey) return
       const tag = getTagById(tagId)
       if (!tag) return
-      // Optimistically update label
+
+      // Optimistic update — works whether or not a dayPlan exists yet
       setDayPlans((prev) => {
         const existing = prev[dateKey]
-        if (existing) return { ...prev, [dateKey]: { ...existing, label: tag.label } }
-        return prev
+        if (existing) {
+          // Column already has a dayPlan row — just update the label
+          return { ...prev, [dateKey]: { ...existing, label: tag.label } }
+        } else {
+          // No dayPlan yet — seed a placeholder so the column shows the tag color
+          // immediately while the API call creates the real row
+          const placeholder: DayPlan = {
+            id: `pending-${dateKey}`,
+            tripId: trip.id,
+            date: dateKey,
+            label: tag.label,
+            items: [],
+          }
+          return { ...prev, [dateKey]: placeholder }
+        }
       })
+
+      // Persist to DB; replace placeholder with real row when it comes back
       startTransition(async () => {
         const result = await apiUpsertDayPlan(trip.id, dateKey, tag.label)
         if (result.dayPlan) handleDayPlanChange(dateKey, result.dayPlan)
@@ -534,7 +547,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     : null
 
   return (
-    // Single DndContext wraps BOTH the sidebar and the board
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
@@ -577,7 +589,6 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
         </div>
       </div>
 
-      {/* Drag overlay */}
       <DragOverlay>
         {activeTag ? (
           <div className={`flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg cursor-grabbing ${activeTag.colors.chip}`}>
