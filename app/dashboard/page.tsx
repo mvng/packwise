@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getUserTrips, deleteTrip } from '@/actions/trip.actions'
 import { formatDate } from '@/lib/utils'
 import TripWeather from '@/components/TripWeather'
+import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
 import type { User } from '@supabase/supabase-js'
 
@@ -219,11 +220,16 @@ export default function DashboardPage() {
                       {trip.name || 'Untitled Trip'}
                     </h3>
                     <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
-                    <div className="text-xs text-gray-400 mb-3">
+                    <div className="text-xs text-gray-400 mb-2">
                       {trip.startDate ? formatDate(trip.startDate as string) : ''}
                       {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
                     </div>
-                    
+
+                    {/* Countdown badge */}
+                    <div className="mb-3">
+                      <TripCountdown startDate={trip.startDate} endDate={trip.endDate} variant="card" />
+                    </div>
+
                     {/* Weather widget */}
                     <TripWeather 
                       destination={trip.destination}

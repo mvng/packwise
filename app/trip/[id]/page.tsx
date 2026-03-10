@@ -9,6 +9,7 @@ import { getTripWeather } from '@/actions/weather.actions'
 import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
+import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
@@ -144,7 +145,6 @@ export default function TripPageClient({ params }: TripPageProps) {
   const timezoneDifference = tripTimezone ? getTimezoneOffsetDifference(tripTimezone) : ''
   const timezoneTooltip = timezoneAbbr && timezoneDifference ? `${timezoneAbbr} • ${timezoneDifference}` : timezoneDifference
 
-  // In plan mode, use full-width layout; pack mode keeps the narrower centered layout
   const isPlanMode = !isSharedView && viewMode === 'plan'
 
   return (
@@ -252,6 +252,13 @@ export default function TripPageClient({ params }: TripPageProps) {
               )}
             </div>
           </div>
+
+          {/* Countdown banner */}
+          {trip.startDate && (
+            <div className="mb-4">
+              <TripCountdown startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
+            </div>
+          )}
 
           {trip.destination && trip.startDate && trip.endDate && (
             <div className="mb-4">
