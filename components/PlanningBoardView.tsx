@@ -1,7 +1,7 @@
 // npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
 'use client'
 
-import { useState, useEffect, useTransition, useCallback } from 'react'
+import { useState, useEffect, useTransition, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   DndContext,
@@ -10,8 +10,10 @@ import {
   useSensor,
   useSensors,
   DragOverlay,
+  useDroppable,
   type DragEndEvent,
   type DragStartEvent,
+  type DragOverEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -76,81 +78,174 @@ async function apiSaveDayPlanItemsToInventory(dayPlanId: string) {
   return res.json()
 }
 
+// ─── Day Function Tags ────────────────────────────────────────────────────────
+
+export interface DayTag {
+  id: string
+  label: string
+  icon: string
+  // Tailwind classes: [header bg, header text, column border, column bg tint]
+  colors: { headerBg: string; headerText: string; border: string; bodyBg: string; chip: string }
+}
+
+export const DAY_TAGS: DayTag[] = [
+  {
+    id: 'travel',
+    label: 'Travel Day',
+    icon: '✈️',
+    colors: { headerBg: 'bg-sky-500', headerText: 'text-white', border: 'border-sky-300', bodyBg: 'bg-sky-50', chip: 'bg-sky-100 text-sky-700' },
+  },
+  {
+    id: 'workout',
+    label: 'Workout',
+    icon: '🏋️',
+    colors: { headerBg: 'bg-orange-500', headerText: 'text-white', border: 'border-orange-300', bodyBg: 'bg-orange-50', chip: 'bg-orange-100 text-orange-700' },
+  },
+  {
+    id: 'laundry',
+    label: 'Laundry Day',
+    icon: '🧺',
+    colors: { headerBg: 'bg-teal-500', headerText: 'text-white', border: 'border-teal-300', bodyBg: 'bg-teal-50', chip: 'bg-teal-100 text-teal-700' },
+  },
+  {
+    id: 'rest',
+    label: 'Rest Day',
+    icon: '😴',
+    colors: { headerBg: 'bg-indigo-400', headerText: 'text-white', border: 'border-indigo-200', bodyBg: 'bg-indigo-50', chip: 'bg-indigo-100 text-indigo-600' },
+  },
+  {
+    id: 'adventure',
+    label: 'Adventure',
+    icon: '🧗',
+    colors: { headerBg: 'bg-emerald-500', headerText: 'text-white', border: 'border-emerald-300', bodyBg: 'bg-emerald-50', chip: 'bg-emerald-100 text-emerald-700' },
+  },
+  {
+    id: 'beach',
+    label: 'Beach Day',
+    icon: '🏖️',
+    colors: { headerBg: 'bg-yellow-400', headerText: 'text-yellow-900', border: 'border-yellow-300', bodyBg: 'bg-yellow-50', chip: 'bg-yellow-100 text-yellow-700' },
+  },
+  {
+    id: 'sightseeing',
+    label: 'Sightseeing',
+    icon: '🗺️',
+    colors: { headerBg: 'bg-violet-500', headerText: 'text-white', border: 'border-violet-300', bodyBg: 'bg-violet-50', chip: 'bg-violet-100 text-violet-700' },
+  },
+  {
+    id: 'dining',
+    label: 'Dining Out',
+    icon: '🍽️',
+    colors: { headerBg: 'bg-rose-500', headerText: 'text-white', border: 'border-rose-300', bodyBg: 'bg-rose-50', chip: 'bg-rose-100 text-rose-700' },
+  },
+  {
+    id: 'spa',
+    label: 'Spa / Wellness',
+    icon: '🧖',
+    colors: { headerBg: 'bg-pink-400', headerText: 'text-white', border: 'border-pink-200', bodyBg: 'bg-pink-50', chip: 'bg-pink-100 text-pink-600' },
+  },
+  {
+    id: 'shopping',
+    label: 'Shopping',
+    icon: '🛍️',
+    colors: { headerBg: 'bg-fuchsia-500', headerText: 'text-white', border: 'border-fuchsia-300', bodyBg: 'bg-fuchsia-50', chip: 'bg-fuchsia-100 text-fuchsia-700' },
+  },
+]
+
+function getTagById(id: string | null | undefined): DayTag | null {
+  if (!id) return null
+  return DAY_TAGS.find((t) => t.id === id || t.label === id) ?? null
+}
+
+// ─── Drag ID helpers ──────────────────────────────────────────────────────────
+// Tag drags use id format: "tag::{tagId}"
+// Item drags use plain item uuid
+
+function makeTagDragId(tagId: string) { return `tag::${tagId}` }
+function parseTagDragId(id: string): string | null {
+  return id.startsWith('tag::') ? id.slice(5) : null
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PlanningBoardViewProps {
-  trip: {
-    id: string
-    startDate: Date | string
-    endDate: Date | string
-  }
+  trip: { id: string; startDate: Date | string; endDate: Date | string }
 }
 
 type DayPlanMap = Record<string, DayPlan>
 
-const CATEGORY_COLORS: Record<string, string> = {
+const ITEM_CATEGORY_COLORS: Record<string, string> = {
   Outfit: 'bg-purple-100 text-purple-700',
   Gear: 'bg-green-100 text-green-700',
   Toiletries: 'bg-blue-100 text-blue-700',
   Accessories: 'bg-yellow-100 text-yellow-700',
 }
 
-function getCategoryColor(category?: string | null) {
-  return category && CATEGORY_COLORS[category]
-    ? CATEGORY_COLORS[category]
+function getItemCategoryColor(category?: string | null) {
+  return category && ITEM_CATEGORY_COLORS[category]
+    ? ITEM_CATEGORY_COLORS[category]
     : 'bg-gray-100 text-gray-600'
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function generateDays(startDate: Date | string, endDate: Date | string): Date[] {
-  const start = new Date(startDate)
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(endDate)
-  end.setHours(0, 0, 0, 0)
+  const start = new Date(startDate); start.setHours(0, 0, 0, 0)
+  const end = new Date(endDate); end.setHours(0, 0, 0, 0)
   const days: Date[] = []
   const cursor = new Date(start)
-  while (cursor <= end) {
-    days.push(new Date(cursor))
-    cursor.setDate(cursor.getDate() + 1)
-  }
+  while (cursor <= end) { days.push(new Date(cursor)); cursor.setDate(cursor.getDate() + 1) }
   return days
 }
 
-function toDateKey(date: Date): string {
-  return date.toISOString().split('T')[0]
-}
+function toDateKey(date: Date): string { return date.toISOString().split('T')[0] }
 
 function formatColumnDate(date: Date): string {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
+// ─── Draggable Tag Chip (sidebar) ─────────────────────────────────────────────
+
+function DraggableTagChip({ tag }: { tag: DayTag }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useSortable({
+    id: makeTagDragId(tag.id),
+    // Don't actually sort — just drag out
+    data: { type: 'tag', tag },
+  })
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-grab active:cursor-grabbing select-none transition-all ${
+        isDragging ? 'opacity-40 scale-95' : 'hover:shadow-sm hover:-translate-y-0.5'
+      } ${tag.colors.chip} border-transparent`}
+    >
+      <span className="text-base leading-none">{tag.icon}</span>
+      <span className="text-xs font-medium whitespace-nowrap">{tag.label}</span>
+    </div>
+  )
+}
+
+// ─── Tag Drop Zone (column header area) ──────────────────────────────────────
+
+function TagDropZone({ dateKey, isOver }: { dateKey: string; isOver: boolean }) {
+  return (
+    <div className={`absolute inset-0 rounded-t-xl transition-all pointer-events-none ${
+      isOver ? 'ring-2 ring-white ring-opacity-80 bg-white bg-opacity-20' : ''
+    }`} />
+  )
+}
+
 // ─── DraggableCard ────────────────────────────────────────────────────────────
 
-function DraggableCard({
-  item,
-  onDelete,
-}: {
-  item: DayPlanItem
-  onDelete: (itemId: string) => void
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: item.id,
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  }
-
+function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white border border-gray-100 rounded-lg px-2.5 py-1.5 shadow-sm group cursor-grab active:cursor-grabbing"
+      className="bg-white border border-gray-100 rounded-lg px-3 py-2 shadow-sm group cursor-grab active:cursor-grabbing"
     >
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -159,7 +254,7 @@ function DraggableCard({
           )}
           <span className="text-xs font-medium text-gray-800 truncate">{item.name}</span>
           {item.category && (
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${getCategoryColor(item.category)}`}>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${getItemCategoryColor(item.category)}`}>
               {item.category}
             </span>
           )}
@@ -167,24 +262,16 @@ function DraggableCard({
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
           className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-opacity text-sm leading-none flex-shrink-0 focus:outline-none rounded ml-1"
-          aria-label="Delete item"
-        >
-          ×
-        </button>
+        >×</button>
       </div>
-      {item.notes && (
-        <p className="text-[11px] text-gray-400 truncate mt-0.5 pl-0.5">{item.notes}</p>
-      )}
+      {item.notes && <p className="text-[11px] text-gray-400 truncate mt-0.5 pl-0.5">{item.notes}</p>}
     </div>
   )
 }
 
 // ─── AddItemForm ──────────────────────────────────────────────────────────────
 
-function AddItemForm({
-  onAdd,
-  onOpenInventory,
-}: {
+function AddItemForm({ onAdd, onOpenInventory }: {
   onAdd: (item: Omit<DayPlanItem, 'id' | 'dayPlanId' | 'order'>) => Promise<void>
   onOpenInventory: () => void
 }) {
@@ -193,56 +280,43 @@ function AddItemForm({
   const [category, setCategory] = useState('Outfit')
   const [quantity, setQuantity] = useState(1)
   const [notes, setNotes] = useState('')
-  const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit() {
     if (!name.trim()) return
-    setError(null)
-    try {
-      await onAdd({ name: name.trim(), category, quantity, notes: notes.trim() || null })
-      setName('')
-      setCategory('Outfit')
-      setQuantity(1)
-      setNotes('')
-      setOpen(false)
-    } catch (e: any) {
-      setError(e.message || 'Failed to add item')
-    }
+    await onAdd({ name: name.trim(), category, quantity, notes: notes.trim() || null })
+    setName(''); setCategory('Outfit'); setQuantity(1); setNotes('')
+    setOpen(false)
   }
 
-  const inputCls = 'text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full'
+  const inputCls = 'text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 w-full bg-white'
 
-  if (!open) {
-    return (
-      <div className="flex items-center gap-3 pt-1">
-        <button onClick={() => setOpen(true)} className="text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none rounded">
-          + Add item
-        </button>
-        <button onClick={onOpenInventory} className="text-xs text-gray-400 hover:text-blue-500 transition-colors focus:outline-none rounded">
-          + From Inventory
-        </button>
-      </div>
-    )
-  }
+  if (!open) return (
+    <div className="flex items-center gap-3 pt-1">
+      <button onClick={() => setOpen(true)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">+ Add item</button>
+      <button onClick={onOpenInventory} className="text-xs text-gray-400 hover:text-blue-500 transition-colors">+ Inventory</button>
+    </div>
+  )
 
   return (
     <div className="space-y-1.5 pt-1">
-      {error && <p className="text-xs text-red-500">{error}</p>}
-      <input autoFocus type="text" placeholder="Item name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }} className={inputCls} />
+      <input autoFocus type="text" placeholder="Item name" value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
+        className={inputCls} />
       <div className="flex gap-1.5">
         <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
-          <option>Outfit</option>
-          <option>Gear</option>
-          <option>Toiletries</option>
-          <option>Accessories</option>
-          <option>Other</option>
+          <option>Outfit</option><option>Gear</option><option>Toiletries</option>
+          <option>Accessories</option><option>Other</option>
         </select>
-        <input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className={`${inputCls} w-16`} />
+        <input type="number" min={1} value={quantity}
+          onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+          className={`${inputCls} w-16`} />
       </div>
-      <input type="text" placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} />
+      <input type="text" placeholder="Notes (optional)" value={notes}
+        onChange={(e) => setNotes(e.target.value)} className={inputCls} />
       <div className="flex items-center gap-2">
-        <button onClick={handleSubmit} className="bg-blue-500 text-white rounded-lg px-2.5 py-1 text-xs font-medium hover:bg-blue-600 focus:outline-none">Add</button>
-        <button onClick={() => { setOpen(false); setError(null) }} className="text-xs text-gray-400 hover:text-gray-600 focus:outline-none">Cancel</button>
+        <button onClick={handleSubmit} className="bg-blue-500 text-white rounded-lg px-3 py-1 text-xs font-medium hover:bg-blue-600">Add</button>
+        <button onClick={() => setOpen(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
       </div>
     </div>
   )
@@ -251,16 +325,13 @@ function AddItemForm({
 // ─── DayColumn ────────────────────────────────────────────────────────────────
 
 function DayColumn({
-  date,
-  dayIndex,
-  tripId,
-  dayPlan,
-  onDayPlanChange,
+  date, dayIndex, tripId, dayPlan, isTagOver, onDayPlanChange,
 }: {
   date: Date
   dayIndex: number
   tripId: string
   dayPlan: DayPlan | undefined
+  isTagOver: boolean
   onDayPlanChange: (dateKey: string, updated: DayPlan) => void
 }) {
   const dateKey = toDateKey(date)
@@ -270,40 +341,34 @@ function DayColumn({
   const [showInventoryPicker, setShowInventoryPicker] = useState(false)
   const [, startTransition] = useTransition()
 
-  useEffect(() => {
-    setLabelInput(dayPlan?.label ?? '')
-  }, [dayPlan?.label])
+  // droppable for tag drops
+  const { setNodeRef: setDropRef } = useDroppable({ id: `col::${dateKey}` })
 
-  async function saveLabel() {
+  useEffect(() => { setLabelInput(dayPlan?.label ?? '') }, [dayPlan?.label])
+
+  const tag = getTagById(dayPlan?.label)
+
+  async function saveLabel(value: string) {
     setEditingLabel(false)
-    const result = await apiUpsertDayPlan(tripId, dateKey, labelInput || undefined)
+    const result = await apiUpsertDayPlan(tripId, dateKey, value || undefined)
     if (result.dayPlan) onDayPlanChange(dateKey, result.dayPlan)
   }
 
   async function handleAddItem(item: Omit<DayPlanItem, 'id' | 'dayPlanId' | 'order'>) {
-    let targetDayPlan = dayPlan
-
-    if (!targetDayPlan) {
+    let plan = dayPlan
+    if (!plan) {
       const result = await apiUpsertDayPlan(tripId, dateKey)
       if (result.error) throw new Error(result.error)
-      targetDayPlan = result.dayPlan
-      if (!targetDayPlan) throw new Error('Day plan not returned from server')
-      onDayPlanChange(dateKey, targetDayPlan)
+      plan = result.dayPlan
+      if (!plan) throw new Error('No day plan returned')
+      onDayPlanChange(dateKey, plan)
     }
-
     const tempId = `temp-${Date.now()}`
-    const optimistic: DayPlan = {
-      ...targetDayPlan,
-      items: [...(targetDayPlan.items ?? []), { id: tempId, dayPlanId: targetDayPlan.id, order: targetDayPlan.items?.length ?? 0, ...item }],
-    }
+    const optimistic: DayPlan = { ...plan, items: [...(plan.items ?? []), { id: tempId, dayPlanId: plan.id, order: plan.items?.length ?? 0, ...item }] }
     onDayPlanChange(dateKey, optimistic)
-
     startTransition(async () => {
-      const result = await apiAddDayPlanItem(targetDayPlan!.id, item)
-      if (result.error) {
-        onDayPlanChange(dateKey, { ...optimistic, items: optimistic.items.filter((i) => i.id !== tempId) })
-        return
-      }
+      const result = await apiAddDayPlanItem(plan!.id, item)
+      if (result.error) { onDayPlanChange(dateKey, { ...optimistic, items: optimistic.items.filter((i) => i.id !== tempId) }); return }
       onDayPlanChange(dateKey, { ...optimistic, items: optimistic.items.map((i) => i.id === tempId ? result.item : i) })
     })
   }
@@ -318,10 +383,7 @@ function DayColumn({
     if (!dayPlan) return
     startTransition(async () => {
       const result = await apiSaveDayPlanItemsToInventory(dayPlan.id)
-      if (result.saved != null) {
-        setToast('Saved ✓')
-        setTimeout(() => setToast(null), 2500)
-      }
+      if (result.saved != null) { setToast('Saved ✓'); setTimeout(() => setToast(null), 2500) }
     })
   }
 
@@ -333,60 +395,74 @@ function DayColumn({
 
   const items = dayPlan?.items ?? []
 
+  const headerBg = tag ? tag.colors.headerBg : isTagOver ? 'bg-gray-200' : 'bg-gray-50'
+  const headerText = tag ? tag.colors.headerText : 'text-gray-700'
+  const borderColor = tag ? tag.colors.border : 'border-gray-200'
+  const bodyBg = tag ? tag.colors.bodyBg : 'bg-white'
+
   return (
     <>
-      <div className="w-[200px] flex-shrink-0 flex flex-col">
+      <div className={`w-[240px] flex-shrink-0 flex flex-col rounded-xl border-2 transition-colors ${borderColor}`}>
         {/* Column header */}
-        <div className="bg-gray-50 border border-gray-200 rounded-t-xl px-3 py-2">
+        <div ref={setDropRef} className={`relative ${headerBg} rounded-t-xl px-3 py-2.5 transition-colors`}>
+          <TagDropZone dateKey={dateKey} isOver={isTagOver} />
           <div className="flex items-baseline justify-between gap-1">
-            <p className="text-xs font-semibold text-gray-700 truncate">{formatColumnDate(date)}</p>
-            <span className="text-[10px] text-gray-400 flex-shrink-0">Day {dayIndex + 1}</span>
+            <p className={`text-xs font-bold truncate ${headerText}`}>{formatColumnDate(date)}</p>
+            <span className={`text-[10px] flex-shrink-0 opacity-70 ${headerText}`}>Day {dayIndex + 1}</span>
           </div>
-          {editingLabel ? (
+
+          {/* Tag chip or label */}
+          {tag ? (
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-sm">{tag.icon}</span>
+              <span className={`text-[11px] font-semibold ${headerText} opacity-90`}>{tag.label}</span>
+              <button
+                onClick={() => saveLabel('')}
+                className={`ml-auto text-[10px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none`}
+                title="Remove tag"
+              >✕</button>
+            </div>
+          ) : editingLabel ? (
             <input
               autoFocus
               type="text"
               value={labelInput}
               onChange={(e) => setLabelInput(e.target.value)}
-              onBlur={saveLabel}
-              onKeyDown={(e) => { if (e.key === 'Enter') saveLabel() }}
+              onBlur={() => saveLabel(labelInput)}
+              onKeyDown={(e) => { if (e.key === 'Enter') saveLabel(labelInput) }}
               className="mt-1 text-[11px] w-full bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           ) : (
-            <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none rounded">
+            <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none rounded w-full text-left">
               {dayPlan?.label
                 ? <span className="text-[11px] text-gray-500 font-medium">{dayPlan.label}</span>
-                : <span className="text-[11px] text-gray-300 italic">+ label</span>}
+                : <span className="text-[11px] opacity-40 italic">drop a tag or add label</span>}
             </button>
           )}
         </div>
 
         {/* Column body */}
-        <div className="bg-white border border-t-0 border-gray-200 rounded-b-xl flex flex-col flex-1">
-          <div className="flex-1 overflow-y-auto max-h-[55vh] p-2 space-y-1">
+        <div className={`${bodyBg} rounded-b-xl flex flex-col flex-1 transition-colors`}>
+          <div className="flex-1 overflow-y-auto max-h-[52vh] p-2.5 space-y-1.5">
             <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <AnimatePresence initial={false}>
                 {items.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.1 }}
-                  >
+                  <motion.div key={item.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.1 }}>
                     <DraggableCard item={item} onDelete={handleDeleteItem} />
                   </motion.div>
                 ))}
               </AnimatePresence>
             </SortableContext>
+            {items.length === 0 && (
+              <p className="text-[11px] text-gray-300 italic text-center pt-4">Nothing planned yet</p>
+            )}
           </div>
-
-          <div className="px-2 pb-2">
+          <div className="px-2.5 pb-2.5">
             {items.length > 0 && (
-              <div className="mb-1">
+              <div className="mb-1.5">
                 {toast
                   ? <p className="text-[11px] text-indigo-500">{toast}</p>
-                  : <button onClick={handleSaveToInventory} className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors focus:outline-none">↓ Save to inventory</button>
+                  : <button onClick={handleSaveToInventory} className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors">↓ Save to inventory</button>
                 }
               </div>
             )}
@@ -413,6 +489,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
   const days = generateDays(trip.startDate, trip.endDate)
   const [dayPlans, setDayPlans] = useState<DayPlanMap>({})
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [tagOverColumn, setTagOverColumn] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
   useEffect(() => {
@@ -427,9 +504,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
           map[key] = dp as DayPlan
         }
         setDayPlans(map)
-      } catch (e) {
-        console.error('Failed to load day plans', e)
-      }
+      } catch (e) { console.error('Failed to load day plans', e) }
     }
     load()
   }, [trip.id])
@@ -451,15 +526,43 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     setActiveId(event.active.id as string)
   }
 
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+    const tagId = parseTagDragId(active.id as string)
+    if (!tagId) { setTagOverColumn(null); return }
+    if (over && (over.id as string).startsWith('col::')) {
+      setTagOverColumn((over.id as string).slice(5))
+    } else {
+      setTagOverColumn(null)
+    }
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     setActiveId(null)
+    setTagOverColumn(null)
     const { active, over } = event
-    if (!over || active.id === over.id) return
+    if (!over) return
 
+    const tagId = parseTagDragId(active.id as string)
+
+    // Tag dropped onto column header
+    if (tagId && (over.id as string).startsWith('col::')) {
+      const dateKey = (over.id as string).slice(5)
+      const tag = getTagById(tagId)
+      if (!tag) return
+      startTransition(async () => {
+        const result = await apiUpsertDayPlan(trip.id, dateKey, tag.label)
+        if (result.dayPlan) handleDayPlanChange(dateKey, result.dayPlan)
+      })
+      return
+    }
+
+    if (active.id === over.id) return
+
+    // Item reorder / move
     const sourceKey = findColumnKeyForItem(active.id as string)
     const destKey = findColumnKeyForItem(over.id as string)
     if (!sourceKey) return
-
     const sourcePlan = dayPlans[sourceKey]
 
     if (!destKey || sourceKey === destKey) {
@@ -483,36 +586,68 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     }
   }
 
-  const activeItem = activeId
+  const activeItem = activeId && !parseTagDragId(activeId)
     ? Object.values(dayPlans).flatMap((dp) => dp.items).find((i) => i.id === activeId)
     : null
+  const activeTag = activeId ? getTagById(parseTagDragId(activeId)) : null
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="w-full overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
-        <div className="inline-flex gap-2 pb-4 px-1 min-w-max">
-          {days.map((date, index) => {
-            const key = toDateKey(date)
-            return (
-              <DayColumn
-                key={key}
-                date={date}
-                dayIndex={index}
-                tripId={trip.id}
-                dayPlan={dayPlans[key]}
-                onDayPlanChange={handleDayPlanChange}
-              />
-            )
-          })}
+    <div className="flex gap-6 h-full">
+      {/* ── Tags Sidebar ─────────────────────────────────────────── */}
+      <div className="w-44 flex-shrink-0">
+        <div className="bg-white rounded-xl border border-gray-200 p-3 sticky top-4">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Day Tags</p>
+          <p className="text-[10px] text-gray-300 mb-3 leading-tight">Drag onto a day to set its theme</p>
+          <SortableContext items={DAY_TAGS.map((t) => makeTagDragId(t.id))} strategy={verticalListSortingStrategy}>
+            <div className="space-y-1.5">
+              {DAY_TAGS.map((tag) => (
+                <DraggableTagChip key={tag.id} tag={tag} />
+              ))}
+            </div>
+          </SortableContext>
         </div>
       </div>
-      <DragOverlay>
-        {activeItem ? (
-          <div className="bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 shadow-lg opacity-90 w-[180px]">
-            <span className="text-xs font-medium text-gray-800">{activeItem.name}</span>
+
+      {/* ── Board ────────────────────────────────────────────────── */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex-1 overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+          <div className="inline-flex gap-3 pb-4 px-1 min-w-max">
+            {days.map((date, index) => {
+              const key = toDateKey(date)
+              return (
+                <DayColumn
+                  key={key}
+                  date={date}
+                  dayIndex={index}
+                  tripId={trip.id}
+                  dayPlan={dayPlans[key]}
+                  isTagOver={tagOverColumn === key}
+                  onDayPlanChange={handleDayPlanChange}
+                />
+              )
+            })}
           </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        </div>
+
+        <DragOverlay>
+          {activeTag ? (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg ${activeTag.colors.chip}`}>
+              <span className="text-base">{activeTag.icon}</span>
+              <span className="text-xs font-semibold">{activeTag.label}</span>
+            </div>
+          ) : activeItem ? (
+            <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg opacity-95 w-[220px]">
+              <span className="text-xs font-medium text-gray-800">{activeItem.name}</span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </div>
   )
 }
