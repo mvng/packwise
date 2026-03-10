@@ -10,7 +10,6 @@ import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
 import EditTripModal from '@/components/EditTripModal'
-import OutfitPlannerPanel from '@/components/OutfitPlannerPanel'
 import { formatDate } from '@/lib/utils'
 
 interface TripPageProps {
@@ -57,7 +56,6 @@ export default function TripPageClient({ params }: TripPageProps) {
   const [isOwner, setIsOwner] = useState(false)
   const [editingTrip, setEditingTrip] = useState<any>(null)
   const [tripTimezone, setTripTimezone] = useState<string | null>(null)
-  const [avgTempF, setAvgTempF] = useState<number | undefined>(undefined)
 
   useEffect(() => {
     async function init() {
@@ -84,10 +82,6 @@ export default function TripPageClient({ params }: TripPageProps) {
           fetchedTrip.endDate
         )
         if (weather?.timezone) setTripTimezone(weather.timezone)
-        // temperature.avg is already in °F (API is called with temperature_unit=fahrenheit)
-        if (weather?.temperature?.avg != null) {
-          setAvgTempF(weather.temperature.avg)
-        }
       }
 
       if (authUser) {
@@ -299,19 +293,6 @@ export default function TripPageClient({ params }: TripPageProps) {
             </div>
           )}
         </div>
-
-        {!isSharedView && trip.startDate && trip.endDate && (
-          <div className="mb-6">
-            <OutfitPlannerPanel
-              tripId={id}
-              startDate={trip.startDate}
-              endDate={trip.endDate}
-              tripLuggages={trip.tripLuggages}
-              avgTempF={avgTempF}
-              tripType={trip.tripType}
-            />
-          </div>
-        )}
 
         <PackingListSection
           trip={displayTrip}
