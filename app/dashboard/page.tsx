@@ -18,6 +18,7 @@ type Trip = {
   endDate: Date | string | null
   tripType: string | null
   notes: string | null
+  hotelConfirmationUrl?: string | null
   createdAt: Date | string
   packingLists?: Array<{
     categories: Array<{
@@ -146,6 +147,12 @@ export default function DashboardPage() {
             >
               🎒 <span className="hidden sm:inline">Inventory</span>
             </Link>
+            <Link
+              href="/settings"
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors flex items-center gap-1.5"
+            >
+              ⚙️ <span className="hidden sm:inline">Settings</span>
+            </Link>
             <span className="text-sm text-gray-600 hidden sm:block">{user?.email}</span>
             <button
               onClick={handleSignOut}
@@ -199,9 +206,14 @@ export default function DashboardPage() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <span className="text-3xl">{getTripEmoji(trip.tripType)}</span>
-                      <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-full">
-                        {trip.tripType || 'trip'}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {trip.hotelConfirmationUrl && (
+                          <span className="text-xs" title="Hotel confirmation saved">🏨</span>
+                        )}
+                        <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-full">
+                          {trip.tripType || 'trip'}
+                        </span>
+                      </div>
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-1">
                       {trip.name || 'Untitled Trip'}
