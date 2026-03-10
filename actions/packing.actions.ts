@@ -48,6 +48,23 @@ export async function addCustomItem(
   tripId: string
 ) {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    // Verify user owns the trip that this category belongs to
+    const category = await prisma.category.findFirst({
+      where: {
+        id: categoryId,
+        packingList: {
+          trip: {
+            userId: user.id
+          }
+        }
+      }
+    })
+
+    if (!category) return { error: 'Unauthorized' }
+
     const item = await prisma.packingItem.create({
       data: {
         categoryId,
