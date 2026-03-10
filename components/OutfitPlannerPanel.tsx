@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import OutfitPlanner, { calcOutfitSummary, OutfitSummary, DayActivity } from './OutfitPlanner'
-import LaundryToggle from './LaundryToggle'
 import LuggageFitCheck from './LuggageFitCheck'
 import SmartOutfitSuggestions from './SmartOutfitSuggestions'
+import { getLaundrySettings } from './EditTripModal'
 
 interface TripLuggage {
   luggage: {
@@ -14,6 +14,7 @@ interface TripLuggage {
 }
 
 interface OutfitPlannerPanelProps {
+  tripId: string
   startDate: string
   endDate: string
   tripLuggages?: TripLuggage[]
@@ -22,6 +23,7 @@ interface OutfitPlannerPanelProps {
 }
 
 export default function OutfitPlannerPanel({
+  tripId,
   startDate,
   endDate,
   tripLuggages = [],
@@ -31,6 +33,13 @@ export default function OutfitPlannerPanel({
   const [days, setDays] = useState<DayActivity[]>([])
   const [hasLaundry, setHasLaundry] = useState(false)
   const [laundryMidpoint, setLaundryMidpoint] = useState<string | undefined>()
+
+  // Read laundry settings from localStorage (set via EditTripModal)
+  useEffect(() => {
+    const settings = getLaundrySettings(tripId)
+    setHasLaundry(settings.hasLaundry)
+    setLaundryMidpoint(settings.laundryDate || undefined)
+  }, [tripId])
 
   const outfitSummary: OutfitSummary = days.length > 0
     ? calcOutfitSummary(days, hasLaundry, laundryMidpoint)
@@ -47,21 +56,10 @@ export default function OutfitPlannerPanel({
         endDate={endDate}
         onChange={setDays}
       />
-      <LaundryToggle
-        startDate={startDate}
-        endDate={endDate}
-        onChange={(laundry, midpoint) => {
-          setHasLaundry(laundry)
-          setLaundryMidpoint(midpoint)
-        }}
-      />
       {outfitSummary.totalDays > 0 && (
         <>
           {luggages.length > 0 && (
-            <LuggageFitCheck
-              luggages={luggages}
-              outfits={outfitSummary}
-            />
+            <LuggageFitCheck luggages={luggages} outfits={outfitSummary} />
           )}
           <SmartOutfitSuggestions
             outfits={outfitSummary}
