@@ -36,6 +36,7 @@ model Trip {
   notes        String?
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
+  dayPlans     DayPlan[]
   packingLists PackingList[]
   tripLuggages TripLuggage[]
   user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -43,6 +44,36 @@ model Trip {
   @@index([userId])
   @@index([startDate])
   @@map("trips")
+}
+
+model DayPlan {
+  id        String       @id @default(uuid())
+  tripId    String       @map("trip_id")
+  date      DateTime
+  label     String?
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  items     DayPlanItem[]
+  trip      Trip         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("day_plans")
+}
+
+model DayPlanItem {
+  id        String   @id @default(uuid())
+  dayPlanId String   @map("day_plan_id")
+  name      String
+  category  String?
+  quantity  Int      @default(1)
+  notes     String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  dayPlan   DayPlan  @relation(fields: [dayPlanId], references: [id], onDelete: Cascade)
+
+  @@index([dayPlanId])
+  @@map("day_plan_items")
 }
 
 model PackingList {
