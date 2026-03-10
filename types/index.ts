@@ -97,14 +97,20 @@ export interface DayPlan {
   items: DayPlanItem[]
 }
 
+// itemType is encoded in the DB as category='__tag__' (no migration needed)
+// For regular items, itemType is 'item' (or undefined for legacy rows)
 export interface DayPlanItem {
   id: string
   dayPlanId: string
-  name: string
+  name: string       // for tags: stores the tagId (e.g. 'workout')
   quantity: number
-  category?: string | null
-  notes?: string | null
+  category?: string | null  // '__tag__' for inline tag items
+  notes?: string | null     // for tags: stores optional time string e.g. '10:00'
   order: number
+  // derived helpers (not stored, computed on read)
+  itemType?: 'item' | 'tag'
+  tagId?: string
+  time?: string | null
 }
 
 export interface UserSettings {
