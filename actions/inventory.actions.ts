@@ -261,37 +261,62 @@ export async function addInventoryItemsToTrip(tripId: string, itemIds: string[])
       grouped.get(key)!.push(item)
     }
 
-    for (const [catName, items] of grouped) {
+    const categoriesToCreate = []
+    const categoryMap = new Map<string, string>()
+
+    for (const catName of grouped.keys()) {
       const match = existingCategories.find(
         (c) => c.name.toLowerCase() === catName.toLowerCase()
       )
-
-      let packingCategoryId: string
       if (match) {
-        packingCategoryId = match.id
+        categoryMap.set(catName.toLowerCase(), match.id)
       } else {
-        const newCat = await prisma.category.create({
-          data: { packingListId: packingList.id, name: catName, order: nextCatOrder++ },
+        categoriesToCreate.push({
+          packingListId: packingList.id,
+          name: catName,
+          order: nextCatOrder++,
         })
-        packingCategoryId = newCat.id
       }
+    }
 
-      const lastItem = await prisma.packingItem.findFirst({
-        where: { categoryId: packingCategoryId },
-        orderBy: { order: 'desc' },
-        select: { order: true },
-      })
-      let orderCounter = (lastItem?.order ?? -1) + 1
+    if (categoriesToCreate.length > 0) {
+      const newCats = await Promise.all(
+        categoriesToCreate.map((data) => prisma.category.create({ data }))
+      )
+      for (const cat of newCats) {
+        categoryMap.set(cat.name.toLowerCase(), cat.id)
+      }
+    }
 
-      await prisma.packingItem.createMany({
-        data: items.map((item) => ({
-          categoryId: packingCategoryId,
+    const catIds = Array.from(categoryMap.values())
+    const maxOrders = await prisma.packingItem.groupBy({
+      by: ['categoryId'],
+      where: { categoryId: { in: catIds } },
+      _max: { order: true },
+    })
+    const maxOrderMap = new Map(maxOrders.map((m) => [m.categoryId, m._max.order ?? -1]))
+
+    const allItemsToCreate = []
+
+    for (const [catName, items] of grouped) {
+      const catId = categoryMap.get(catName.toLowerCase())!
+      let orderCounter = (maxOrderMap.get(catId) ?? -1) + 1
+
+      for (const item of items) {
+        allItemsToCreate.push({
+          categoryId: catId,
           name: item.name,
           quantity: item.quantity,
           isPacked: false,
           isCustom: false,
           order: orderCounter++,
-        })),
+        })
+      }
+    }
+
+    if (allItemsToCreate.length > 0) {
+      await prisma.packingItem.createMany({
+        data: allItemsToCreate,
       })
     }
 
