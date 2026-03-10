@@ -84,9 +84,9 @@ export default function TripPageClient({ params }: TripPageProps) {
           fetchedTrip.endDate
         )
         if (weather?.timezone) setTripTimezone(weather.timezone)
+        // temperature.avg is already in °F (API is called with temperature_unit=fahrenheit)
         if (weather?.temperature?.avg != null) {
-          // temperature.avg is in Celsius
-          setAvgTempF(Math.round(weather.temperature.avg * 9 / 5 + 32))
+          setAvgTempF(weather.temperature.avg)
         }
       }
 
