@@ -596,7 +596,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     return dayPlans[dateKey] ?? {
       id: `pending-${dateKey}`,
       tripId: trip.id,
-      date: dateKey as any,
+      date: dateKey as unknown as Date,
       label: null,
       items: [],
     }
@@ -619,7 +619,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
         setDayPlans((prev) => {
           const existing = prev[dateKey]
           if (existing) return { ...prev, [dateKey]: { ...existing, label: tag.label } }
-          return { ...prev, [dateKey]: { id: `pending-${dateKey}`, tripId: trip.id, date: dateKey as any, label: tag.label, items: [] } }
+          return { ...prev, [dateKey]: { id: `pending-${dateKey}`, tripId: trip.id, date: dateKey as unknown as Date, label: tag.label, items: [] } }
         })
         startTransition(async () => {
           const result = await apiUpsertDayPlan(trip.id, dateKey, tag.label)

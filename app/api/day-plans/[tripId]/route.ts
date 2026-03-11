@@ -13,8 +13,8 @@ export async function GET(
       include: { items: { orderBy: { order: 'asc' } } },
     })
     return NextResponse.json({ dayPlans })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
 
@@ -51,7 +51,7 @@ export async function POST(
       include: { items: { orderBy: { order: 'asc' } } },
     })
     return NextResponse.json({ dayPlan })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
