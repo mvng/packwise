@@ -12,8 +12,22 @@ async function getAuthenticatedUser() {
 
 export async function toggleItemPacked(itemId: string, isPacked: boolean, tripId: string) {
   try {
-    await prisma.packingItem.update({
-      where: { id: itemId },
+    const user = await getAuthenticatedUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    await prisma.packingItem.updateMany({
+      where: {
+        id: itemId,
+        category: {
+          packingList: {
+            trip: {
+              user: {
+                supabaseId: user.id
+              }
+            }
+          }
+        }
+      },
       data: { isPacked },
     })
     revalidatePath(`/trip/${tripId}`)
@@ -29,8 +43,19 @@ export async function togglePackLast(itemId: string, packLast: boolean, tripId: 
     const user = await getAuthenticatedUser()
     if (!user) return { error: 'Unauthorized' }
 
-    await prisma.packingItem.update({
-      where: { id: itemId },
+    await prisma.packingItem.updateMany({
+      where: {
+        id: itemId,
+        category: {
+          packingList: {
+            trip: {
+              user: {
+                supabaseId: user.id
+              }
+            }
+          }
+        }
+      },
       data: { packLast },
     })
     revalidatePath(`/trip/${tripId}`)
@@ -57,7 +82,9 @@ export async function addCustomItem(
         id: categoryId,
         packingList: {
           trip: {
-            userId: user.id
+            user: {
+              supabaseId: user.id
+            }
           }
         }
       }
@@ -83,8 +110,22 @@ export async function addCustomItem(
 
 export async function deleteItem(itemId: string, tripId: string) {
   try {
-    await prisma.packingItem.delete({
-      where: { id: itemId },
+    const user = await getAuthenticatedUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    await prisma.packingItem.deleteMany({
+      where: {
+        id: itemId,
+        category: {
+          packingList: {
+            trip: {
+              user: {
+                supabaseId: user.id
+              }
+            }
+          }
+        }
+      },
     })
     revalidatePath(`/trip/${tripId}`)
     return { success: true }

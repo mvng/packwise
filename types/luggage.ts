@@ -7,6 +7,7 @@ export interface Luggage {
   type: LuggageType
   icon?: string | null
   capacity?: number
+  capacityLiters?: number | null
   createdAt: Date
   updatedAt: Date
   tripLuggages?: TripLuggage[]
@@ -40,6 +41,7 @@ export interface CreateLuggageInput {
   type: LuggageType
   icon?: string
   capacity?: number
+  capacityLiters?: number
 }
 
 export interface UpdateLuggageInput {
@@ -47,4 +49,42 @@ export interface UpdateLuggageInput {
   type?: LuggageType
   icon?: string
   capacity?: number
+  capacityLiters?: number
+}
+
+export type LuggageTripHistoryEntry = {
+  id: string
+  tripId: string
+  luggageId: string
+  isActive: boolean
+  trip: {
+    id: string
+    name: string | null
+    destination: string
+    startDate: Date
+    endDate: Date
+    tripType: string
+    transportMode: string | null
+  }
+  packingItems: {
+    id: string
+    name: string
+    quantity: number
+    isPacked: boolean
+  }[]
+}
+
+export type LuggageWithHistory = {
+  id: string
+  name: string
+  type: string
+  icon: string | null
+  capacity: number | null
+  capacityLiters: number | null
+  userId: string
+  user: {
+    homeCity: string | null
+    homeCountry: string | null
+  }
+  tripLuggages: LuggageTripHistoryEntry[]
 }
