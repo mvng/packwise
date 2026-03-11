@@ -31,6 +31,7 @@ export default function LuggagePage() {
       name: formData.name,
       type: formData.type,
       capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
+      capacityLiters: formData.capacity ? parseFloat(formData.capacity) : undefined,
     })
 
     if (result.success) {
@@ -116,6 +117,7 @@ export default function LuggagePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Capacity (Liters)</label>
                 <input
                   type="number"
+                  step="0.1"
                   value={formData.capacity}
                   onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
                   placeholder="e.g., 20"
@@ -156,8 +158,8 @@ export default function LuggagePage() {
                     <div>
                       <h3 className="font-semibold text-gray-900">{item.name}</h3>
                       <p className="text-sm text-gray-500 capitalize">{item.type}</p>
-                      {item.capacity && (
-                        <p className="text-xs text-gray-400 mt-1">{item.capacity}L capacity</p>
+                      {(item.capacityLiters || item.capacity) && (
+                        <p className="text-xs text-gray-400 mt-1">{item.capacityLiters || item.capacity}L capacity</p>
                       )}
                     </div>
                   </div>

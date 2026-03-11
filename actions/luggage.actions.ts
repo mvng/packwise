@@ -85,6 +85,7 @@ export async function createLuggage(input: CreateLuggageInput) {
         type: input.type,
         icon: input.icon,
         capacity: input.capacity,
+        capacityLiters: input.capacityLiters,
       },
     })
 
