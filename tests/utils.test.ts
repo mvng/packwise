@@ -1,5 +1,36 @@
 import { test, expect } from '@playwright/test'
-import { getTripDuration, formatDateWithTimezone, formatDate } from '../lib/utils'
+import { getTripDuration, formatDateWithTimezone, formatDate, cn } from '../lib/utils'
+
+test.describe('cn', () => {
+  test('should merge simple class names', () => {
+    expect(cn('class1', 'class2')).toBe('class1 class2')
+  })
+
+  test('should handle conditional class names', () => {
+    expect(cn({ class1: true, class2: false, class3: true })).toBe('class1 class3')
+  })
+
+  test('should handle array combinations', () => {
+    expect(cn(['class1', 'class2'], 'class3')).toBe('class1 class2 class3')
+  })
+
+  test('should ignore undefined, null, and false', () => {
+    expect(cn('class1', undefined, null, false, 'class2')).toBe('class1 class2')
+  })
+
+  test('should handle complex combinations', () => {
+    expect(
+      cn(
+        'class1',
+        ['class2', 'class3'],
+        { class4: true, class5: false },
+        undefined,
+        null,
+        'class6'
+      )
+    ).toBe('class1 class2 class3 class4 class6')
+  })
+})
 
 test.describe('getTripDuration', () => {
   test('should return 0 for same start and end dates', () => {
