@@ -1,18 +1,17 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  const origin = requestUrl.origin
 
   if (code) {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`)
+      redirect(`/login?error=${encodeURIComponent(error.message)}`)
     }
 
     // Eagerly upsert the Prisma User row on login so the Trip.userId FK
@@ -41,5 +40,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/dashboard`)
+  redirect('/dashboard')
 }
