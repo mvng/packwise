@@ -134,7 +134,6 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
             </div>
             <button
               onClick={onClose}
-              aria-label="Close modal"
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

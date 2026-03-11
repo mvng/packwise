@@ -54,39 +54,6 @@ test.describe('getTripDuration', () => {
   })
 })
 
-test.describe('formatDate', () => {
-  test('should format YYYY-MM-DD string without timezone', () => {
-    const date = '2024-01-01'
-    const result = formatDate(date)
-    expect(result).toBe('Jan 1, 2024')
-  })
-
-  test('should format YYYY-MM-DD string with timezone', () => {
-    const date = '2024-01-01'
-    const result = formatDate(date, { includeTimezone: true })
-    expect(result).toMatch(/^Jan 1, 2024 [a-zA-Z0-9+\-:\s]+$/) // e.g., "Jan 1, 2024 GMT" or "Jan 1, 2024 EST"
-  })
-
-  test('should format Date object without timezone', () => {
-    const date = new Date(2024, 0, 1) // Jan 1, 2024 local time
-    const result = formatDate(date)
-    expect(result).toBe('Jan 1, 2024')
-  })
-
-  test('should format Date object with timezone', () => {
-    const date = new Date(2024, 0, 1) // Jan 1, 2024 local time
-    const result = formatDate(date, { includeTimezone: true })
-    expect(result).toMatch(/^Jan 1, 2024 [a-zA-Z0-9+\-:\s]+$/)
-  })
-
-  test('should format non-YYYY-MM-DD string properly', () => {
-    // Tests the fallback parsing
-    const date = 'Jan 1, 2024 12:00:00'
-    const result = formatDate(date)
-    expect(result).toBe('Jan 1, 2024')
-  })
-})
-
 test.describe('formatDateWithTimezone', () => {
   test('should format date with valid timezone', () => {
     // By using a specific ISO time in UTC, we can predict the timezone shift

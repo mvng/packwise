@@ -230,20 +230,9 @@ export async function addInventoryItemsToTrip(tripId: string, itemIds: string[])
     }
 
     if (categoriesToCreate.length > 0) {
-      // Use createMany to insert all categories in a single query
-      await prisma.category.createMany({
-        data: categoriesToCreate,
-      })
-
-      // Fetch the newly created categories to get their IDs
-      const createdCategoryNames = categoriesToCreate.map((c) => c.name)
-      const newCats = await prisma.category.findMany({
-        where: {
-          packingListId: packingList.id,
-          name: { in: createdCategoryNames }
-        }
-      })
-
+      const newCats = await Promise.all(
+        categoriesToCreate.map((data) => prisma.category.create({ data }))
+      )
       for (const cat of newCats) {
         categoryMap.set(cat.name.toLowerCase(), cat.id)
       }
