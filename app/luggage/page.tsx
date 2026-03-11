@@ -161,12 +161,20 @@ export default function LuggagePage() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-gray-400 hover:text-red-600 text-sm"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex flex-col items-end gap-2">
+                    <Link
+                      href={`/luggage/${item.id}`}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      View History
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="text-gray-400 hover:text-red-600 text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
