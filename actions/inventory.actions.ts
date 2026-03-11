@@ -1,8 +1,58 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
+
+/**
+ * Returns the Prisma User.id (not the Supabase auth UUID).
+ * Mirrors the getUserId() pattern in trip.actions.ts exactly so that
+ * InventoryCategory.userId → User.id FK constraint is satisfied.
+ */
+async function getUserId(): Promise<string | null> {
+  const supabase = await createClient()
+  let authUser: any = null
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    authUser = user
+  } catch {}
+
+  if (!authUser) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      authUser = session?.user ?? null
+    } catch {}
+  }
+
+  if (authUser) {
+    const prismaUser = await prisma.user.upsert({
+      where: { supabaseId: authUser.id },
+      create: {
+        supabaseId: authUser.id,
+        email: authUser.email ?? '',
+        name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
+        avatarUrl: authUser.user_metadata?.avatar_url ?? null,
+        authProvider: authUser.app_metadata?.provider ?? 'email',
+      },
+      update: {
+        email: authUser.email ?? '',
+        name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
+        avatarUrl: authUser.user_metadata?.avatar_url ?? null,
+      },
+    })
+    return prismaUser.id
+  }
+
+  const cookieStore = await cookies()
+  const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
+  if (isGuestMode) {
+    return cookieStore.get('guest_user_id')?.value ?? null
+  }
+
+  return null
+}
 
 // ─── Category actions ────────────────────────────────────────────────────────
 
@@ -211,62 +261,37 @@ export async function addInventoryItemsToTrip(tripId: string, itemIds: string[])
       grouped.get(key)!.push(item)
     }
 
-    const categoriesToCreate = []
-    const categoryMap = new Map<string, string>()
-
-    for (const catName of grouped.keys()) {
+    for (const [catName, items] of grouped) {
       const match = existingCategories.find(
         (c) => c.name.toLowerCase() === catName.toLowerCase()
       )
+
+      let packingCategoryId: string
       if (match) {
-        categoryMap.set(catName.toLowerCase(), match.id)
+        packingCategoryId = match.id
       } else {
-        categoriesToCreate.push({
-          packingListId: packingList.id,
-          name: catName,
-          order: nextCatOrder++,
+        const newCat = await prisma.category.create({
+          data: { packingListId: packingList.id, name: catName, order: nextCatOrder++ },
         })
+        packingCategoryId = newCat.id
       }
-    }
 
-    if (categoriesToCreate.length > 0) {
-      const newCats = await Promise.all(
-        categoriesToCreate.map((data) => prisma.category.create({ data }))
-      )
-      for (const cat of newCats) {
-        categoryMap.set(cat.name.toLowerCase(), cat.id)
-      }
-    }
+      const lastItem = await prisma.packingItem.findFirst({
+        where: { categoryId: packingCategoryId },
+        orderBy: { order: 'desc' },
+        select: { order: true },
+      })
+      let orderCounter = (lastItem?.order ?? -1) + 1
 
-    const catIds = Array.from(categoryMap.values())
-    const maxOrders = await prisma.packingItem.groupBy({
-      by: ['categoryId'],
-      where: { categoryId: { in: catIds } },
-      _max: { order: true },
-    })
-    const maxOrderMap = new Map(maxOrders.map((m) => [m.categoryId, m._max.order ?? -1]))
-
-    const allItemsToCreate = []
-
-    for (const [catName, items] of grouped) {
-      const catId = categoryMap.get(catName.toLowerCase())!
-      let orderCounter = (maxOrderMap.get(catId) ?? -1) + 1
-
-      for (const item of items) {
-        allItemsToCreate.push({
-          categoryId: catId,
+      await prisma.packingItem.createMany({
+        data: items.map((item) => ({
+          categoryId: packingCategoryId,
           name: item.name,
           quantity: item.quantity,
           isPacked: false,
           isCustom: false,
           order: orderCounter++,
-        })
-      }
-    }
-
-    if (allItemsToCreate.length > 0) {
-      await prisma.packingItem.createMany({
-        data: allItemsToCreate,
+        })),
       })
     }
 

@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 import { getUserTrips, deleteTrip } from '@/actions/trip.actions'
 import { formatDate } from '@/lib/utils'
 import TripWeather from '@/components/TripWeather'
-import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
 import type { User } from '@supabase/supabase-js'
 
@@ -19,8 +18,12 @@ type Trip = {
   endDate: Date | string | null
   tripType: string | null
   notes: string | null
-  hotelConfirmationUrl?: string | null
   createdAt: Date | string
+  packingLists?: Array<{
+    categories: Array<{
+      items: Array<{ isPacked: boolean }>
+    }>
+  }>
 }
 
 const getTripEmoji = (tripType: string | null) => {
@@ -35,6 +38,13 @@ const getTripEmoji = (tripType: string | null) => {
     leisure: '🎡',
   }
   return icons[tripType] || '🧳'
+}
+
+const getTripProgress = (trip: Trip) => {
+  const allItems = trip.packingLists?.flatMap((l) => l.categories.flatMap((c) => c.items)) ?? []
+  const total = allItems.length
+  const packed = allItems.filter((i) => i.isPacked).length
+  return { total, packed, percent: total > 0 ? Math.round((packed / total) * 100) : 0 }
 }
 
 export default function DashboardPage() {
@@ -136,12 +146,6 @@ export default function DashboardPage() {
             >
               🎒 <span className="hidden sm:inline">Inventory</span>
             </Link>
-            <Link
-              href="/settings"
-              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors flex items-center gap-1.5"
-            >
-              ⚙️ <span className="hidden sm:inline">Settings</span>
-            </Link>
             <span className="text-sm text-gray-600 hidden sm:block">{user?.email}</span>
             <button
               onClick={handleSignOut}
@@ -184,65 +188,76 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {trips.map((trip) => (
-              <div key={trip.id} className="relative group">
-                <Link
-                  href={`/trip/${trip.id}`}
-                  className="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-3xl">{getTripEmoji(trip.tripType)}</span>
-                    <div className="flex items-center gap-1.5">
-                      {trip.hotelConfirmationUrl && (
-                        <span className="text-xs" title="Hotel confirmation saved">🏨</span>
-                      )}
+            {trips.map((trip) => {
+              const { total, packed, percent } = getTripProgress(trip)
+
+              return (
+                <div key={trip.id} className="relative group">
+                  <Link
+                    href={`/trip/${trip.id}`}
+                    className="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-3xl">{getTripEmoji(trip.tripType)}</span>
                       <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-full">
                         {trip.tripType || 'trip'}
                       </span>
                     </div>
-                  </div>
-                  <h3 className="font-semibold text-gray-900 mb-1">
-                    {trip.name || 'Untitled Trip'}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
-                  <div className="text-xs text-gray-400 mb-2">
-                    {trip.startDate ? formatDate(trip.startDate as string) : ''}
-                    {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
-                  </div>
+                    <h3 className="font-semibold text-gray-900 mb-1">
+                      {trip.name || 'Untitled Trip'}
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
+                    <div className="text-xs text-gray-400 mb-3">
+                      {trip.startDate ? formatDate(trip.startDate as string) : ''}
+                      {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
+                    </div>
 
-                  {/* Countdown badge */}
-                  <div className="mb-3">
-                    <TripCountdown startDate={trip.startDate} endDate={trip.endDate} variant="card" />
+                    {/* Weather widget */}
+                    <TripWeather
+                      destination={trip.destination}
+                      startDate={trip.startDate}
+                      endDate={trip.endDate}
+                    />
+
+                    {total > 0 && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                          <span>{packed}/{total} packed</span>
+                          <span>{percent}%</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-1.5 rounded-full transition-all ${
+                              percent === 100 ? 'bg-green-500' : 'bg-blue-500'
+                            }`}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </Link>
+
+                  {/* Action buttons */}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                    <button
+                      onClick={(e) => handleEditTrip(e, trip)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                      aria-label="Edit trip"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteTrip(e, trip.id)}
+                      disabled={deletingId === trip.id}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                      aria-label="Delete trip"
+                    >
+                      {deletingId === trip.id ? '…' : '🗑️'}
+                    </button>
                   </div>
-
-                  {/* Weather widget */}
-                  <TripWeather
-                    destination={trip.destination}
-                    startDate={trip.startDate}
-                    endDate={trip.endDate}
-                  />
-                </Link>
-
-                {/* Action buttons */}
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-                  <button
-                    onClick={(e) => handleEditTrip(e, trip)}
-                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                    aria-label="Edit trip"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteTrip(e, trip.id)}
-                    disabled={deletingId === trip.id}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
-                    aria-label="Delete trip"
-                  >
-                    {deletingId === trip.id ? '…' : '🗑️'}
-                  </button>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </main>

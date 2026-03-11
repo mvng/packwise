@@ -12,11 +12,7 @@ Packwise is a full-stack web application that helps travelers create intelligent
 - ✅ **Interactive Packing** – Check off items as you pack with real-time progress
 - 📝 **Custom Items** – Add your own items to any category
 - 📊 **Progress Tracking** – Visual progress bar showing packing completion
-- 🎒 **Inventory Management** – Keep track of items you own
-- 🧳 **Luggage Management** – Add and manage luggage items and sizes, and assign your items to specific luggages
-- 📅 **Day Plans** – Create daily itineraries for your trips
 - 🔒 **Auth** – Secure login/signup powered by Supabase Auth
-- ⚙️ **Settings** – Customize your experience
 
 ## Tech Stack
 
@@ -34,31 +30,22 @@ Packwise is a full-stack web application that helps travelers create intelligent
 
 ```
 packwise/
-├── actions/             # Next.js Server Actions
-│   ├── day-plan.actions.ts # Daily itinerary management
-│   ├── inventory.actions.ts# User inventory management
-│   ├── luggage.actions.ts  # User luggage management
-│   ├── packing.actions.ts  # Item management
-│   ├── trip.actions.ts     # CRUD for trips
-│   ├── user.actions.ts     # User account management
-│   └── weather.actions.ts  # Weather fetching
-├── app/                 # Next.js App Router pages
-│   ├── (auth)/login/      # Authentication page
-│   ├── api/               # API Routes
-│   ├── auth/callback/     # OAuth callback
-│   ├── dashboard/         # User dashboard
-│   ├── inventory/         # Inventory management
-│   ├── luggage/           # Luggage management
-│   ├── settings/          # User settings
-│   └── trip/[id]/         # Trip detail page
-├── components/          # React components
-├── lib/                 # Shared utilities
-│   ├── supabase/          # Supabase client
-│   ├── prisma.ts          # Prisma client
-│   └── utils.ts           # Helper functions
-├── prisma/              # Database schema & migrations
-├── types/               # TypeScript types
-└── utils/               # Packing list generators
+├── actions/           # Next.js Server Actions
+│   ├── trip.actions.ts  # CRUD for trips
+│   └── packing.actions.ts # Item management
+├── app/               # Next.js App Router pages
+│   ├── (auth)/login/    # Authentication page
+│   ├── auth/callback/   # OAuth callback
+│   ├── dashboard/       # User dashboard
+│   └── trip/[id]/       # Trip detail page
+├── components/        # React components
+├── lib/               # Shared utilities
+│   ├── supabase/        # Supabase client
+│   ├── prisma.ts        # Prisma client
+│   └── utils.ts         # Helper functions
+├── prisma/            # Database schema & migrations
+├── types/             # TypeScript types
+└── utils/             # Packing list generators
 ```
 
 ## Getting Started
