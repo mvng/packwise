@@ -77,12 +77,12 @@ export async function createTrip(input: CreateTripInput) {
 
     revalidatePath('/dashboard')
     return { success: true, tripId: trip.id }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Create trip error:', error)
-    if (error.code === 'P2003') {
+    if (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 'P2003') {
       return { error: 'Failed to create trip due to a database configuration issue. Please try again or contact support.' }
     }
-    return { error: error.message || 'Failed to create trip' }
+    return { error: error instanceof Error ? error.message : 'Failed to create trip' }
   }
 }
 
@@ -126,9 +126,9 @@ export async function updateTrip(
     revalidatePath('/dashboard')
     revalidatePath(`/trip/${tripId}`)
     return { success: true }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Update trip error:', error)
-    return { error: error.message || 'Failed to update trip' }
+    return { error: error instanceof Error ? error.message : 'Failed to update trip' }
   }
 }
 
@@ -144,9 +144,9 @@ export async function getUserTrips() {
     })
 
     return { trips }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get trips error:', error)
-    return { error: error.message || 'Failed to fetch trips' }
+    return { error: error instanceof Error ? error.message : 'Failed to fetch trips' }
   }
 }
 
@@ -162,9 +162,9 @@ export async function getTripById(tripId: string) {
 
     if (!trip) return { error: 'Trip not found' }
     return { trip }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get trip error:', error)
-    return { error: error.message || 'Failed to fetch trip' }
+    return { error: error instanceof Error ? error.message : 'Failed to fetch trip' }
   }
 }
 
@@ -176,9 +176,9 @@ export async function deleteTrip(tripId: string) {
     await prisma.trip.delete({ where: { id: tripId, userId } })
     revalidatePath('/dashboard')
     return { success: true }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Delete trip error:', error)
-    return { error: error.message || 'Failed to delete trip' }
+    return { error: error instanceof Error ? error.message : 'Failed to delete trip' }
   }
 }
 
@@ -211,9 +211,9 @@ export async function getSharedTripById(tripId: string) {
 
     if (!trip) return { error: 'Trip not found' }
     return { trip }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get shared trip error:', error)
-    return { error: error.message || 'Failed to fetch trip' }
+    return { error: error instanceof Error ? error.message : 'Failed to fetch trip' }
   }
 }
 
@@ -280,8 +280,8 @@ export async function forkTrip(
         ? 'Trip copied to your account with your checked items!'
         : 'Trip copied to your account successfully!'
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Fork trip error:', error)
-    return { error: error.message || 'Failed to copy trip' }
+    return { error: error instanceof Error ? error.message : 'Failed to copy trip' }
   }
 }
