@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { getTripDuration } from '../lib/utils'
+import { getTripDuration, formatDateWithTimezone, formatDate } from '../lib/utils'
 
 test.describe('getTripDuration', () => {
   test('should return 0 for same start and end dates', () => {
@@ -51,5 +51,66 @@ test.describe('getTripDuration', () => {
     const endDate = '2024-01-01T22:00:00Z'
     // 12 hours = 0.5 days. Math.ceil(0.5) = 1
     expect(getTripDuration(startDate, endDate)).toBe(1)
+  })
+})
+
+test.describe('formatDateWithTimezone', () => {
+  test('should format date with valid timezone', () => {
+    // By using a specific ISO time in UTC, we can predict the timezone shift
+    // Midnight UTC on Jan 2 is 4 PM PST on Jan 1
+    const date = '2024-01-02T00:00:00Z'
+    const result = formatDateWithTimezone(date, 'America/Los_Angeles')
+
+    // Check that it's formatted as a string containing some date parts
+    expect(typeof result).toBe('string')
+    // We can just verify it includes the timezone abbreviation
+    expect(result).toMatch(/PST|PDT/)
+  })
+
+  test('should fallback to default format on invalid timezone', () => {
+    const date = '2024-01-01'
+    const invalidTimezone = 'Garbage/Timezone'
+
+    // Suppress console.warn during test to avoid clutter
+    const originalWarn = console.warn
+    let warningLogged = false
+    console.warn = (...args) => {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('Invalid timezone: Garbage/Timezone')) {
+        warningLogged = true
+      }
+    }
+
+    const result = formatDateWithTimezone(date, invalidTimezone)
+    const expectedFallback = formatDate(date, { includeTimezone: true })
+
+    // Restore console.warn
+    console.warn = originalWarn
+
+    expect(result).toBe(expectedFallback)
+    expect(warningLogged).toBe(true)
+  })
+
+  test('should handle Date objects properly with valid timezone', () => {
+    const date = new Date('2024-01-01T12:00:00Z')
+    const result = formatDateWithTimezone(date, 'America/New_York')
+    expect(typeof result).toBe('string')
+    // Should contain the formatted date, might be Dec 31 or Jan 1 depending on TZ shift
+  })
+
+  test('should fallback to default format on invalid timezone with Date object', () => {
+    const date = new Date('2024-01-01T12:00:00Z')
+    const invalidTimezone = 'Invalid/Timezone'
+
+    // Suppress console.warn
+    const originalWarn = console.warn
+    console.warn = () => {}
+
+    const result = formatDateWithTimezone(date, invalidTimezone)
+    const expectedFallback = formatDate(date, { includeTimezone: true })
+
+    // Restore console.warn
+    console.warn = originalWarn
+
+    expect(result).toBe(expectedFallback)
   })
 })
