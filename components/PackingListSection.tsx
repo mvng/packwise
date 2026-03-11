@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useOptimistic } from 'react'
 import { toggleItemPacked, addCustomItem, deleteItem, togglePackLast } from '@/actions/packing.actions'
 import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
@@ -70,6 +70,76 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const [isBagsCardExpanded, setIsBagsCardExpanded] = useState(true)
   const [, startTransition] = useTransition()
 
+  const [optimisticLists, addOptimisticListUpdate] = useOptimistic(
+    lists,
+    (state, action: { type: string, payload: any }) => {
+      switch (action.type) {
+        case 'TOGGLE_PACKED':
+          return state.map(list => list.id === action.payload.packingListId ? {
+            ...list,
+            categories: list.categories.map(cat => cat.id === action.payload.categoryId ? {
+              ...cat,
+              items: cat.items.map(item => item.id === action.payload.itemId ? { ...item, isPacked: action.payload.isPacked } : item)
+            } : cat)
+          } : list)
+        case 'TOGGLE_PACK_LAST':
+          return state.map(list => list.id === action.payload.packingListId ? {
+            ...list,
+            categories: list.categories.map(cat => cat.id === action.payload.categoryId ? {
+              ...cat,
+              items: cat.items.map(item => item.id === action.payload.itemId ? { ...item, packLast: action.payload.packLast } : item)
+            } : cat)
+          } : list)
+        case 'ADD_ITEM':
+          return state.map(list => list.id === action.payload.packingListId ? {
+            ...list,
+            categories: list.categories.map(cat => cat.id === action.payload.categoryId ? {
+              ...cat,
+              items: [...cat.items, action.payload.item]
+            } : cat)
+          } : list)
+        case 'DELETE_ITEM':
+          return state.map(list => list.id === action.payload.packingListId ? {
+            ...list,
+            categories: list.categories.map(cat => cat.id === action.payload.categoryId ? {
+              ...cat,
+              items: cat.items.filter(item => item.id !== action.payload.itemId)
+            } : cat)
+          } : list)
+        case 'ASSIGN_LUGGAGE':
+          return state.map(list => list.id === action.payload.packingListId ? {
+            ...list,
+            categories: list.categories.map(cat => cat.id === action.payload.categoryId ? {
+              ...cat,
+              items: cat.items.map(item => item.id === action.payload.itemId ? { ...item, tripLuggageId: action.payload.tripLuggageId || undefined } : item)
+            } : cat)
+          } : list)
+        case 'REMOVE_LUGGAGE':
+          return state.map(list => ({
+            ...list,
+            categories: list.categories.map(cat => ({
+              ...cat,
+              items: cat.items.map(item => item.tripLuggageId === action.payload.tripLuggageId ? { ...item, tripLuggageId: undefined } : item)
+            }))
+          }))
+        default:
+          return state
+      }
+    }
+  )
+
+  const [optimisticTripLuggages, addOptimisticTripLuggagesUpdate] = useOptimistic(
+    tripLuggages,
+    (state, action: { type: string, payload: any }) => {
+      switch (action.type) {
+        case 'REMOVE_LUGGAGE':
+          return state.filter(tl => tl.id !== action.payload.tripLuggageId)
+        default:
+          return state
+      }
+    }
+  )
+
   const luggageIcons: Record<LuggageType, string> = {
     backpack: '🎒',
     'carry-on': '🧳',
@@ -137,112 +207,197 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       return
     }
     startTransition(async () => {
-      await toggleItemPacked(itemId, !isPacked, trip.id)
-      setLists(prev => prev.map(list =>
-        list.id === packingListId ? {
-          ...list,
-          categories: list.categories.map(cat =>
-            cat.id === categoryId ? {
-              ...cat,
-              items: cat.items.map(item =>
-                item.id === itemId ? { ...item, isPacked: !isPacked } : item
-              )
-            } : cat
-          )
-        } : list
-      ))
+      addOptimisticListUpdate({
+        type: 'TOGGLE_PACKED',
+        payload: { itemId, categoryId, packingListId, isPacked: !isPacked }
+      })
+
+      const result = await toggleItemPacked(itemId, !isPacked, trip.id)
+
+      if (result?.error) {
+        setAddError(result.error)
+        setTimeout(() => setAddError(null), 3000)
+      } else {
+        setLists(prev => prev.map(list =>
+          list.id === packingListId ? {
+            ...list,
+            categories: list.categories.map(cat =>
+              cat.id === categoryId ? {
+                ...cat,
+                items: cat.items.map(item =>
+                  item.id === itemId ? { ...item, isPacked: !isPacked } : item
+                )
+              } : cat
+            )
+          } : list
+        ))
+      }
     })
   }
 
   const handleTogglePackLast = (itemId: string, categoryId: string, packingListId: string, current: boolean) => {
     if (readOnly) return
     startTransition(async () => {
-      await togglePackLast(itemId, !current, trip.id)
-      setLists(prev => prev.map(list =>
-        list.id === packingListId ? {
-          ...list,
-          categories: list.categories.map(cat =>
-            cat.id === categoryId ? {
-              ...cat,
-              items: cat.items.map(item =>
-                item.id === itemId ? { ...item, packLast: !current } : item
-              )
-            } : cat
-          )
-        } : list
-      ))
+      addOptimisticListUpdate({
+        type: 'TOGGLE_PACK_LAST',
+        payload: { itemId, categoryId, packingListId, packLast: !current }
+      })
+
+      const result = await togglePackLast(itemId, !current, trip.id)
+
+      if (result?.error) {
+        setAddError(result.error)
+        setTimeout(() => setAddError(null), 3000)
+      } else {
+        setLists(prev => prev.map(list =>
+          list.id === packingListId ? {
+            ...list,
+            categories: list.categories.map(cat =>
+              cat.id === categoryId ? {
+                ...cat,
+                items: cat.items.map(item =>
+                  item.id === itemId ? { ...item, packLast: !current } : item
+                )
+              } : cat
+            )
+          } : list
+        ))
+      }
     })
   }
 
-  const handleAddItem = async (categoryId: string, packingListId: string) => {
+  const handleAddItem = (categoryId: string, packingListId: string) => {
     if (readOnly) return
     const name = newItemName[categoryId]?.trim()
     if (!name) return
     setAddError(null)
-    const result = await addCustomItem(categoryId, name, 1, trip.id)
-    if (result.error) {
-      setAddError(result.error)
-    } else if (result.item) {
-      setLists(prev => prev.map(list =>
-        list.id === packingListId ? {
-          ...list,
-          categories: list.categories.map(cat =>
-            cat.id === categoryId ? { ...cat, items: [...cat.items, result.item!] } : cat
-          )
-        } : list
-      ))
+
+    const tempId = crypto.randomUUID()
+    const optimisticItem: PackingItem = {
+      id: tempId,
+      name,
+      quantity: 1,
+      isPacked: false,
+      isCustom: true,
+      packLast: false,
+      order: 0,
+    }
+
+    startTransition(async () => {
+      addOptimisticListUpdate({
+        type: 'ADD_ITEM',
+        payload: { categoryId, packingListId, item: optimisticItem }
+      })
       setNewItemName(prev => ({ ...prev, [categoryId]: '' }))
       setAddingTo(null)
-    }
+
+      const result = await addCustomItem(categoryId, name, 1, trip.id)
+
+      if (result.error) {
+        setAddError(result.error)
+        setTimeout(() => setAddError(null), 3000)
+      } else if (result.item) {
+        setLists(prev => prev.map(list =>
+          list.id === packingListId ? {
+            ...list,
+            categories: list.categories.map(cat =>
+              cat.id === categoryId ? { ...cat, items: [...cat.items, result.item!] } : cat
+            )
+          } : list
+        ))
+      }
+    })
   }
 
   const handleDelete = (itemId: string, categoryId: string, packingListId: string) => {
     if (readOnly) return
     startTransition(async () => {
-      await deleteItem(itemId, trip.id)
-      setLists(prev => prev.map(list =>
-        list.id === packingListId ? {
-          ...list,
-          categories: list.categories.map(cat =>
-            cat.id === categoryId ? { ...cat, items: cat.items.filter(item => item.id !== itemId) } : cat
-          )
-        } : list
-      ))
+      addOptimisticListUpdate({
+        type: 'DELETE_ITEM',
+        payload: { itemId, categoryId, packingListId }
+      })
+
+      const result = await deleteItem(itemId, trip.id)
+
+      if (result?.error) {
+        setAddError(result.error)
+        setTimeout(() => setAddError(null), 3000)
+      } else {
+        setLists(prev => prev.map(list =>
+          list.id === packingListId ? {
+            ...list,
+            categories: list.categories.map(cat =>
+              cat.id === categoryId ? { ...cat, items: cat.items.filter(item => item.id !== itemId) } : cat
+            )
+          } : list
+        ))
+      }
     })
   }
 
-  const handleAssignLuggage = async (itemId: string, tripLuggageId: string | null, categoryId: string, packingListId: string) => {
+  const handleAssignLuggage = (itemId: string, tripLuggageId: string | null, categoryId: string, packingListId: string) => {
     if (readOnly) return
-    await assignItemToLuggage(itemId, tripLuggageId, trip.id)
-    setLists(prev => prev.map(list =>
-      list.id === packingListId ? {
-        ...list,
-        categories: list.categories.map(cat =>
-          cat.id === categoryId ? {
-            ...cat,
-            items: cat.items.map(item =>
-              item.id === itemId ? { ...item, tripLuggageId: tripLuggageId || undefined } : item
+    startTransition(async () => {
+      addOptimisticListUpdate({
+        type: 'ASSIGN_LUGGAGE',
+        payload: { itemId, tripLuggageId, categoryId, packingListId }
+      })
+
+      const result = await assignItemToLuggage(itemId, tripLuggageId, trip.id)
+
+      if (result?.error) {
+        setAddError(result.error)
+        setTimeout(() => setAddError(null), 3000)
+      } else {
+        setLists(prev => prev.map(list =>
+          list.id === packingListId ? {
+            ...list,
+            categories: list.categories.map(cat =>
+              cat.id === categoryId ? {
+                ...cat,
+                items: cat.items.map(item =>
+                  item.id === itemId ? { ...item, tripLuggageId: tripLuggageId || undefined } : item
+                )
+              } : cat
             )
-          } : cat
-        )
-      } : list
-    ))
+          } : list
+        ))
+      }
+    })
   }
 
-  const handleRemoveLuggage = async (tripLuggageId: string, luggageId: string) => {
+  const handleRemoveLuggage = (tripLuggageId: string, luggageId: string) => {
     if (readOnly) return
     if (!confirm('Remove this luggage from the trip? Items will be unassigned.')) return
-    await removeLuggageFromTrip(trip.id, luggageId)
-    setTripLuggages(prev => prev.filter(tl => tl.id !== tripLuggageId))
-    setLists(prev => prev.map(list => ({
-      ...list,
-      categories: list.categories.map(cat => ({
-        ...cat,
-        items: cat.items.map(item =>
-          item.tripLuggageId === tripLuggageId ? { ...item, tripLuggageId: undefined } : item
-        )
-      }))
-    })))
+
+    startTransition(async () => {
+      addOptimisticTripLuggagesUpdate({
+        type: 'REMOVE_LUGGAGE',
+        payload: { tripLuggageId }
+      })
+      addOptimisticListUpdate({
+        type: 'REMOVE_LUGGAGE',
+        payload: { tripLuggageId }
+      })
+
+      const result = await removeLuggageFromTrip(trip.id, luggageId)
+
+      if (result?.error) {
+        setAddError(result.error)
+        setTimeout(() => setAddError(null), 3000)
+      } else {
+        setTripLuggages(prev => prev.filter(tl => tl.id !== tripLuggageId))
+        setLists(prev => prev.map(list => ({
+          ...list,
+          categories: list.categories.map(cat => ({
+            ...cat,
+            items: cat.items.map(item =>
+              item.tripLuggageId === tripLuggageId ? { ...item, tripLuggageId: undefined } : item
+            )
+          }))
+        })))
+      }
+    })
   }
 
   const handleDragStart = (e: React.DragEvent, itemId: string, categoryId: string, packingListId: string) => {
@@ -300,7 +455,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     return item.isPacked
   }
 
-  const allItems = lists.flatMap(list =>
+  const allItems = optimisticLists.flatMap(list =>
     list.categories.flatMap(cat =>
       cat.items.map(item => ({
         ...item,
@@ -319,7 +474,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const itemsByLuggage: Record<string, typeof allItems> = {
     'not-assigned': regularItems.filter(item => !item.tripLuggageId)
   }
-  tripLuggages.forEach(tl => {
+  optimisticTripLuggages.forEach(tl => {
     itemsByLuggage[tl.id] = regularItems.filter(item => item.tripLuggageId === tl.id)
   })
 
@@ -390,7 +545,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     )
   }
 
-  if (!lists.length) {
+  if (!optimisticLists.length) {
     return (
       <div className="space-y-4">
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
@@ -444,14 +599,14 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             >
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold text-gray-700">Bags for this trip</h3>
-                {tripLuggages.length > 0 && <span className="text-xs text-gray-500">{tripLuggages.length} bag{tripLuggages.length !== 1 ? 's' : ''}</span>}
+                {optimisticTripLuggages.length > 0 && <span className="text-xs text-gray-500">{optimisticTripLuggages.length} bag{optimisticTripLuggages.length !== 1 ? 's' : ''}</span>}
               </div>
               <svg className={`w-5 h-5 text-gray-400 transition-transform ${isBagsCardExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
             {isBagsCardExpanded && (
               <div className="px-4 pb-4">
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {tripLuggages.map((tl) => {
+                  {optimisticTripLuggages.map((tl) => {
                     const itemCount = itemsByLuggage[tl.id]?.length || 0
                     const isDropTarget = dragOverTarget === tl.id
                     return (
@@ -480,7 +635,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                     className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-dashed border-blue-300 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >+ Add bag</button>
                 </div>
-                {tripLuggages.length === 0
+                {optimisticTripLuggages.length === 0
                   ? <p className="text-sm text-gray-500">Add luggage to organize your items by bag</p>
                   : <p className="text-xs text-gray-500">💡 Drag items to assign them to bags</p>
                 }
@@ -527,7 +682,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         </section>
       )}
 
-      {tripLuggages.length > 0 && (
+      {optimisticTripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
           <button onClick={() => setViewMode('luggage')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'luggage' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Luggage</button>
           <button onClick={() => setViewMode('category')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'category' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Category</button>
@@ -535,9 +690,9 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       )}
 
       <div id="packing-list-content">
-        {viewMode === 'luggage' && tripLuggages.length > 0 ? (
+        {viewMode === 'luggage' && optimisticTripLuggages.length > 0 ? (
           <div className="space-y-4">
-            {tripLuggages.map((tl) => {
+            {optimisticTripLuggages.map((tl) => {
               const items = itemsByLuggage[tl.id] || []
               const packedCount = items.filter(i => getItemPackedState(i)).length
               const isExpanded = expandedGroups[tl.id]
@@ -612,7 +767,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             )}
           </div>
         ) : (
-          lists.map((list) => (
+          optimisticLists.map((list) => (
             <article key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
               <header className="px-6 py-4 border-b border-gray-50">
                 <h3 className="font-semibold text-gray-900">{list.name}</h3>
@@ -634,10 +789,10 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                           return (
                             <li
                               key={item.id}
-                              draggable={!readOnly && tripLuggages.length > 0}
+                              draggable={!readOnly && optimisticTripLuggages.length > 0}
                               onDragStart={(e) => handleDragStart(e, item.id, category.id, list.id)}
                               onDragEnd={handleDragEnd}
-                              className={`flex items-center gap-3 group ${ !readOnly && tripLuggages.length > 0 ? 'cursor-move' : '' }`}
+                              className={`flex items-center gap-3 group ${ !readOnly && optimisticTripLuggages.length > 0 ? 'cursor-move' : '' }`}
                             >
                               <label className="flex items-center gap-3 flex-1 cursor-pointer">
                                 <input type="checkbox" checked={isPacked} onChange={() => handleToggle(item.id, category.id, list.id, isPacked)} className="sr-only peer" />

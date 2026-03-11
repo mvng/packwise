@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useOptimistic } from 'react'
 import {
   createInventoryCategory,
   deleteInventoryCategory,
@@ -26,31 +26,78 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
+  const [optimisticCategories, addOptimisticCategoryUpdate] = useOptimistic(
+    categories,
+    (state, action: { type: string, payload: any }) => {
+      switch (action.type) {
+        case 'ADD_CATEGORY':
+          return [...state, action.payload.category]
+        case 'DELETE_CATEGORY':
+          return state.filter(c => c.id !== action.payload.categoryId)
+        case 'ADD_ITEM':
+          return state.map(cat => cat.id === action.payload.categoryId ? {
+            ...cat,
+            items: [...cat.items, action.payload.item]
+          } : cat)
+        case 'SAVE_ITEM':
+          return state.map(cat => ({
+            ...cat,
+            items: cat.items.map((item: any) => item.id === action.payload.itemId ? { ...item, ...action.payload.data } : item)
+          }))
+        case 'DELETE_ITEM':
+          return state.map(cat => ({
+            ...cat,
+            items: cat.items.filter(item => item.id !== action.payload.itemId)
+          }))
+        default:
+          return state
+      }
+    }
+  )
+
   const filteredCategories = useMemo(() => {
-    if (!search.trim()) return categories
+    if (!search.trim()) return optimisticCategories
     const q = search.toLowerCase()
-    return categories
+    return optimisticCategories
       .map((cat) => ({
         ...cat,
-        items: cat.items.filter((item) => item.name.toLowerCase().includes(q)),
+        items: cat.items.filter((item: any) => item.name.toLowerCase().includes(q)),
       }))
       .filter((cat) => cat.items.length > 0 || cat.name.toLowerCase().includes(q))
   }, [categories, search])
 
-  const totalItems = categories.reduce((sum, cat) => sum + cat.items.length, 0)
+  const totalItems = optimisticCategories.reduce((sum, cat) => sum + cat.items.length, 0)
 
   function handleAddCategory(name: string) {
     setError(null)
+    const tempId = crypto.randomUUID()
+    const optimisticCategory: InventoryCategoryData = {
+      id: tempId,
+      name,
+      order: optimisticCategories.length,
+      items: [],
+      userId: 'temp-user-id',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+
     startTransition(async () => {
+      addOptimisticCategoryUpdate({
+        type: 'ADD_CATEGORY',
+        payload: { category: optimisticCategory }
+      })
+      setShowAddCategory(false)
+
       const result = await createInventoryCategory(name)
+
       if ('error' in result) {
         setError(result.error)
+        setShowAddCategory(true) // Re-open on error
       } else {
         setCategories((prev) => [
           ...prev,
           { ...result.category, items: [] } as InventoryCategoryData,
         ])
-        setShowAddCategory(false)
       }
     })
   }
@@ -58,7 +105,13 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
   function handleDeleteCategory(categoryId: string) {
     setError(null)
     startTransition(async () => {
+      addOptimisticCategoryUpdate({
+        type: 'DELETE_CATEGORY',
+        payload: { categoryId }
+      })
+
       const result = await deleteInventoryCategory(categoryId)
+
       if ('error' in result) {
         setError(result.error)
       } else {
@@ -69,10 +122,31 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
 
   function handleAddItem(categoryId: string, data: ItemFormData) {
     setError(null)
+    const tempId = crypto.randomUUID()
+    const optimisticItem: InventoryItemData = {
+      id: tempId,
+      categoryId,
+      name: data.name,
+      quantity: data.quantity,
+      notes: data.notes || null,
+      isFavorite: false,
+      order: 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+
     startTransition(async () => {
+      addOptimisticCategoryUpdate({
+        type: 'ADD_ITEM',
+        payload: { categoryId, item: optimisticItem }
+      })
+      setAddItemCategoryId(null)
+
       const result = await createInventoryItem({ categoryId, ...data })
+
       if ('error' in result) {
         setError(result.error)
+        setAddItemCategoryId(categoryId) // Re-open on error
       } else {
         setCategories((prev) =>
           prev.map((cat) =>
@@ -81,7 +155,6 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
               : cat
           )
         )
-        setAddItemCategoryId(null)
       }
     })
   }
@@ -92,9 +165,20 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
   ) {
     setError(null)
     startTransition(async () => {
+      // Find the old item so we can re-open edit on failure
+      const oldItem = categories.flatMap(c => c.items).find(i => i.id === itemId)
+
+      addOptimisticCategoryUpdate({
+        type: 'SAVE_ITEM',
+        payload: { itemId, data }
+      })
+      setEditItem(null)
+
       const result = await updateInventoryItem(itemId, data)
+
       if ('error' in result) {
         setError(result.error)
+        if (oldItem) setEditItem(oldItem)
       } else {
         setCategories((prev) =>
           prev.map((cat) => ({
@@ -104,7 +188,6 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
             ),
           }))
         )
-        setEditItem(null)
       }
     })
   }
@@ -112,7 +195,13 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
   function handleDeleteItem(itemId: string) {
     setError(null)
     startTransition(async () => {
+      addOptimisticCategoryUpdate({
+        type: 'DELETE_ITEM',
+        payload: { itemId }
+      })
+
       const result = await deleteInventoryItem(itemId)
+
       if ('error' in result) {
         setError(result.error)
       } else {
@@ -164,7 +253,7 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
       )}
 
       {/* Empty state */}
-      {categories.length === 0 ? (
+      {optimisticCategories.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
           <div className="text-5xl mb-4">🎒</div>
           <h3 className="font-semibold text-gray-900 mb-2">No inventory yet</h3>
@@ -212,8 +301,8 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
       {/* Footer count */}
       {totalItems > 0 && !search && (
         <p className="text-xs text-gray-400 text-center mt-6">
-          {totalItems} item{totalItems !== 1 ? 's' : ''} across {categories.length} categor
-          {categories.length !== 1 ? 'ies' : 'y'}
+          {totalItems} item{totalItems !== 1 ? 's' : ''} across {optimisticCategories.length} categor
+          {optimisticCategories.length !== 1 ? 'ies' : 'y'}
         </p>
       )}
 

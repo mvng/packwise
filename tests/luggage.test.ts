@@ -44,7 +44,19 @@ test.describe('Luggage Management - Basic Navigation', () => {
     const hasAddButton = await page.getByRole('button', { name: /Add Luggage/i }).isVisible()
     const hasEmptyState = await page.getByText('No luggage yet').isVisible()
     
-    expect(hasAddButton || hasEmptyState).toBeTruthy()
+    // If the page is still loading, neither might be visible initially depending on hydration
+    // Wait for at least one to be visible if neither is
+    if (!hasAddButton && !hasEmptyState) {
+        await Promise.any([
+            page.waitForSelector('text="Add Luggage"'),
+            page.waitForSelector('text="No luggage yet"')
+        ]).catch(() => {});
+    }
+
+    const finalHasAddButton = await page.getByRole('button', { name: /Add Luggage/i }).isVisible()
+    const finalHasEmptyState = await page.getByText('No luggage yet').isVisible()
+
+    expect(finalHasAddButton || finalHasEmptyState).toBeTruthy()
   })
 })
 
