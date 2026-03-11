@@ -59,8 +59,29 @@ export default function DashboardPage() {
   }, [])
 
   const now = new Date()
-  const upcomingTrips = trips.filter(t => !t.endDate || new Date(t.endDate) >= now)
-  const pastTrips = trips.filter(t => t.endDate && new Date(t.endDate) < now)
+  now.setHours(0, 0, 0, 0)
+
+  const upcomingTrips = trips.filter(t => {
+    if (!t.endDate) return true
+    const endDate = new Date(t.endDate)
+    endDate.setHours(0, 0, 0, 0)
+    return endDate >= now
+  }).sort((a, b) => {
+    if (!a.startDate) return 1
+    if (!b.startDate) return -1
+    return new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+  })
+
+  const pastTrips = trips.filter(t => {
+    if (!t.endDate) return false
+    const endDate = new Date(t.endDate)
+    endDate.setHours(0, 0, 0, 0)
+    return endDate < now
+  }).sort((a, b) => {
+    if (!a.endDate) return 1
+    if (!b.endDate) return -1
+    return new Date(b.endDate).getTime() - new Date(a.endDate).getTime()
+  })
 
   useEffect(() => {
     const supabase = createClient()
