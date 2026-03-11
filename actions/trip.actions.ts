@@ -140,7 +140,7 @@ export async function getUserTrips() {
     const trips = await prisma.trip.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      include: { packingLists: { include: { categories: { include: { items: true } } } } },
+      // Optimization: Removed fetching nested packing lists and items since dashboard only needs basic trip info
     })
 
     return { trips }
