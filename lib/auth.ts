@@ -1,11 +1,10 @@
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
-import { type User } from '@supabase/supabase-js'
 
 export async function getUserId(): Promise<string | null> {
   const supabase = await createClient()
-  let authUser: User | null = null
+  let authUser: any = null
 
   try {
     const { data: { user } } = await supabase.auth.getUser()

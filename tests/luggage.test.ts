@@ -41,7 +41,7 @@ test.describe('Luggage Management - Basic Navigation', () => {
     }
     
     // Either has luggage or shows empty state
-    const hasAddButton = await page.getByRole('button', { name: '+ Add Luggage' }).isVisible()
+    const hasAddButton = await page.getByRole('button', { name: /Add Luggage/i }).isVisible()
     const hasEmptyState = await page.getByText('No luggage yet').isVisible()
     
     expect(hasAddButton || hasEmptyState).toBeTruthy()
@@ -110,7 +110,7 @@ test.describe('Manual Test Instructions', () => {
     2. Click "+ Add Luggage"
     3. Enter name: "20L Aer Pro Pack"
     4. Select type: "Backpack"
-    5. Enter capacity: "20" (or leave empty and fill Liters)
+    5. Enter capacity: "20"
     6. Click "Add"
     7. ✓ Verify luggage card appears with 🎒 icon
     

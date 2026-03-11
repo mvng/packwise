@@ -12,22 +12,8 @@ async function getAuthenticatedUser() {
 
 export async function toggleItemPacked(itemId: string, isPacked: boolean, tripId: string) {
   try {
-    const user = await getAuthenticatedUser()
-    if (!user) return { error: 'Unauthorized' }
-
-    await prisma.packingItem.updateMany({
-      where: {
-        id: itemId,
-        category: {
-          packingList: {
-            trip: {
-              user: {
-                supabaseId: user.id
-              }
-            }
-          }
-        }
-      },
+    await prisma.packingItem.update({
+      where: { id: itemId },
       data: { isPacked },
     })
     revalidatePath(`/trip/${tripId}`)
@@ -43,19 +29,8 @@ export async function togglePackLast(itemId: string, packLast: boolean, tripId: 
     const user = await getAuthenticatedUser()
     if (!user) return { error: 'Unauthorized' }
 
-    await prisma.packingItem.updateMany({
-      where: {
-        id: itemId,
-        category: {
-          packingList: {
-            trip: {
-              user: {
-                supabaseId: user.id
-              }
-            }
-          }
-        }
-      },
+    await prisma.packingItem.update({
+      where: { id: itemId },
       data: { packLast },
     })
     revalidatePath(`/trip/${tripId}`)
@@ -82,9 +57,7 @@ export async function addCustomItem(
         id: categoryId,
         packingList: {
           trip: {
-            user: {
-              supabaseId: user.id
-            }
+            userId: user.id
           }
         }
       }
@@ -110,22 +83,8 @@ export async function addCustomItem(
 
 export async function deleteItem(itemId: string, tripId: string) {
   try {
-    const user = await getAuthenticatedUser()
-    if (!user) return { error: 'Unauthorized' }
-
-    await prisma.packingItem.deleteMany({
-      where: {
-        id: itemId,
-        category: {
-          packingList: {
-            trip: {
-              user: {
-                supabaseId: user.id
-              }
-            }
-          }
-        }
-      },
+    await prisma.packingItem.delete({
+      where: { id: itemId },
     })
     revalidatePath(`/trip/${tripId}`)
     return { success: true }
