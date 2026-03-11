@@ -120,6 +120,7 @@ export default function InventoryPickerModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close modal"
             className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none"
           >
             ×
