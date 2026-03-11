@@ -98,20 +98,27 @@ export async function createTrip(input: CreateTripInput) {
         hotelConfirmationUrl: input.hotelConfirmationUrl,
       })
 
-      const packingList = await prisma.packingList.create({
-        data: { tripId: trip.id, name: 'Main Packing List' },
+      await prisma.packingList.create({
+        data: {
+          tripId: trip.id,
+          name: 'Main Packing List',
+          categories: {
+            create: categories.map((category) => ({
+              name: category.name,
+              order: category.order,
+              items: {
+                create: category.items.map((item, index) => ({
+                  name: item,
+                  quantity: 1,
+                  isPacked: false,
+                  isCustom: false,
+                  order: index,
+                })),
+              },
+            })),
+          },
+        },
       })
-
-      for (const category of categories) {
-        const cat = await prisma.category.create({
-          data: { packingListId: packingList.id, name: category.name, order: category.order },
-        })
-        await prisma.packingItem.createMany({
-          data: category.items.map((item, index) => ({
-            categoryId: cat.id, name: item, quantity: 1, isPacked: false, isCustom: false, order: index,
-          })),
-        })
-      }
     }
 
     revalidatePath('/dashboard')
@@ -286,34 +293,28 @@ export async function forkTrip(
         tripType: sourceTrip.tripType,
         transportMode: sourceTrip.transportMode,
         notes: sourceTrip.notes,
-      }
+        packingLists: {
+          create: sourceTrip.packingLists.map((sourceList) => ({
+            name: sourceList.name,
+            categories: {
+              create: sourceList.categories.map((sourceCategory) => ({
+                name: sourceCategory.name,
+                order: sourceCategory.order,
+                items: {
+                  create: sourceCategory.items.map((sourceItem) => ({
+                    name: sourceItem.name,
+                    quantity: sourceItem.quantity,
+                    isPacked: localStorageState?.[sourceItem.id] ?? false,
+                    isCustom: sourceItem.isCustom,
+                    order: sourceItem.order,
+                  })),
+                },
+              })),
+            },
+          })),
+        },
+      },
     })
-
-    for (const sourceList of sourceTrip.packingLists) {
-      const newList = await prisma.packingList.create({
-        data: { tripId: newTrip.id, name: sourceList.name }
-      })
-
-      for (const sourceCategory of sourceList.categories) {
-        const newCategory = await prisma.category.create({
-          data: { packingListId: newList.id, name: sourceCategory.name, order: sourceCategory.order }
-        })
-
-        for (const sourceItem of sourceCategory.items) {
-          const isPacked = localStorageState?.[sourceItem.id] ?? false
-          await prisma.packingItem.create({
-            data: {
-              categoryId: newCategory.id,
-              name: sourceItem.name,
-              quantity: sourceItem.quantity,
-              isPacked,
-              isCustom: sourceItem.isCustom,
-              order: sourceItem.order
-            }
-          })
-        }
-      }
-    }
 
     revalidatePath('/dashboard')
 
