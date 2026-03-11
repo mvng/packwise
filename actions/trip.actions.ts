@@ -283,12 +283,6 @@ export async function forkTrip(
     if (!sourceTrip) return { error: 'Trip not found' }
     if (sourceTrip.userId === userId) return { error: 'You already own this trip', alreadyOwned: true }
 
-    // Check if user already owns this trip
-    if (sourceTrip.userId === userId) {
-      return { error: 'You already own this trip', alreadyOwned: true }
-    }
-
-    // Create a new trip for the current user, along with all nested packing lists, categories, and items
     const newTrip = await prisma.trip.create({
       data: {
         userId,
@@ -321,32 +315,6 @@ export async function forkTrip(
         },
       },
     })
-
-    for (const sourceList of sourceTrip.packingLists) {
-      const newList = await prisma.packingList.create({
-        data: { tripId: newTrip.id, name: sourceList.name }
-      })
-
-      for (const sourceCategory of sourceList.categories) {
-        const newCategory = await prisma.category.create({
-          data: { packingListId: newList.id, name: sourceCategory.name, order: sourceCategory.order }
-        })
-
-        for (const sourceItem of sourceCategory.items) {
-          const isPacked = localStorageState?.[sourceItem.id] ?? false
-          await prisma.packingItem.create({
-            data: {
-              categoryId: newCategory.id,
-              name: sourceItem.name,
-              quantity: sourceItem.quantity,
-              isPacked,
-              isCustom: sourceItem.isCustom,
-              order: sourceItem.order
-            }
-          })
-        }
-      }
-    }
 
     revalidatePath('/dashboard')
 
