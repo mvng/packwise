@@ -1,21 +1,83 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 
-async function getAuthenticatedUser() {
+/**
+ * Returns the Prisma User.id (not the Supabase auth UUID).
+ * Mirrors the getUserId() pattern in trip.actions.ts exactly so that
+ * foreign key constraints are satisfied for both authenticated and guest users.
+ */
+async function getUserId(): Promise<string | null> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
+  let authUser: any = null
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    authUser = user
+  } catch {}
+
+  if (!authUser) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      authUser = session?.user ?? null
+    } catch {}
+  }
+
+  if (authUser) {
+    const prismaUser = await prisma.user.upsert({
+      where: { supabaseId: authUser.id },
+      create: {
+        supabaseId: authUser.id,
+        email: authUser.email ?? '',
+        name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
+        avatarUrl: authUser.user_metadata?.avatar_url ?? null,
+        authProvider: authUser.app_metadata?.provider ?? 'email',
+      },
+      update: {
+        email: authUser.email ?? '',
+        name: authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
+        avatarUrl: authUser.user_metadata?.avatar_url ?? null,
+      },
+    })
+    return prismaUser.id
+  }
+
+  const cookieStore = await cookies()
+  const isGuestMode = cookieStore.get('guest_mode')?.value === 'true'
+  if (isGuestMode) {
+    return cookieStore.get('guest_user_id')?.value ?? null
+  }
+
+  return null
 }
 
 export async function toggleItemPacked(itemId: string, isPacked: boolean, tripId: string) {
   try {
-    await prisma.packingItem.update({
-      where: { id: itemId },
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
+
+    const { count } = await prisma.packingItem.updateMany({
+      where: {
+        id: itemId,
+        category: {
+          packingList: {
+            trip: {
+              id: tripId,
+              userId,
+            },
+          },
+        },
+      },
       data: { isPacked },
     })
+
+    if (count === 0) {
+      return { error: 'Item not found or unauthorized' }
+    }
+
     revalidatePath(`/trip/${tripId}`)
     return { success: true }
   } catch (error) {
@@ -26,13 +88,28 @@ export async function toggleItemPacked(itemId: string, isPacked: boolean, tripId
 
 export async function togglePackLast(itemId: string, packLast: boolean, tripId: string) {
   try {
-    const user = await getAuthenticatedUser()
-    if (!user) return { error: 'Unauthorized' }
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
 
-    await prisma.packingItem.update({
-      where: { id: itemId },
+    const { count } = await prisma.packingItem.updateMany({
+      where: {
+        id: itemId,
+        category: {
+          packingList: {
+            trip: {
+              id: tripId,
+              userId,
+            },
+          },
+        },
+      },
       data: { packLast },
     })
+
+    if (count === 0) {
+      return { error: 'Item not found or unauthorized' }
+    }
+
     revalidatePath(`/trip/${tripId}`)
     return { success: true }
   } catch (error) {
@@ -48,6 +125,26 @@ export async function addCustomItem(
   tripId: string
 ) {
   try {
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
+
+    // Verify category belongs to user's trip
+    const category = await prisma.category.findFirst({
+      where: {
+        id: categoryId,
+        packingList: {
+          trip: {
+            id: tripId,
+            userId,
+          },
+        },
+      },
+    })
+
+    if (!category) {
+      return { error: 'Category not found or unauthorized' }
+    }
+
     const item = await prisma.packingItem.create({
       data: {
         categoryId,
@@ -66,9 +163,27 @@ export async function addCustomItem(
 
 export async function deleteItem(itemId: string, tripId: string) {
   try {
-    await prisma.packingItem.delete({
-      where: { id: itemId },
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
+
+    const { count } = await prisma.packingItem.deleteMany({
+      where: {
+        id: itemId,
+        category: {
+          packingList: {
+            trip: {
+              id: tripId,
+              userId,
+            },
+          },
+        },
+      },
     })
+
+    if (count === 0) {
+      return { error: 'Item not found or unauthorized' }
+    }
+
     revalidatePath(`/trip/${tripId}`)
     return { success: true }
   } catch (error) {
