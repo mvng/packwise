@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function getUserId(): Promise<string | null> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let authUser: any = null
 
   try {

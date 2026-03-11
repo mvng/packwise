@@ -119,7 +119,7 @@ export default function NewTripPage() {
 
   const duration = getDurationDays(formData.startDate, formData.endDate)
   const templateCategories = formData.generateSuggestions
-    ? generatePackingList(formData.tripType as any, duration, formData.transportMode)
+    ? generatePackingList(formData.tripType as "leisure" | "business" | "beach" | "hiking" | "city" | "skiing", duration, formData.transportMode)
     : []
   const totalItems = templateCategories.reduce((sum, c) => sum + c.items.length, 0)
 
@@ -131,7 +131,7 @@ export default function NewTripPage() {
             ← Back to Dashboard
           </Link>
           <h1 className="text-3xl font-bold text-gray-900 mt-4">Plan a New Trip</h1>
-          <p className="text-gray-500 mt-2">Tell us about your trip and we'll create a smart packing list for you.</p>
+          <p className="text-gray-500 mt-2">Tell us about your trip and we&apos;ll create a smart packing list for you.</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -371,7 +371,7 @@ export default function NewTripPage() {
                 <div className="text-center py-6">
                   <p className="text-3xl mb-3">📝</p>
                   <p className="text-sm font-medium text-gray-700">Starting blank</p>
-                  <p className="text-xs text-gray-400 mt-1">You'll build your packing list from scratch.</p>
+                  <p className="text-xs text-gray-400 mt-1">You&apos;ll build your packing list from scratch.</p>
                 </div>
               )}
             </div>

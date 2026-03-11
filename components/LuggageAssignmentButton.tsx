@@ -101,7 +101,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
 
                 {/* Header */}
                 <div className="px-6 pt-2 pb-4 border-b border-gray-100">
-                  <h3 className="font-semibold text-gray-900 text-lg">Move "{itemName}" to:</h3>
+                  <h3 className="font-semibold text-gray-900 text-lg">Move &quot;{itemName}&quot; to:</h3>
                 </div>
 
                 {/* Luggage Cards */}

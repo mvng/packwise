@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     for (const [catName, items] of grouped) {
       let category = existingCategories.find(
         (c) => c.name.toLowerCase() === catName.toLowerCase()
-      ) as any
+      )
 
       if (!category) {
         maxCatOrder += 1
@@ -84,8 +84,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ synced })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('syncDayPlans error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }

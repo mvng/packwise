@@ -100,19 +100,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     }
   }, [localPackedState, readOnly, trip.id])
 
-  useEffect(() => {
-    if (!readOnly) {
-      loadTripLuggage()
-    } else if (sharedTripLuggages && sharedTripLuggages.length > 0) {
-      const expanded: Record<string, boolean> = { 'not-assigned': true, 'pack-last': true }
-      sharedTripLuggages.forEach(tl => {
-        expanded[tl.id] = true
-      })
-      setExpandedGroups(expanded)
-      setViewMode('luggage')
-    }
-  }, [readOnly, sharedTripLuggages])
-
   async function loadTripLuggage() {
     const result = await getTripLuggage(trip.id)
     if (result.tripLuggages) {
@@ -126,6 +113,19 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       if (luggages.length > 0) setViewMode('luggage')
     }
   }
+
+  useEffect(() => {
+    if (!readOnly) {
+      loadTripLuggage()
+    } else if (sharedTripLuggages && sharedTripLuggages.length > 0) {
+      const expanded: Record<string, boolean> = { 'not-assigned': true, 'pack-last': true }
+      sharedTripLuggages.forEach(tl => {
+        expanded[tl.id] = true
+      })
+      setExpandedGroups(expanded)
+      setViewMode('luggage')
+    }
+  }, [readOnly, sharedTripLuggages, trip.id])
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }))
@@ -323,7 +323,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     itemsByLuggage[tl.id] = regularItems.filter(item => item.tripLuggageId === tl.id)
   })
 
-  const renderItem = (item: typeof allItems[0], showPackLastToggle = false) => {
+  const renderItem = (item: typeof allItems[0]) => {
     const isPacked = getItemPackedState(item)
     return (
       <div

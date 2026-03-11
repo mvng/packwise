@@ -72,7 +72,7 @@ export async function GET(
       percentage,
       byCategory
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching packing progress:', error)
     return NextResponse.json({ error: 'Failed to fetch packing progress' }, { status: 500 })
   }

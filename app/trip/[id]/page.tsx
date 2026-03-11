@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { notFound, useRouter } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getSharedTripById } from '@/actions/trip.actions'
@@ -42,13 +42,15 @@ function getTimezoneOffsetDifference(destinationTimezone: string): string {
 }
 
 export default function TripPageClient({ params }: TripPageProps) {
-  const router = useRouter()
   const [id, setId] = useState<string>('')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<any>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [trip, setTrip] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isNotFound, setIsNotFound] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingTrip, setEditingTrip] = useState<any>(null)
   const [tripTimezone, setTripTimezone] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'plan' | 'pack'>('pack')
@@ -112,17 +114,22 @@ export default function TripPageClient({ params }: TripPageProps) {
   const isSharedView = !isOwner
   const displayTrip = isSharedView ? {
     ...trip,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     packingLists: trip.packingLists.map((list: any) => ({
       ...list,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       categories: list.categories.map((cat: any) => ({
         ...cat,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         items: cat.items.map((item: any) => ({ ...item, isPacked: false }))
       }))
     }))
   } : trip
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allItems = displayTrip.packingLists.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items))
   const totalItems = allItems.length
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const packedItems = allItems.filter((item: any) => item.isPacked).length
   const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
 
@@ -200,7 +207,7 @@ export default function TripPageClient({ params }: TripPageProps) {
                 </div>
               </div>
               <div className="flex-shrink-0 w-full lg:w-auto">
-                <ForkTripButton tripId={id} tripName={trip.name || trip.destination} isAuthenticated={!!user} variant="primary" />
+                <ForkTripButton tripId={id} isAuthenticated={!!user} variant="primary" />
               </div>
             </div>
           </div>
