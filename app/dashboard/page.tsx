@@ -176,6 +176,48 @@ export default function DashboardPage() {
     </div>
   )
 
+  const renderPastTripItem = (trip: Trip) => (
+    <div key={trip.id} className="relative group">
+      <Link
+        href={`/trip/${trip.id}`}
+        className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{getTripEmoji(trip.tripType)}</span>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-gray-900 truncate">
+              {trip.name || 'Untitled Trip'}
+            </h3>
+            <p className="text-xs text-gray-500 truncate mb-1">{trip.destination || ''}</p>
+            <div className="text-[11px] text-gray-400">
+              {trip.startDate ? formatDate(trip.startDate as string) : ''}
+              {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
+            </div>
+          </div>
+        </div>
+      </Link>
+
+      {/* Action buttons */}
+      <div className="absolute top-1/2 -translate-y-1/2 right-2 opacity-0 group-hover:opacity-100 flex gap-0.5 transition-opacity bg-white/90 rounded-md backdrop-blur-sm shadow-sm">
+        <button
+          onClick={(e) => handleEditTrip(e, trip)}
+          className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-all"
+          aria-label="Edit trip"
+        >
+          ✏️
+        </button>
+        <button
+          onClick={(e) => handleDeleteTrip(e, trip.id)}
+          disabled={deletingId === trip.id}
+          className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-all disabled:opacity-50"
+          aria-label="Delete trip"
+        >
+          {deletingId === trip.id ? '…' : '🗑️'}
+        </button>
+      </div>
+    </div>
+  )
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -247,23 +289,37 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-12">
-            {upcomingTrips.length > 0 && (
-              <section>
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Upcoming Trips</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {upcomingTrips.map(renderTripCard)}
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-1">
+              {upcomingTrips.length > 0 ? (
+                <section>
+                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Upcoming Trips</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {upcomingTrips.map(renderTripCard)}
+                  </div>
+                </section>
+              ) : (
+                <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
+                  <p className="text-gray-500 mb-4">No upcoming trips planned.</p>
+                  <Link
+                    href="/dashboard/new"
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    + Plan a new trip
+                  </Link>
                 </div>
-              </section>
-            )}
+              )}
+            </div>
 
             {pastTrips.length > 0 && (
-              <section>
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Past Trips</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-80 hover:opacity-100 transition-opacity">
-                  {pastTrips.map(renderTripCard)}
-                </div>
-              </section>
+              <aside className="w-full lg:w-80 flex-shrink-0">
+                <section className="bg-gray-50/50 rounded-xl p-4 border border-gray-100">
+                  <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4">Past Trips</h2>
+                  <div className="space-y-3 opacity-90 hover:opacity-100 transition-opacity">
+                    {pastTrips.map(renderPastTripItem)}
+                  </div>
+                </section>
+              </aside>
             )}
           </div>
         )}
