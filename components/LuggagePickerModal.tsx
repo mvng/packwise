@@ -45,7 +45,13 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
 
   useEffect(() => {
     loadLuggage()
-  }, [])
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [onClose])
 
   async function loadLuggage() {
     const result = await getUserLuggage()
@@ -134,9 +140,10 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
             </div>
             <button
               onClick={onClose}
+              aria-label="Close modal"
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>

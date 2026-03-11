@@ -25,7 +25,7 @@ export default function InventoryPickerModal({
   const [isPending, startTransition] = useTransition()
 
   // Load inventory on mount
-  useState(() => {
+  useEffect(() => {
     getUserInventory().then((result) => {
       if ('error' in result) {
         setError(result.error)
@@ -34,7 +34,13 @@ export default function InventoryPickerModal({
       }
       setLoading(false)
     })
-  })
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [onClose])
 
   const filteredCategories = useMemo(() => {
     if (!categories) return []
@@ -120,9 +126,10 @@ export default function InventoryPickerModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close modal"
             className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none"
           >
-            ×
+            <span aria-hidden="true">&times;</span>
           </button>
         </div>
 
