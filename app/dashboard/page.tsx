@@ -58,6 +58,10 @@ export default function DashboardPage() {
     }
   }, [])
 
+  const now = new Date()
+  const upcomingTrips = trips.filter(t => !t.endDate || new Date(t.endDate) >= now)
+  const pastTrips = trips.filter(t => t.endDate && new Date(t.endDate) < now)
+
   useEffect(() => {
     const supabase = createClient()
 
@@ -111,6 +115,66 @@ export default function DashboardPage() {
     setEditingTrip(null)
     loadTrips()
   }
+
+  const renderTripCard = (trip: Trip) => (
+    <div key={trip.id} className="relative group">
+      <Link
+        href={`/trip/${trip.id}`}
+        className="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+      >
+        <div className="flex items-start justify-between mb-3">
+          <span className="text-3xl">{getTripEmoji(trip.tripType)}</span>
+          <div className="flex items-center gap-1.5">
+            {trip.hotelConfirmationUrl && (
+              <span className="text-xs" title="Hotel confirmation saved">🏨</span>
+            )}
+            <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-full">
+              {trip.tripType || 'trip'}
+            </span>
+          </div>
+        </div>
+        <h3 className="font-semibold text-gray-900 mb-1">
+          {trip.name || 'Untitled Trip'}
+        </h3>
+        <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
+        <div className="text-xs text-gray-400 mb-2">
+          {trip.startDate ? formatDate(trip.startDate as string) : ''}
+          {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
+        </div>
+
+        {/* Countdown badge */}
+        <div className="mb-3">
+          <TripCountdown startDate={trip.startDate} endDate={trip.endDate} variant="card" />
+        </div>
+
+        {/* Weather widget */}
+        <TripWeather
+          destination={trip.destination}
+          startDate={trip.startDate}
+          endDate={trip.endDate}
+        />
+      </Link>
+
+      {/* Action buttons */}
+      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+        <button
+          onClick={(e) => handleEditTrip(e, trip)}
+          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+          aria-label="Edit trip"
+        >
+          ✏️
+        </button>
+        <button
+          onClick={(e) => handleDeleteTrip(e, trip.id)}
+          disabled={deletingId === trip.id}
+          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+          aria-label="Delete trip"
+        >
+          {deletingId === trip.id ? '…' : '🗑️'}
+        </button>
+      </div>
+    </div>
+  )
 
   if (loading) {
     return (
@@ -183,66 +247,24 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {trips.map((trip) => (
-              <div key={trip.id} className="relative group">
-                <Link
-                  href={`/trip/${trip.id}`}
-                  className="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-3xl">{getTripEmoji(trip.tripType)}</span>
-                    <div className="flex items-center gap-1.5">
-                      {trip.hotelConfirmationUrl && (
-                        <span className="text-xs" title="Hotel confirmation saved">🏨</span>
-                      )}
-                      <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded-full">
-                        {trip.tripType || 'trip'}
-                      </span>
-                    </div>
-                  </div>
-                  <h3 className="font-semibold text-gray-900 mb-1">
-                    {trip.name || 'Untitled Trip'}
-                  </h3>
-                  <p className="text-sm text-gray-500 mb-3">{trip.destination || ''}</p>
-                  <div className="text-xs text-gray-400 mb-2">
-                    {trip.startDate ? formatDate(trip.startDate as string) : ''}
-                    {trip.endDate ? ` – ${formatDate(trip.endDate as string)}` : ''}
-                  </div>
-
-                  {/* Countdown badge */}
-                  <div className="mb-3">
-                    <TripCountdown startDate={trip.startDate} endDate={trip.endDate} variant="card" />
-                  </div>
-
-                  {/* Weather widget */}
-                  <TripWeather
-                    destination={trip.destination}
-                    startDate={trip.startDate}
-                    endDate={trip.endDate}
-                  />
-                </Link>
-
-                {/* Action buttons */}
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-                  <button
-                    onClick={(e) => handleEditTrip(e, trip)}
-                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                    aria-label="Edit trip"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteTrip(e, trip.id)}
-                    disabled={deletingId === trip.id}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
-                    aria-label="Delete trip"
-                  >
-                    {deletingId === trip.id ? '…' : '🗑️'}
-                  </button>
+          <div className="space-y-12">
+            {upcomingTrips.length > 0 && (
+              <section>
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">Upcoming Trips</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {upcomingTrips.map(renderTripCard)}
                 </div>
-              </div>
-            ))}
+              </section>
+            )}
+
+            {pastTrips.length > 0 && (
+              <section>
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">Past Trips</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-80 hover:opacity-100 transition-opacity">
+                  {pastTrips.map(renderTripCard)}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </main>
