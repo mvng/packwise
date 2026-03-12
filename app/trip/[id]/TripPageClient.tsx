@@ -11,6 +11,7 @@ import TripWeather from '@/components/TripWeather'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
 import PackingRating from '@/components/PackingRating'
+import TripMembersSection from '@/components/TripMembersSection'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
 import { Calendar, Check } from 'lucide-react'
@@ -190,6 +191,9 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
         )}
 
         {/* Trip meta card */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+          <TripMembersSection tripId={trip.id} members={trip.members || []} isOwner={isOwner} />
+        </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
