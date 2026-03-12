@@ -276,6 +276,10 @@ function InlineTagCard({
 function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+
+  // Simple UI representation for assignee
+  const assigneeInitial = item.assignee?.name ? item.assignee.name.charAt(0).toUpperCase() : null
+
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}
       className="bg-white border border-gray-100 rounded-lg px-3 py-2 shadow-sm group cursor-grab active:cursor-grabbing"
@@ -288,6 +292,14 @@ function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: s
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${getItemCategoryColor(item.category)}`}>
               {item.category}
             </span>
+          )}
+          {assigneeInitial && (
+            <div
+              className="w-4 h-4 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0 shadow-sm border border-blue-200"
+              title={item.assignee?.name}
+            >
+              {assigneeInitial}
+            </div>
           )}
         </div>
         <button

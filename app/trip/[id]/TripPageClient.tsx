@@ -1,23 +1,33 @@
 'use client'
 
-import { useEffect, useState, useTransition, useRef } from 'react'
-import { notFound } from 'next/navigation'
+import { useState, useTransition, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { getSharedTripById } from '@/actions/trip.actions'
 import { getTripWeather } from '@/actions/weather.actions'
-import { createClient } from '@/lib/supabase/server'
-import { prisma } from '@/lib/prisma'
-import { Suspense } from 'react'
-import TripWeather from '@/components/TripWeather'
+import PackingListSection from '@/components/PackingListSection'
+import ForkTripButton from '@/components/ForkTripButton'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
-import CalendarSyncDropdown from '@/components/CalendarSyncDropdown'
+import PackingRating from '@/components/PackingRating'
+import TripMembersSection from '@/components/TripMembersSection'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
+import { Calendar, Check } from 'lucide-react'
 
-const PlanningBoardView = dynamic(() => import('@/components/PlanningBoardView'), { ssr: false })
+const PlanningBoardView = dynamic(() => import('@/components/PlanningBoardView'), {
+  ssr: false,
+  loading: () => <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">Loading planning board...</div>
+})
 
-interface TripPageProps {
-  params: Promise<{ id: string }>
+interface TripPageClientProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  initialTrip: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  user: any
+  isOwner: boolean
+  initialTripTimezone: string | null
+  weatherComponent?: React.ReactNode
 }
 
 function getTimezoneAbbreviation(timezone: string, date: Date): string {
@@ -41,64 +51,85 @@ function getTimezoneOffsetDifference(destinationTimezone: string): string {
   } catch { return '' }
 }
 
-export default function TripPageClient({ params }: TripPageProps) {
-  const [id, setId] = useState<string>('')
+export default function TripPageClient({ initialTrip, user, isOwner, initialTripTimezone, weatherComponent }: TripPageClientProps) {
+  const router = useRouter()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [user, setUser] = useState<any>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [trip, setTrip] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [isNotFound, setIsNotFound] = useState(false)
-  const [isOwner, setIsOwner] = useState(false)
+  const [trip, setTrip] = useState<any>(initialTrip)
+  const id = initialTrip.id
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingTrip, setEditingTrip] = useState<any>(null)
-  const [tripTimezone, setTripTimezone] = useState<string | null>(null)
+  const [tripTimezone, setTripTimezone] = useState<string | null>(initialTripTimezone)
+
+  // Sync prop updates (from router.refresh) to local state
+  useEffect(() => {
+    setTrip(initialTrip)
+    setTripTimezone(initialTripTimezone)
+  }, [initialTrip, initialTripTimezone])
+
   const [viewMode, setViewMode] = useState<'plan' | 'pack'>('pack')
   const [isSyncing, setIsSyncing] = useState(false)
-  const [, startTransition] = useTransition()
-import TripWeatherSkeleton from '@/components/TripWeatherSkeleton'
-import TripPageClient from './TripPageClient'
+  const [isPending, startTransition] = useTransition()
 
-export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+  const handleEditSuccess = async () => {
+    setEditingTrip(null)
 
-  // Await the asynchronous createClient function first
-  const supabase = await createClient()
+    const { trip: fetchedTrip } = await getSharedTripById(id)
 
-  // Run initial data fetching concurrently
-  const [authResponse, tripResponse] = await Promise.all([
-    supabase.auth.getUser(),
-    getSharedTripById(id)
-  ])
+    if (fetchedTrip) {
+      setTrip(fetchedTrip)
 
-  const user = authResponse.data.user
-  const fetchedTrip = tripResponse.trip
-
-  if (tripResponse.error || !fetchedTrip) {
-    return notFound()
-  }
-
-  // Check ownership
-  let isOwner = false
-  if (user) {
-    const prismaUser = await prisma.user.findUnique({
-      where: { supabaseId: user.id },
-      select: { id: true }
-    })
-    isOwner = fetchedTrip.userId === prismaUser?.id
-  }
-
-  let tripTimezone: string | null = null
-  let weatherComponent = null
-
-  if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
-    const { weather } = await getTripWeather(fetchedTrip.destination, fetchedTrip.startDate, fetchedTrip.endDate)
-    if (weather?.timezone) {
-      tripTimezone = weather.timezone
+      if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
+        const { weather } = await getTripWeather(fetchedTrip.destination, fetchedTrip.startDate, fetchedTrip.endDate)
+        if (weather?.timezone) {
+          setTripTimezone(weather.timezone)
+        }
+      }
     }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const isPlanMode = !isSharedView && viewMode === 'plan'
+    router.refresh()
+  }
+
+  const isSharedView = !isOwner
+  const displayTrip = isSharedView ? {
+    ...trip,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    packingLists: trip.packingLists.map((list: any) => ({
+      ...list,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      categories: list.categories.map((cat: any) => ({
+        ...cat,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        items: cat.items.map((item: any) => ({ ...item, isPacked: false }))
+      }))
+    }))
+  } : trip
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allItems = displayTrip.packingLists.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items))
+  const totalItems = allItems.length
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const packedItems = allItems.filter((item: any) => item.isPacked).length
+  const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
+
+  const getTripEmoji = (tripType: string) => {
+    const icons: Record<string, string> = { beach: '🏖️', hiking: '🦵', city: '🏙️', skiing: '⛷️', ski: '⛷️', business: '💼', leisure: '🌴' }
+    return icons[tripType] || '✈️'
+  }
+
+  const getUserDisplayName = () => {
+    if (!user) return null
+    return user.user_metadata?.full_name || user.user_metadata?.name || user.email
+  }
+
+  const getTripOwnerName = () => {
+    if (!trip.user) return 'Someone'
+    return trip.user.name || trip.user.email || 'Someone'
+  }
+
+  const timezoneAbbr = tripTimezone && trip.startDate ? getTimezoneAbbreviation(tripTimezone, new Date(trip.startDate)) : ''
+  const timezoneDifference = tripTimezone ? getTimezoneOffsetDifference(tripTimezone) : ''
+  const timezoneTooltip = timezoneAbbr && timezoneDifference ? `${timezoneAbbr} • ${timezoneDifference}` : timezoneDifference
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -161,6 +192,9 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
         {/* Trip meta card */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+          <TripMembersSection tripId={trip.id} members={trip.members || []} isOwner={isOwner} />
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
               <div className="text-4xl">{getTripEmoji(trip.tripType)}</div>
@@ -188,21 +222,16 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
             {!isSharedView && (
-              <div className="flex items-center gap-2">
-
-                <CalendarSyncDropdown tripId={trip.id} />
-
-                <button
-                  onClick={() => setEditingTrip(trip)}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <circle cx="10" cy="3" r="1.5" />
-                    <circle cx="10" cy="10" r="1.5" />
-                    <circle cx="10" cy="17" r="1.5" />
-                  </svg>
-                </button>
-              </div>
+              <button
+                onClick={() => setEditingTrip(trip)}
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <circle cx="10" cy="3" r="1.5" />
+                  <circle cx="10" cy="10" r="1.5" />
+                  <circle cx="10" cy="17" r="1.5" />
+                </svg>
+              </button>
             )}
           </div>
 
@@ -213,8 +242,8 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
             </div>
           )}
 
-          {trip.destination && trip.startDate && trip.endDate && (
-            <TripWeather destination={trip.destination} startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
+          {trip.destination && trip.startDate && trip.endDate && weatherComponent && (
+            weatherComponent
           )}
         </div>
 
@@ -222,38 +251,38 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         {!isSharedView && (
           <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit mb-6">
             <button
-              disabled={isSyncing}
+              disabled={isSyncing || isPending}
               onClick={() => setViewMode('plan')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
                 viewMode === 'plan' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              🗓 Plan
+              <Calendar className="w-4 h-4" /> Plan
             </button>
             <button
-              disabled={isSyncing}
-              onClick={() => {
+              disabled={isSyncing || isPending}
+              onClick={async () => {
                 if (viewMode === 'plan') {
                   setIsSyncing(true)
-                  startTransition(async () => {
-                    await fetch('/api/day-plans/sync', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ tripId: trip.id }),
-                    })
-                    setIsSyncing(false)
-                    setViewMode('pack')
-                    window.location.reload()
+                  await fetch('/api/day-plans/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tripId: trip.id }),
+                  })
+                  setIsSyncing(false)
+                  setViewMode('pack')
+                  startTransition(() => {
+                    router.refresh()
                   })
                 } else {
                   setViewMode('pack')
                 }
               }}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
                 viewMode === 'pack' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {isSyncing ? 'Syncing…' : '✅ Pack'}
+              {(isSyncing || isPending) ? 'Syncing…' : <><Check className="w-4 h-4" /> Pack</>}
             </button>
           </div>
         )}
@@ -268,6 +297,11 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
             sharedTripLuggages={isSharedView ? trip.tripLuggages : undefined}
           />
         )}
+
+        {/* Packing Rating Footnote */}
+        {displayTrip.packingLists.length > 0 && (
+          <PackingRating trip={displayTrip} />
+        )}
       </main>
 
       {editingTrip && (
@@ -278,25 +312,5 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         />
       )}
     </div>
-    weatherComponent = (
-      <Suspense fallback={<TripWeatherSkeleton variant="detail" />}>
-        <TripWeather
-          destination={fetchedTrip.destination}
-          startDate={fetchedTrip.startDate}
-          endDate={fetchedTrip.endDate}
-          variant="detail"
-        />
-      </Suspense>
-    )
-  }
-
-  return (
-    <TripPageClient
-      initialTrip={fetchedTrip}
-      user={user}
-      isOwner={isOwner}
-      initialTripTimezone={tripTimezone}
-      weatherComponent={weatherComponent}
-    />
   )
 }
