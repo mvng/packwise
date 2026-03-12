@@ -93,3 +93,89 @@ export async function deleteItem(itemId: string, tripId: string) {
     return { error: 'Failed to delete item' }
   }
 }
+
+export async function importItemsToTrip(
+  tripId: string,
+  items: { name: string; quantity: number }[]
+) {
+  try {
+    const user = await getAuthenticatedUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    // Verify user owns the trip
+    const trip = await prisma.trip.findFirst({
+      where: { id: tripId, userId: user.id },
+      include: {
+        packingLists: {
+          include: {
+            categories: true
+          }
+        }
+      }
+    })
+
+    if (!trip) return { error: 'Trip not found or unauthorized' }
+
+    // Determine the packing list to use. Create one if it doesn't exist.
+    let packingListId: string
+    if (trip.packingLists.length > 0) {
+      packingListId = trip.packingLists[0].id
+    } else {
+      const newList = await prisma.packingList.create({
+        data: {
+          tripId: trip.id,
+          name: 'Main Packing List',
+        }
+      })
+      packingListId = newList.id
+    }
+
+    // Find or create an "Imported" category
+    let importedCategory = await prisma.category.findFirst({
+      where: {
+        packingListId: packingListId,
+        name: 'Imported'
+      }
+    })
+
+    if (!importedCategory) {
+      const maxOrderCat = await prisma.category.findFirst({
+        where: { packingListId: packingListId },
+        orderBy: { order: 'desc' }
+      })
+      const newOrder = maxOrderCat ? maxOrderCat.order + 1 : 0
+
+      importedCategory = await prisma.category.create({
+        data: {
+          packingListId: packingListId,
+          name: 'Imported',
+          order: newOrder
+        }
+      })
+    }
+
+    // Bulk insert the items
+    const maxOrderItem = await prisma.packingItem.findFirst({
+      where: { categoryId: importedCategory.id },
+      orderBy: { order: 'desc' }
+    })
+    let currentOrder = maxOrderItem ? maxOrderItem.order + 1 : 0
+
+    await prisma.packingItem.createMany({
+      data: items.map(item => ({
+        categoryId: importedCategory!.id,
+        name: item.name,
+        quantity: item.quantity,
+        isCustom: true,
+        isPacked: false,
+        order: currentOrder++
+      }))
+    })
+
+    revalidatePath(`/trip/${tripId}`)
+    return { success: true, count: items.length }
+  } catch (error) {
+    console.error('Error importing items:', error)
+    return { error: 'Failed to import items' }
+  }
+}
