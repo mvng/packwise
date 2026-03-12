@@ -242,16 +242,26 @@ export default function TripPageClient({ params }: TripPageProps) {
               </div>
             </div>
             {!isSharedView && (
-              <button
-                onClick={() => setEditingTrip(trip)}
-                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <circle cx="10" cy="3" r="1.5" />
-                  <circle cx="10" cy="10" r="1.5" />
-                  <circle cx="10" cy="17" r="1.5" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/api/calendar/${trip.id}`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                  title="Add to Calendar"
+                >
+                  <span>📅</span>
+                  <span className="hidden sm:inline">Add to Calendar</span>
+                </a>
+                <button
+                  onClick={() => setEditingTrip(trip)}
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="3" r="1.5" />
+                    <circle cx="10" cy="10" r="1.5" />
+                    <circle cx="10" cy="17" r="1.5" />
+                  </svg>
+                </button>
+              </div>
             )}
           </div>
 
