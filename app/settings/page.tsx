@@ -68,7 +68,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="text-2xl">🧳</span>
             <span className="font-bold text-xl text-gray-900">Packwise</span>
@@ -79,7 +79,7 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-10">
+      <main className="max-w-[1600px] mx-auto px-4 py-10">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Settings</h1>
         <p className="text-gray-500 text-sm mb-8">
           Personalize Packwise so your packing lists are smarter.

@@ -125,7 +125,7 @@ export default function NewTripPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-5xl mx-auto px-4">
+      <div className="max-w-[1600px] mx-auto px-4">
         <div className="mb-8">
           <Link href="/dashboard" className="text-blue-600 hover:text-blue-800 text-sm">
             ← Back to Dashboard

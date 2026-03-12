@@ -251,7 +251,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🧳</span>
             <span className="font-bold text-xl text-gray-900">Packwise</span>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 max-w-7xl mx-auto px-6 py-8 w-full">
+      <main className="flex-1 max-w-[1600px] mx-auto px-6 py-8 w-full">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Trips</h1>
@@ -349,7 +349,7 @@ export default function DashboardPage() {
       {/* Footer with weather disclaimer */}
       {trips.length > 0 && (
         <footer className="border-t border-gray-200 bg-white mt-12">
-          <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="max-w-[1600px] mx-auto px-6 py-4">
             <p className="text-xs text-gray-400 text-center">
               Weather forecasts shown for trips within 14 days. Forecasts are estimates and may change.
             </p>
