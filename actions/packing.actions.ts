@@ -45,7 +45,8 @@ export async function addCustomItem(
   categoryId: string,
   name: string,
   quantity: number,
-  tripId: string
+  tripId: string,
+  assigneeId?: string
 ) {
   try {
     const user = await getAuthenticatedUser()
@@ -71,7 +72,11 @@ export async function addCustomItem(
         name,
         quantity,
         isCustom: true,
+        assigneeId: assigneeId || null,
       },
+      include: {
+        assignee: true,
+      }
     })
     revalidatePath(`/trip/${tripId}`)
     return { item }
@@ -119,6 +124,9 @@ export async function assignItemToMember(itemId: string, assigneeId: string | nu
   } catch (error) {
     console.error('Failed to assign item:', error)
     return { error: 'Failed to assign item' }
+  }
+}
+
 export async function importItemsToTrip(
   tripId: string,
   items: { name: string; quantity: number }[]

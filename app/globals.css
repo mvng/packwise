@@ -7,6 +7,40 @@
   --foreground: #171717;
 }
 
+@media print {
+  body {
+    background-color: white !important;
+  }
+
+  header,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: none !important;
+    box-shadow: none !important;
+    margin-bottom: 2rem !important;
+  }
+
+  ul {
+    padding-left: 0 !important;
+  }
+
+  button {
+    display: none !important;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
