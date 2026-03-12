@@ -230,9 +230,13 @@ export async function addInventoryItemsToTrip(tripId: string, itemIds: string[])
     }
 
     if (categoriesToCreate.length > 0) {
-      const newCats = await Promise.all(
-        categoriesToCreate.map((data) => prisma.category.create({ data }))
-      )
+      await prisma.category.createMany({
+        data: categoriesToCreate,
+      })
+      const createdCatNames = categoriesToCreate.map((c) => c.name)
+      const newCats = await prisma.category.findMany({
+        where: { packingListId: packingList.id, name: { in: createdCatNames } },
+      })
       for (const cat of newCats) {
         categoryMap.set(cat.name.toLowerCase(), cat.id)
       }

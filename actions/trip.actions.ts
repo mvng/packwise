@@ -150,6 +150,34 @@ export async function getUserTrips() {
   }
 }
 
+export async function getDashboardTrips() {
+  try {
+    const userId = await getUserId()
+    if (!userId) return { error: 'Unauthorized' }
+
+    const trips = await prisma.trip.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        destination: true,
+        startDate: true,
+        endDate: true,
+        tripType: true,
+        hotelConfirmationUrl: true,
+        notes: true,
+        createdAt: true,
+      },
+    })
+
+    return { trips }
+  } catch (error: any) {
+    console.error('Get dashboard trips error:', error)
+    return { error: error.message || 'Failed to fetch dashboard trips' }
+  }
+}
+
 export async function getTripById(tripId: string) {
   try {
     const userId = await getUserId()
@@ -193,12 +221,16 @@ export async function getSharedTripById(tripId: string) {
           where: { isActive: true },
           orderBy: { createdAt: 'asc' }
         },
+        members: { orderBy: { createdAt: 'asc' } },
         packingLists: {
           include: {
             categories: {
               include: {
                 items: {
-                  include: { tripLuggage: { include: { luggage: true } } },
+                  include: {
+                    tripLuggage: { include: { luggage: true } },
+                    assignee: true
+                  },
                   orderBy: { order: 'asc' }
                 }
               },

@@ -99,6 +99,16 @@ test.describe('generatePackingList', () => {
     expect(longClothing?.items).toContain('Underwear (8)') // qty + 1
   })
 
+  test('should cap clothing quantities at 7 for long durations (e.g., 14 days)', () => {
+    // 14 days -> qty = 7 (capped at 7)
+    const extremelyLongTrip = generatePackingList('leisure', 14)
+    const extremelyLongClothing = extremelyLongTrip.find(c => c.name === 'Clothing')
+    expect(extremelyLongClothing?.items).toContain('T-shirts (7)')
+    expect(extremelyLongClothing?.items).not.toContain('T-shirts (14)')
+    expect(extremelyLongClothing?.items).toContain('Underwear (8)') // qty + 1
+    expect(extremelyLongClothing?.items).not.toContain('Underwear (15)')
+  })
+
   test('should replace Hotel confirmations with saved online hint if hotelConfirmationUrl is present', () => {
     const list = generatePackingList('leisure', 5, null, {
       hotelConfirmationUrl: 'https://hotel.com/conf123'

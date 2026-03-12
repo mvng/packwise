@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from 'react'
 import { getUserInventory, addInventoryItemsToTrip } from '@/actions/inventory.actions'
 import type { InventoryCategoryData, InventoryItemData } from '@/types/inventory'
+import { useEffect } from 'react'
 
 interface InventoryPickerModalProps {
   tripId: string
@@ -127,7 +128,7 @@ export default function InventoryPickerModal({
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none"
+            className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded-md"
           >
             <span aria-hidden="true">&times;</span>
           </button>

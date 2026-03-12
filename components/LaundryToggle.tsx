@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { CheckCircle2 } from 'lucide-react'
 
 interface LaundryToggleProps {
   startDate: string
@@ -64,8 +65,8 @@ export default function LaundryToggle({ startDate, endDate, onChange }: LaundryT
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full max-w-xs"
           />
           {laundryDate && (
-            <p className="text-xs text-green-600 mt-2">
-              ✅ Outfit counts after {new Date(laundryDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} are halved
+            <p className="text-xs text-green-600 mt-2 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Outfit counts after {new Date(laundryDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} are halved
             </p>
           )}
         </div>
