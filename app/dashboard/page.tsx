@@ -112,6 +112,18 @@ export default function DashboardPage() {
     return () => subscription.unsubscribe()
   }, [router, loadTrips])
 
+  useEffect(() => {
+    // Automatically prefetch the top upcoming trip if available
+    if (upcomingTrips.length > 0) {
+      const topTrip = upcomingTrips[0]
+      // Use a small delay to prioritize initial page render
+      const timeout = setTimeout(() => {
+        handlePrefetchTrip(topTrip)
+      }, 500)
+      return () => clearTimeout(timeout)
+    }
+  }, [upcomingTrips])
+
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -166,8 +178,6 @@ export default function DashboardPage() {
     <div key={trip.id} className="relative group">
       <Link
         href={`/trip/${trip.id}`}
-        onMouseEnter={() => handlePrefetchTrip(trip)}
-        onFocus={() => handlePrefetchTrip(trip)}
         className="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
       >
         <div className="flex items-start justify-between mb-3">
@@ -228,8 +238,6 @@ export default function DashboardPage() {
     <div key={trip.id} className="relative group">
       <Link
         href={`/trip/${trip.id}`}
-        onMouseEnter={() => handlePrefetchTrip(trip)}
-        onFocus={() => handlePrefetchTrip(trip)}
         className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors"
       >
         <div className="flex items-center gap-3">
