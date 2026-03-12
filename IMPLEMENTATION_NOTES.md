@@ -3,10 +3,10 @@
 ## Features & Business Logic
 
 ### Packing Rating Heuristics
-The Packing Rating component (`components/PackingRating.tsx`) evaluates a user's packing list and issues alerts based on the duration of the trip vs. the total quantity of clothing items packed.
-- **Underpacking**: If the user has packed **less than 1 clothing item per day** of the trip.
-- **Overpacking**: If the user has packed **more than 3 clothing items per day** of the trip.
-- **Good/Sufficient**: Anything between 1 and 3 clothing items per day is considered a solid, appropriate amount.
+The Packing Rating component (`components/PackingRating.tsx`) evaluates a user's packing list and displays a subtle footnote based on the duration of the trip vs. the total quantity of clothing items packed.
+- **Efficient packing**: If the user has packed **less than 1 clothing item per day** of the trip.
+- **Well-prepared**: If the user has packed **more than 3 clothing items per day** of the trip.
+- **On track**: Anything between 1 and 3 clothing items per day is considered a solid, appropriate amount.
 *Note: The heuristic identifies "clothing" by searching for categories whose names contain 'clothing', 'clothes', or 'apparel' (case-insensitive).*
 
 ## Files Updated

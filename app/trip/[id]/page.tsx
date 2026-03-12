@@ -262,11 +262,6 @@ export default function TripPageClient({ params }: TripPageProps) {
           )}
         </div>
 
-        {/* Packing Rating */}
-        {displayTrip.packingLists.length > 0 && (
-          <PackingRating trip={displayTrip} />
-        )}
-
         {/* View toggle */}
         {!isSharedView && (
           <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit mb-6">
@@ -316,6 +311,11 @@ export default function TripPageClient({ params }: TripPageProps) {
             readOnly={isSharedView}
             sharedTripLuggages={isSharedView ? trip.tripLuggages : undefined}
           />
+        )}
+
+        {/* Packing Rating Footnote */}
+        {displayTrip.packingLists.length > 0 && (
+          <PackingRating trip={displayTrip} />
         )}
       </main>
 

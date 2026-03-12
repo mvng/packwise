@@ -60,7 +60,7 @@ export default function PackingRating({ trip }: PackingRatingProps) {
    * - Overpacking: More than 3 clothing items per trip day.
    * - Good: Between 1 and 3 clothing items per trip day.
    */
-  let ratingText = "Looking good!"
+  let ratingText = "On track"
   let ratingColor = "bg-green-50 border-green-200 text-green-800"
   let icon = "✅"
   let subtext = `You have packed a solid amount of clothing (${clothingCount} items) for a ${duration}-day trip.`
@@ -70,23 +70,23 @@ export default function PackingRating({ trip }: PackingRatingProps) {
   }
 
   if (clothingCount < duration) {
-    ratingText = "Underpacking alert"
+    ratingText = "Efficient packing"
     ratingColor = "bg-amber-50 border-amber-200 text-amber-800"
-    icon = "⚠️"
-    subtext = `You might be underpacking! You have ${clothingCount} clothing items for a ${duration}-day trip.`
+    icon = "🎒"
+    subtext = `You're packing light with ${clothingCount} clothing items for a ${duration}-day trip.`
   } else if (clothingCount > duration * 3) {
-    ratingText = "Overpacking alert"
+    ratingText = "Well-prepared"
     ratingColor = "bg-blue-50 border-blue-200 text-blue-800"
     icon = "🧳"
-    subtext = `You might be overpacking. You have ${clothingCount} clothing items for just a ${duration}-day trip.`
+    subtext = `You have plenty of options with ${clothingCount} clothing items for a ${duration}-day trip.`
   }
 
   return (
-    <div className={`rounded-2xl border p-4 mb-6 flex items-start gap-4 ${ratingColor}`}>
-      <div className="text-2xl mt-1">{icon}</div>
+    <div className={`rounded-xl border p-3 mt-8 flex items-center gap-3 w-fit mx-auto ${ratingColor} shadow-sm`}>
+      <div className="text-lg">{icon}</div>
       <div>
-        <h3 className="font-semibold">{ratingText}</h3>
-        <p className="text-sm opacity-90 mt-1">{subtext}</p>
+        <h3 className="font-medium text-sm">{ratingText}</h3>
+        <p className="text-xs opacity-90">{subtext}</p>
       </div>
     </div>
   )
