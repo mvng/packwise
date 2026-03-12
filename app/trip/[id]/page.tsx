@@ -11,6 +11,7 @@ import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
+import TripLoadingScreen from '@/components/TripLoadingScreen'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
 
@@ -103,11 +104,7 @@ export default function TripPageClient({ params }: TripPageProps) {
     }
   }
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-    </div>
-  )
+  if (loading) return <TripLoadingScreen />
 
   if (isNotFound || !trip) return notFound()
 
