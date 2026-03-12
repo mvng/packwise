@@ -45,7 +45,7 @@ export default function LuggageFitCheck({ luggages, outfits }: LuggageFitCheckPr
   if (luggages.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6">
       <div className="flex items-center gap-3 mb-4">
         <span className="text-xl">🧳</span>
         <div>

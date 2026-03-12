@@ -25,12 +25,12 @@ export default function CategorySection({
   const [showMenu, setShowMenu] = useState(false)
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
       {/* Category header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-gray-900 text-sm">{category.name}</h3>
-          <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+          <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
             {category.items.length}
           </span>
         </div>
@@ -44,7 +44,7 @@ export default function CategorySection({
           <div className="relative">
             <button
               onClick={() => setShowMenu((v) => !v)}
-              className="text-gray-400 hover:text-gray-600 px-1 transition-colors text-lg leading-none"
+              className="text-gray-500 hover:text-gray-600 px-1 transition-colors text-lg leading-none"
               aria-label="Category options"
             >
               •••
@@ -52,7 +52,7 @@ export default function CategorySection({
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 min-w-[148px] overflow-hidden">
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg z-20 min-w-[148px] overflow-hidden">
                   <button
                     onClick={() => {
                       onDeleteCategory()
@@ -72,7 +72,7 @@ export default function CategorySection({
       {/* Items */}
       {category.items.length === 0 ? (
         <div className="px-5 py-6 text-center">
-          <p className="text-sm text-gray-400">No items yet.</p>
+          <p className="text-sm text-gray-500">No items yet.</p>
           <button
             onClick={onAddItem}
             className="mt-1.5 text-sm text-blue-500 hover:text-blue-600 font-medium transition-colors"
@@ -94,7 +94,7 @@ export default function CategorySection({
                 {item.isFavorite ? (
                   '⭐'
                 ) : (
-                  <span className="text-gray-300 hover:text-yellow-400">☆</span>
+                  <span className="text-gray-500 hover:text-yellow-400">☆</span>
                 )}
               </button>
 
@@ -103,13 +103,13 @@ export default function CategorySection({
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-800 truncate">{item.name}</span>
                   {item.quantity > 1 && (
-                    <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5 flex-shrink-0">
+                    <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 flex-shrink-0">
                       ×{item.quantity}
                     </span>
                   )}
                 </div>
                 {item.notes && (
-                  <p className="text-xs text-gray-400 truncate mt-0.5">{item.notes}</p>
+                  <p className="text-xs text-gray-500 truncate mt-0.5">{item.notes}</p>
                 )}
               </div>
 
@@ -118,7 +118,7 @@ export default function CategorySection({
                 <button
                   onClick={() => onEditItem(item)}
                   title="Edit item"
-                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="p-1.5 text-gray-500 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -138,7 +138,7 @@ export default function CategorySection({
                   onClick={() => onDeleteItem(item.id)}
                   disabled={isPending}
                   title="Delete item"
-                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                  className="p-1.5 text-gray-500 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
                   <svg
                     className="w-3.5 h-3.5"
