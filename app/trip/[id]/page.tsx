@@ -171,7 +171,7 @@ export default function TripPageClient({ params }: TripPageProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {user && <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 text-lg">←</Link>}
             {user ? (
@@ -207,7 +207,7 @@ export default function TripPageClient({ params }: TripPageProps) {
         )}
       </header>
 
-      <main className={`${ isPlanMode ? 'max-w-[1600px]' : 'max-w-5xl' } mx-auto px-6 py-8 transition-all`}>
+      <main className={`max-w-[1600px] mx-auto px-6 py-8 transition-all`}>
         {isSharedView && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6 mb-6">
             <div className="flex items-start justify-between gap-6 flex-col lg:flex-row">
