@@ -11,6 +11,7 @@ import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
+import PackingRating from '@/components/PackingRating'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
 
@@ -316,6 +317,11 @@ export default function TripPageClient({ params }: TripPageProps) {
             readOnly={isSharedView}
             sharedTripLuggages={isSharedView ? trip.tripLuggages : undefined}
           />
+        )}
+
+        {/* Packing Rating Footnote */}
+        {displayTrip.packingLists.length > 0 && (
+          <PackingRating trip={displayTrip} />
         )}
       </main>
 
