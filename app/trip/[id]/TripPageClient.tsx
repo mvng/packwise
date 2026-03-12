@@ -7,7 +7,6 @@ import { getSharedTripById } from '@/actions/trip.actions'
 import { getTripWeather } from '@/actions/weather.actions'
 import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
-import TripWeather from '@/components/TripWeather'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
 import PackingRating from '@/components/PackingRating'
@@ -26,6 +25,7 @@ interface TripPageClientProps {
   user: any
   isOwner: boolean
   initialTripTimezone: string | null
+  weatherComponent?: React.ReactNode
 }
 
 function getTimezoneAbbreviation(timezone: string, date: Date): string {
@@ -49,7 +49,7 @@ function getTimezoneOffsetDifference(destinationTimezone: string): string {
   } catch { return '' }
 }
 
-export default function TripPageClient({ initialTrip, user, isOwner, initialTripTimezone }: TripPageClientProps) {
+export default function TripPageClient({ initialTrip, user, isOwner, initialTripTimezone, weatherComponent }: TripPageClientProps) {
   const router = useRouter()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [trip, setTrip] = useState<any>(initialTrip)
@@ -237,8 +237,8 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
             </div>
           )}
 
-          {trip.destination && trip.startDate && trip.endDate && (
-            <TripWeather destination={trip.destination} startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
+          {trip.destination && trip.startDate && trip.endDate && weatherComponent && (
+            weatherComponent
           )}
         </div>
 
