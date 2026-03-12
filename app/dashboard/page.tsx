@@ -84,30 +84,36 @@ export default function DashboardPage() {
   })
 
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
 
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        router.push('/login')
+        if (mounted) router.push('/login')
         return
       }
 
-      setUser(session.user)
-      await loadTrips()
+      if (mounted) {
+        setUser(session.user)
+        await loadTrips()
+      }
     }
 
     checkAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (!session) {
+        if (!session && mounted) {
           router.push('/login')
         }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [router, loadTrips])
 
   const handleSignOut = async () => {
@@ -141,6 +147,7 @@ export default function DashboardPage() {
     <div key={trip.id} className="relative group">
       <Link
         href={`/trip/${trip.id}`}
+        prefetch={true}
         className="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
       >
         <div className="flex items-start justify-between mb-3">
@@ -201,6 +208,7 @@ export default function DashboardPage() {
     <div key={trip.id} className="relative group">
       <Link
         href={`/trip/${trip.id}`}
+        prefetch={true}
         className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors"
       >
         <div className="flex items-center gap-3">
