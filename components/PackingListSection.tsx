@@ -511,10 +511,10 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
               </svg>
             )}
           </div>
-          <span className={`flex-1 text-sm ${isPacked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+          <span className={`flex-1 text-sm ${isPacked ? 'line-through text-gray-500' : 'text-gray-700'}`}>
             {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
             {item.name}
-            {viewMode === 'luggage' && !item.packLast && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
+            {viewMode === 'luggage' && !item.packLast && <span className="text-xs text-gray-500 ml-2">• {item.categoryName}</span>}
           </span>
         </label>
         {!readOnly && (
@@ -526,7 +526,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
               className={`text-xs px-2 py-0.5 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 ${
                 item.packLast
                   ? 'bg-amber-100 text-amber-700 border-amber-300'
-                  : 'bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600'
+                  : 'bg-white text-gray-500 border-gray-300 hover:border-amber-300 hover:text-amber-600'
               }`}
               aria-label={item.packLast ? 'Remove from pack last' : 'Mark as pack last'}
             >
@@ -548,7 +548,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   if (!optimisticLists.length) {
     return (
       <div className="space-y-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
           <div className="text-5xl mb-4">📋</div>
           <h3 className="font-semibold text-gray-900 mb-2">No packing list yet</h3>
           <p className="text-gray-500 text-sm">
@@ -601,7 +601,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                 <h3 className="text-sm font-semibold text-gray-700">Bags for this trip</h3>
                 {optimisticTripLuggages.length > 0 && <span className="text-xs text-gray-500">{optimisticTripLuggages.length} bag{optimisticTripLuggages.length !== 1 ? 's' : ''}</span>}
               </div>
-              <svg className={`w-5 h-5 text-gray-400 transition-transform ${isBagsCardExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              <svg className={`w-5 h-5 text-gray-500 transition-transform ${isBagsCardExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
             {isBagsCardExpanded && (
               <div className="px-4 pb-4">
@@ -616,7 +616,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => { e.stopPropagation(); handleDrop(e, tl.id) }}
                         className={`group relative flex items-center gap-2 px-3 py-2 bg-white border rounded-xl hover:shadow-sm transition-all ${
-                          isDropTarget ? 'border-blue-500 border-2 bg-blue-50 shadow-md scale-105' : 'border-gray-200 hover:border-blue-300'
+                          isDropTarget ? 'border-blue-500 border-2 bg-blue-50 shadow-md scale-105' : 'border-gray-300 hover:border-blue-300'
                         }`}
                       >
                         <span className="text-lg">{getLuggageIcon(tl)}</span>
@@ -624,7 +624,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         {itemCount > 0 && <span className="text-xs text-gray-500">({itemCount})</span>}
                         <button
                           onClick={() => handleRemoveLuggage(tl.id, tl.luggageId)}
-                          className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1"
+                          className="ml-1 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1"
                           aria-label={`Remove ${tl.luggage.name}`}
                         >×</button>
                       </div>
@@ -684,8 +684,8 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
 
       {optimisticTripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
-          <button onClick={() => setViewMode('luggage')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'luggage' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Luggage</button>
-          <button onClick={() => setViewMode('category')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'category' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Category</button>
+          <button onClick={() => setViewMode('luggage')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'luggage' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-500 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Luggage</button>
+          <button onClick={() => setViewMode('category')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'category' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-500 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Category</button>
         </div>
       )}
 
@@ -703,7 +703,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                   onDragOver={(e) => !readOnly && handleDragOver(e, tl.id)}
                   onDragLeave={!readOnly ? handleDragLeave : undefined}
                   onDrop={(e) => !readOnly && handleDrop(e, tl.id)}
-                  className={`bg-white rounded-2xl border overflow-hidden transition-all ${ isDropTarget ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]' : 'border-gray-100' }`}
+                  className={`bg-white rounded-2xl border overflow-hidden transition-all ${ isDropTarget ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]' : 'border-gray-200' }`}
                 >
                   <button
                     onClick={() => toggleGroup(tl.id)}
@@ -727,13 +727,13 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                           <div className="h-2 bg-blue-500 rounded-full transition-all" style={{ width: `${(packedCount / items.length) * 100}%` }} />
                         </div>
                       )}
-                      <svg className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      <svg className={`w-5 h-5 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </div>
                   </button>
                   {isExpanded && (
                     <div className="px-6 pb-4 border-t border-gray-50">
                       {items.length === 0
-                        ? <p className="text-sm text-gray-400 py-4 text-center">{readOnly ? 'No items in this bag' : 'No items assigned · Drag items here'}</p>
+                        ? <p className="text-sm text-gray-500 py-4 text-center">{readOnly ? 'No items in this bag' : 'No items assigned · Drag items here'}</p>
                         : <ul className="space-y-2 pt-4" role="list">{items.map(item => renderItem(item))}</ul>
                       }
                     </div>
@@ -746,7 +746,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                 onDragOver={(e) => !readOnly && handleDragOver(e, null)}
                 onDragLeave={!readOnly ? handleDragLeave : undefined}
                 onDrop={(e) => !readOnly && handleDrop(e, null)}
-                className={`bg-white rounded-2xl border overflow-hidden transition-all ${ !readOnly && dragOverTarget === 'not-assigned' ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]' : 'border-gray-100' }`}
+                className={`bg-white rounded-2xl border overflow-hidden transition-all ${ !readOnly && dragOverTarget === 'not-assigned' ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]' : 'border-gray-200' }`}
               >
                 <button onClick={() => toggleGroup('not-assigned')} aria-expanded={expandedGroups['not-assigned']} className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset">
                   <div className="flex items-center gap-3">
@@ -756,7 +756,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                       <p className="text-xs text-gray-500">{itemsByLuggage['not-assigned'].length} item{itemsByLuggage['not-assigned'].length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
-                  <svg className={`w-5 h-5 text-gray-400 transition-transform ${expandedGroups['not-assigned'] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  <svg className={`w-5 h-5 text-gray-500 transition-transform ${expandedGroups['not-assigned'] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                 </button>
                 {expandedGroups['not-assigned'] && (
                   <div className="px-6 pb-4 border-t border-gray-50">
@@ -768,7 +768,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
           </div>
         ) : (
           optimisticLists.map((list) => (
-            <article key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <article key={list.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <header className="px-6 py-4 border-b border-gray-50">
                 <h3 className="font-semibold text-gray-900">{list.name}</h3>
               </header>
@@ -777,7 +777,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                   <section key={category.id} className="px-6 py-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{category.name}</h4>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-500">
                         {category.items.filter(i => getItemPackedState(i)).length}/{category.items.length}
                       </span>
                     </div>
@@ -799,7 +799,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                 <div className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${ isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300' } peer-hover:border-blue-400`}>
                                   {isPacked && <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                 </div>
-                                <span className={`flex-1 text-sm ${ isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+                                <span className={`flex-1 text-sm ${ isPacked ? 'line-through text-gray-500' : 'text-gray-700' }`}>
                                   {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
                                   {item.name}
                                 </span>
@@ -809,7 +809,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                   <button
                                     onClick={() => handleTogglePackLast(item.id, category.id, list.id, item.packLast)}
                                     title="Add to departure checklist"
-                                    className="text-xs px-2 py-0.5 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                    className="text-xs px-2 py-0.5 rounded-full border bg-white text-gray-500 border-gray-300 hover:border-amber-300 hover:text-amber-600 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400"
                                   >🌅</button>
                                   <button onClick={() => handleDelete(item.id, category.id, list.id)} className="text-red-400 hover:text-red-600 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1">×</button>
                                 </div>
@@ -825,7 +825,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                           value={newItemName[category.id] || ''}
                           onChange={(e) => setNewItemName(prev => ({ ...prev, [category.id]: e.target.value }))}
                           onKeyDown={(e) => e.key === 'Enter' && handleAddItem(category.id, list.id)}
-                          className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="flex-1 text-sm px-3 py-1.5 border border-gray-300 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           autoFocus
                         />
                         <button onClick={() => handleAddItem(category.id, list.id)} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Add</button>

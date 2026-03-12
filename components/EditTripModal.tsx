@@ -158,9 +158,9 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-semibold text-gray-900">Edit Trip</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -173,7 +173,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
             <input
               type="text" id="name" value={formData.name}
               onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g., Summer Vacation"
             />
           </div>
@@ -184,7 +184,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
               <input
                 type="text" id="city" value={formData.city} required
                 onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., San Francisco"
               />
             </div>
@@ -197,9 +197,9 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
                   value={showCountryDropdown ? countrySearch : formData.country}
                   onChange={e => { setCountrySearch(e.target.value); setShowCountryDropdown(true) }}
                   onFocus={() => setShowCountryDropdown(true)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -223,14 +223,14 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
               <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
               <input type="date" id="startDate" value={formData.startDate}
                 onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
               <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
               <input type="date" id="endDate" value={formData.endDate}
                 onChange={e => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -239,7 +239,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
             <label htmlFor="tripType" className="block text-sm font-medium text-gray-700 mb-1">Trip Type</label>
             <select id="tripType" value={formData.tripType}
               onChange={e => setFormData(prev => ({ ...prev, tripType: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
               <option value="beach">Beach</option>
               <option value="hiking">Hiking</option>
               <option value="city">City</option>
@@ -250,7 +250,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
           </div>
 
           {/* Hotel Confirmation */}
-          <div className="border border-gray-200 rounded-xl p-4 space-y-2">
+          <div className="border border-gray-300 rounded-xl p-4 space-y-2">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-lg">🏨</span>
               <div>
@@ -279,7 +279,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
           </div>
 
           {/* Laundry Access */}
-          <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+          <div className="border border-gray-300 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🧷</span>
@@ -311,7 +311,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
                   max={effectiveEnd}
                   value={laundryDate}
                   onChange={e => handleLaundryDateChange(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
                 />
                 {laundryDate && (
                   <p className="text-xs text-green-600 mt-1">

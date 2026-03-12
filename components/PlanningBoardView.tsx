@@ -234,7 +234,7 @@ function InlineTagCard({
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-2 rounded-lg px-2.5 py-2 border border-dashed group cursor-grab active:cursor-grabbing ${
-        c ? `${c.inlineBg} ${c.inlineBorder} ${c.inlineText}` : 'bg-gray-50 border-gray-200 text-gray-600'
+        c ? `${c.inlineBg} ${c.inlineBorder} ${c.inlineText}` : 'bg-gray-50 border-gray-300 text-gray-600'
       }`}
     >
       <span {...attributes} {...listeners} className="flex-shrink-0 cursor-grab active:cursor-grabbing">
@@ -278,11 +278,11 @@ function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: s
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className="bg-white border border-gray-100 rounded-lg px-3 py-2 shadow-sm group cursor-grab active:cursor-grabbing"
+      className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm group cursor-grab active:cursor-grabbing"
     >
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {item.quantity > 1 && <span className="text-[11px] text-gray-400 font-medium flex-shrink-0">{item.quantity}×</span>}
+          {item.quantity > 1 && <span className="text-[11px] text-gray-500 font-medium flex-shrink-0">{item.quantity}×</span>}
           <span className="text-xs font-medium text-gray-800 truncate">{item.name}</span>
           {item.category && item.category !== TAG_CATEGORY && (
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${getItemCategoryColor(item.category)}`}>
@@ -292,10 +292,10 @@ function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: s
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
-          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-opacity text-sm leading-none flex-shrink-0 focus:outline-none rounded ml-1"
+          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity text-sm leading-none flex-shrink-0 focus:outline-none rounded ml-1"
         >×</button>
       </div>
-      {item.notes && <p className="text-[11px] text-gray-400 truncate mt-0.5 pl-0.5">{item.notes}</p>}
+      {item.notes && <p className="text-[11px] text-gray-500 truncate mt-0.5 pl-0.5">{item.notes}</p>}
     </div>
   )
 }
@@ -319,12 +319,12 @@ function AddItemForm({ onAdd, onOpenInventory }: {
     setOpen(false)
   }
 
-  const inputCls = 'text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 w-full bg-white'
+  const inputCls = 'text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 w-full bg-white placeholder-gray-500'
 
   if (!open) return (
     <div className="flex items-center gap-3 pt-1">
       <button onClick={() => setOpen(true)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">+ Add item</button>
-      <button onClick={onOpenInventory} className="text-xs text-gray-400 hover:text-blue-500 transition-colors">+ Inventory</button>
+      <button onClick={onOpenInventory} className="text-xs text-gray-500 hover:text-blue-500 transition-colors">+ Inventory</button>
     </div>
   )
 
@@ -347,7 +347,7 @@ function AddItemForm({ onAdd, onOpenInventory }: {
         onChange={(e) => setNotes(e.target.value)} className={inputCls} />
       <div className="flex items-center gap-2">
         <button onClick={handleSubmit} className="bg-blue-500 text-white rounded-lg px-3 py-1 text-xs font-medium hover:bg-blue-600">Add</button>
-        <button onClick={() => setOpen(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+        <button onClick={() => setOpen(false)} className="text-xs text-gray-500 hover:text-gray-600">Cancel</button>
       </div>
     </div>
   )
@@ -448,7 +448,7 @@ function DayColumn({
 
   const headerBg = allDayTag ? allDayTag.colors.headerBg : dropping ? 'bg-blue-100' : 'bg-gray-50'
   const headerText = allDayTag ? allDayTag.colors.headerText : 'text-gray-700'
-  const borderColor = allDayTag ? allDayTag.colors.border : dropping ? 'border-blue-400' : 'border-gray-200'
+  const borderColor = allDayTag ? allDayTag.colors.border : dropping ? 'border-blue-400' : 'border-gray-300'
   const bodyBg = allDayTag ? allDayTag.colors.bodyBg : 'bg-white'
 
   return (
@@ -475,13 +475,13 @@ function DayColumn({
               onChange={(e) => setLabelInput(e.target.value)}
               onBlur={() => saveLabel(labelInput)}
               onKeyDown={(e) => { if (e.key === 'Enter') saveLabel(labelInput) }}
-              className="mt-1 text-[11px] w-full bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 text-[11px] w-full bg-white placeholder-gray-500 border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           ) : (
             <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none rounded w-full text-left">
               {dayPlan?.label
                 ? <span className="text-[11px] text-gray-500 font-medium">{dayPlan.label}</span>
-                : <span className={`text-[11px] italic ${dropping ? 'text-blue-400' : 'text-gray-300'}`}>
+                : <span className={`text-[11px] italic ${dropping ? 'text-blue-400' : 'text-gray-500'}`}>
                     {dropping ? 'Drop for all-day tag' : 'drop tag or add label…'}
                   </span>}
             </button>
@@ -507,7 +507,7 @@ function DayColumn({
               </AnimatePresence>
             </SortableContext>
             {items.length === 0 && (
-              <p className="text-[11px] text-gray-300 italic text-center pt-4">Nothing planned yet</p>
+              <p className="text-[11px] text-gray-500 italic text-center pt-4">Nothing planned yet</p>
             )}
           </div>
           <div className="px-2.5 pb-2.5">
@@ -515,7 +515,7 @@ function DayColumn({
               <div className="mb-1.5">
                 {toast
                   ? <p className="text-[11px] text-indigo-500">{toast}</p>
-                  : <button onClick={handleSaveToInventory} className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors">↓ Save to inventory</button>
+                  : <button onClick={handleSaveToInventory} className="text-[11px] text-gray-500 hover:text-indigo-600 font-medium transition-colors">↓ Save to inventory</button>
                 }
               </div>
             )}
@@ -730,10 +730,10 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     >
       <div className="flex gap-5">
         <div className="w-40 flex-shrink-0">
-          <div className="bg-white rounded-xl border border-gray-200 p-3 sticky top-4">
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Day Tags</p>
-            <p className="text-[10px] text-gray-300 mb-1 leading-tight">Drop on <strong>header</strong> = all day</p>
-            <p className="text-[10px] text-gray-300 mb-3 leading-tight">Drop on <strong>item</strong> = inline event</p>
+          <div className="bg-white rounded-xl border border-gray-300 p-3 sticky top-4">
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Day Tags</p>
+            <p className="text-[10px] text-gray-500 mb-1 leading-tight">Drop on <strong>header</strong> = all day</p>
+            <p className="text-[10px] text-gray-500 mb-3 leading-tight">Drop on <strong>item</strong> = inline event</p>
             <div className="space-y-1.5">
               {DAY_TAGS.map((tag) => (
                 <DraggableTagChip key={tag.id} tag={tag} />
@@ -776,7 +776,7 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
             <span className="text-xs font-semibold">{getTagById(activeItem.tagId ?? null)?.label ?? activeItem.name}</span>
           </div>
         ) : activeItem ? (
-          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-lg w-[240px] cursor-grabbing">
+          <div className="bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-lg w-[240px] cursor-grabbing">
             <span className="text-xs font-medium text-gray-800">{activeItem.name}</span>
           </div>
         ) : null}

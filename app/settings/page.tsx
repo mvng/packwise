@@ -38,6 +38,12 @@ export default function SettingsPage() {
     load()
   }, [router])
 
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -87,7 +93,7 @@ export default function SettingsPage() {
 
         <form onSubmit={handleSave} className="space-y-8">
           {/* Home Location */}
-          <section className="bg-white rounded-xl border border-gray-200 p-6">
+          <section className="bg-white rounded-xl border border-gray-300 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-1">🏠 Home Location</h2>
             <p className="text-sm text-gray-500 mb-5">
               When your destination is close to home, Packwise will assume you&apos;re driving — removing
@@ -105,9 +111,9 @@ export default function SettingsPage() {
                   value={homeCity}
                   onChange={(e) => setHomeCity(e.target.value)}
                   placeholder="e.g. San Diego"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <p className="text-xs text-gray-400 mt-1">Used to detect short domestic drives (&lt;500 km).</p>
+                <p className="text-xs text-gray-500 mt-1">Used to detect short domestic drives (&lt;500 km).</p>
               </div>
 
               <div>
@@ -125,7 +131,7 @@ export default function SettingsPage() {
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-400 mt-1">International trips always include passport.</p>
+                <p className="text-xs text-gray-500 mt-1">International trips always include passport.</p>
               </div>
             </div>
 
@@ -151,6 +157,23 @@ export default function SettingsPage() {
             {error && <span className="text-sm text-red-500">{error}</span>}
           </div>
         </form>
+
+        {/* Account Settings */}
+        <section className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-1">Account</h2>
+          <p className="text-sm text-gray-500 mb-5">
+            Manage your account session.
+          </p>
+
+          <div>
+            <button
+              onClick={handleSignOut}
+              className="text-red-600 hover:text-red-700 font-medium text-sm transition-colors border border-red-200 hover:bg-red-50 px-4 py-2 rounded-lg"
+            >
+              Sign out
+            </button>
+          </div>
+        </section>
       </main>
     </div>
   )
