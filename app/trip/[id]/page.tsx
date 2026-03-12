@@ -138,11 +138,6 @@ export default function TripPageClient({ params }: TripPageProps) {
     return icons[tripType] || '✈️'
   }
 
-  const getUserDisplayName = () => {
-    if (!user) return null
-    return user.user_metadata?.full_name || user.user_metadata?.name || user.email
-  }
-
   const getTripOwnerName = () => {
     if (!trip.user) return 'Someone'
     return trip.user.name || trip.user.email || 'Someone'
@@ -174,12 +169,7 @@ export default function TripPageClient({ params }: TripPageProps) {
             )}
           </div>
           <div className="flex items-center gap-4">
-            {user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">{getUserDisplayName()}</span>
-                <Link href="/api/auth/signout" className="text-sm text-gray-600 hover:text-gray-900 font-medium">Sign out</Link>
-              </div>
-            ) : (
+            {!user && (
               <Link href="/login" className="text-sm text-blue-600 hover:text-blue-700 font-medium">Sign in</Link>
             )}
             {!isSharedView && totalItems > 0 && (

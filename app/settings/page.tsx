@@ -38,6 +38,12 @@ export default function SettingsPage() {
     load()
   }, [router])
 
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -151,6 +157,23 @@ export default function SettingsPage() {
             {error && <span className="text-sm text-red-500">{error}</span>}
           </div>
         </form>
+
+        {/* Account Settings */}
+        <section className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-1">Account</h2>
+          <p className="text-sm text-gray-500 mb-5">
+            Manage your account session.
+          </p>
+
+          <div>
+            <button
+              onClick={handleSignOut}
+              className="text-red-600 hover:text-red-700 font-medium text-sm transition-colors border border-red-200 hover:bg-red-50 px-4 py-2 rounded-lg"
+            >
+              Sign out
+            </button>
+          </div>
+        </section>
       </main>
     </div>
   )
