@@ -161,11 +161,11 @@ export default function TripPageClient({ params }: TripPageProps) {
         <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {user && <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 text-lg">←</Link>}
-            {user ? (
-              <Link href="/dashboard" className="hover:opacity-70 transition-opacity">
+            {!isSharedView ? (
+              <button onClick={() => setEditingTrip(trip)} className="text-left hover:opacity-70 transition-opacity">
                 <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
                 {trip.destination && <p className="text-xs text-gray-500">📍 {trip.destination}</p>}
-              </Link>
+              </button>
             ) : (
               <div>
                 <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
@@ -219,10 +219,16 @@ export default function TripPageClient({ params }: TripPageProps) {
             <div className="flex items-center gap-4">
               <div className="text-4xl">{getTripEmoji(trip.tripType)}</div>
               <div>
-                <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
+                {!isSharedView ? (
+                  <button onClick={() => setEditingTrip(trip)} className="text-left hover:opacity-70 transition-opacity">
+                    <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
+                  </button>
+                ) : (
+                  <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
+                )}
                 {trip.startDate && (
                   <div className="relative inline-block group">
-                    <p className="text-sm text-gray-500 cursor-help">
+                    <p className="text-sm text-gray-500 cursor-help mt-1">
                       {formatDate(trip.startDate)}
                       {trip.endDate && ` – ${formatDate(trip.endDate)}`}
                     </p>
