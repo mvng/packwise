@@ -5,6 +5,7 @@ import { toggleItemPacked, addCustomItem, deleteItem, togglePackLast, updateItem
 import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
 import LuggagePickerModal from '@/components/LuggagePickerModal'
+import PasteListModal from '@/components/PasteListModal'
 import type { TripLuggage, LuggageType } from '@/types/luggage'
 import { Backpack, X, Plus, Sun, Sunrise, MessageSquare, User, Check } from 'lucide-react'
 
@@ -73,6 +74,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const [assigningItem, setAssigningItem] = useState<string | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
   const [showInventoryPicker, setShowInventoryPicker] = useState(false)
+  const [showPasteList, setShowPasteList] = useState(false)
   const [showLuggagePicker, setShowLuggagePicker] = useState(false)
   const [inventoryToast, setInventoryToast] = useState<string | null>(null)
   const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>(sharedTripLuggages || [])
@@ -500,6 +502,12 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     window.location.reload()
   }
 
+  function handlePasteListSuccess(count: number) {
+    setInventoryToast(`${count} item${count !== 1 ? 's' : ''} imported to your packing list`)
+    setTimeout(() => setInventoryToast(null), 3500)
+    window.location.reload()
+  }
+
   function handleLuggageSuccess() {
     loadTripLuggage()
     setShowLuggagePicker(false)
@@ -718,6 +726,20 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         </div>
         {!readOnly && (
           <>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setShowInventoryPicker(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <span>🎒</span> Add from Inventory
+              </button>
+              <button
+                onClick={() => setShowPasteList(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <span>📋</span> Paste a List
+              </button>
+            </div>
             <button
               onClick={() => setShowInventoryPicker(true)}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -726,6 +748,9 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             </button>
             {showInventoryPicker && (
               <InventoryPickerModal tripId={trip.id} onClose={() => setShowInventoryPicker(false)} onSuccess={handleInventorySuccess} />
+            )}
+            {showPasteList && (
+              <PasteListModal tripId={trip.id} onClose={() => setShowPasteList(false)} onSuccess={handlePasteListSuccess} />
             )}
           </>
         )}
@@ -804,6 +829,20 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             )}
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => setShowInventoryPicker(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <span>🎒</span> Add from Inventory
+            </button>
+            <button
+              onClick={() => setShowPasteList(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <span>📋</span> Paste a List
+            </button>
+          </div>
           <button
             onClick={() => setShowInventoryPicker(true)}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1106,6 +1145,9 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
 
       {!readOnly && showInventoryPicker && (
         <InventoryPickerModal tripId={trip.id} onClose={() => setShowInventoryPicker(false)} onSuccess={handleInventorySuccess} />
+      )}
+      {!readOnly && showPasteList && (
+        <PasteListModal tripId={trip.id} onClose={() => setShowPasteList(false)} onSuccess={handlePasteListSuccess} />
       )}
       {!readOnly && showLuggagePicker && (
         <LuggagePickerModal tripId={trip.id} onClose={() => setShowLuggagePicker(false)} onSuccess={handleLuggageSuccess} />
