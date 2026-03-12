@@ -684,8 +684,8 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
 
       {optimisticTripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
-          <button onClick={() => setViewMode('luggage')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'luggage' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Luggage</button>
-          <button onClick={() => setViewMode('category')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'category' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Category</button>
+          <button onClick={() => setViewMode('luggage')} aria-label="By Luggage view" disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'luggage' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Luggage</button>
+          <button onClick={() => setViewMode('category')} aria-label="By Category view" disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'category' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Category</button>
         </div>
       )}
 
@@ -828,11 +828,11 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                           className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           autoFocus
                         />
-                        <button onClick={() => handleAddItem(category.id, list.id)} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Add</button>
-                        <button onClick={() => { setAddingTo(null); setAddError(null) }} className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">Cancel</button>
+                        <button onClick={() => handleAddItem(category.id, list.id)} aria-label={`Add item to ${category.name}`} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Add</button>
+                        <button onClick={() => { setAddingTo(null); setAddError(null) }} aria-label={`Cancel adding item to ${category.name}`} className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">Cancel</button>
                       </div>
                     ) : (
-                      <button onClick={() => setAddingTo(category.id)} className="mt-3 text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">+ Add item</button>
+                      <button onClick={() => setAddingTo(category.id)} aria-label={`+ Add item to ${category.name}`} className="mt-3 text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">+ Add item</button>
                     ))}
                   </section>
                 ))}
