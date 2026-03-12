@@ -2,7 +2,6 @@
 
 import { useState, useTransition, useRef, useEffect } from 'react'
 import { updateTrip } from '@/actions/trip.actions'
-import { CheckCircle2 } from 'lucide-react'
 
 const LAUNDRY_STORAGE_KEY = (tripId: string) => `packwise_laundry_${tripId}`
 
@@ -315,8 +314,8 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
                   className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
                 />
                 {laundryDate && (
-                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Outfit counts after {new Date(laundryDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} are halved
+                  <p className="text-xs text-green-600 mt-1">
+                    ✅ Outfit counts after {new Date(laundryDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} are halved
                   </p>
                 )}
               </div>

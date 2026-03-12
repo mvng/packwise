@@ -1,7 +1,11 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useCallback } from 'react'
 import { importItemsToTrip } from '@/actions/packing.actions'
+import { useDropzone } from 'react-dropzone'
+import * as XLSX from 'xlsx'
+import * as mammoth from 'mammoth'
+import { Upload, FileType, FileText, CheckCircle2 } from 'lucide-react'
 
 interface PasteListModalProps {
   tripId: string
@@ -152,6 +156,72 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    setError(null)
+    const file = acceptedFiles[0]
+    if (!file) return
+
+    const fileType = file.name.split('.').pop()?.toLowerCase()
+
+    try {
+      if (fileType === 'xlsx' || fileType === 'xls' || fileType === 'csv') {
+        const buffer = await file.arrayBuffer()
+        const workbook = XLSX.read(buffer, { type: 'array' })
+        const firstSheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[firstSheetName]
+        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
+        const tsv = json.map((row) => row.join('\t')).join('\n')
+        setPastedText(tsv)
+        const items = parsePastedText(tsv)
+        if (items.length === 0) {
+          setError('No items found in the uploaded file.')
+          return
+        }
+        setParsedItems(items)
+        setStep(2)
+      } else if (fileType === 'docx') {
+        const buffer = await file.arrayBuffer()
+        const result = await mammoth.extractRawText({ arrayBuffer: buffer })
+        const text = result.value
+        setPastedText(text)
+        const items = parsePastedText(text)
+        if (items.length === 0) {
+          setError('No items found in the uploaded document.')
+          return
+        }
+        setParsedItems(items)
+        setStep(2)
+      } else if (fileType === 'txt') {
+        const text = await file.text()
+        setPastedText(text)
+        const items = parsePastedText(text)
+        if (items.length === 0) {
+          setError('No items found in the uploaded file.')
+          return
+        }
+        setParsedItems(items)
+        setStep(2)
+      } else {
+        setError('Unsupported file type. Please upload a Word document (.docx), Excel spreadsheet (.xlsx, .csv), or text file (.txt).')
+      }
+    } catch (err) {
+      console.error(err)
+      setError('Failed to process the file. Please try again.')
+    }
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'text/csv': ['.csv'],
+      'text/plain': ['.txt']
+    },
+    maxFiles: 1
+  })
+
   const handleParse = () => {
     const items = parsePastedText(pastedText)
     if (items.length === 0) {
@@ -178,15 +248,17 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
   const handleImport = () => {
     if (parsedItems.length === 0) return
     setError(null)
-    startTransition(async () => {
-      const itemsToImport = parsedItems.map(item => ({ name: item.name, quantity: item.quantity }))
-      const result = await importItemsToTrip(tripId, itemsToImport)
-      if (result.error) {
-        setError(result.error)
-      } else {
-        onSuccess(result.count || 0)
-        onClose()
-      }
+    startTransition(() => {
+      importItemsToTrip(tripId, parsedItems.map(item => ({ name: item.name, quantity: item.quantity })))
+        .then((result) => {
+          if (result.error) {
+            setError(result.error)
+          } else {
+            onSuccess(result.count || 0)
+            onClose()
+          }
+        })
+        .catch(() => setError('Failed to import items'))
     })
   }
 
@@ -213,13 +285,39 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
           {step === 1 ? (
             <div className="space-y-4 flex flex-col h-full">
               <p className="text-sm text-gray-600">
-                You can paste a list from anywhere. We&apos;ll do our best to automatically read items and quantities (e.g., &ldquo;3 shirts&rdquo; or &ldquo;pants x2&rdquo;).
+                You can paste a list from anywhere, or upload a document (Word, Excel, CSV). We&apos;ll do our best to automatically read items and quantities.
               </p>
+
+              {/* Dropzone Area */}
+              <div
+                {...getRootProps()}
+                className={`relative w-full p-6 border-2 border-dashed rounded-xl transition-colors cursor-pointer flex flex-col items-center justify-center gap-3 ${
+                  isDragActive ? 'border-blue-500 bg-blue-50/50' : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+                }`}
+              >
+                <input {...getInputProps()} />
+                <div className={`flex gap-4 items-center justify-center mb-1 ${isDragActive ? 'text-blue-500' : 'text-gray-400'}`}>
+                  <Upload className="w-8 h-8" />
+                </div>
+                <div className="text-center">
+                  <p className={`text-sm font-medium ${isDragActive ? 'text-blue-700' : 'text-gray-700'}`}>
+                    {isDragActive ? 'Drop your file here...' : 'Drag & drop a file here, or click to select'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Supports .docx, .xlsx, .csv, .txt</p>
+                </div>
+              </div>
+
+              <div className="flex items-center w-full my-1">
+                <div className="flex-1 border-t border-gray-200"></div>
+                <span className="px-4 text-xs text-gray-400 uppercase font-medium">or paste text</span>
+                <div className="flex-1 border-t border-gray-200"></div>
+              </div>
+
               <textarea
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
                 placeholder="Paste your items here...&#10;&#10;e.g.&#10;3 t-shirts&#10;1 pair of jeans&#10;Toothbrush&#10;- socks x4"
-                className="flex-1 min-h-[300px] w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="flex-1 min-h-[200px] w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               />
             </div>
           ) : (
