@@ -223,6 +223,19 @@ function InlineTagCard({
 
   function fmtTime(t: string) {
     try {
+      const parts = t.split('-')
+      if (parts.length > 1) {
+        const start = parts[0].trim()
+        const end = parts[1].trim()
+        const [sh, sm] = start.split(':').map(Number)
+        const sd = new Date(); sd.setHours(sh, sm)
+        const [eh, em] = end.split(':').map(Number)
+        const ed = new Date(); ed.setHours(eh, em)
+        const sfmt = sd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+        const efmt = ed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+        // Simplify "8:00 AM - 9:00 AM" to "8:00 - 9:00 AM" if they share AM/PM, but full is safer.
+        return `${sfmt} - ${efmt}`
+      }
       const [h, m] = t.split(':').map(Number)
       const d = new Date(); d.setHours(h, m)
       return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
@@ -246,12 +259,13 @@ function InlineTagCard({
         {editingTime ? (
           <input
             autoFocus
-            type="time"
+            type="text"
+            placeholder="e.g. 10:00 or 10:00-11:30"
             value={timeInput}
             onChange={(e) => setTimeInput(e.target.value)}
             onBlur={commitTime}
             onKeyDown={(e) => { if (e.key === 'Enter') commitTime() }}
-            className="ml-2 text-[11px] bg-white border border-current/20 rounded px-1 py-0.5 focus:outline-none w-24"
+            className="ml-2 text-[11px] bg-white border border-current/20 rounded px-1.5 py-0.5 focus:outline-none w-32"
           />
         ) : (
           <button
@@ -538,7 +552,8 @@ function DayColumn({
 
 // ─── DayDetailView ─────────────────────────────────────────────────────────────
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i)
+// Start at 4 AM, end at 11 PM (20 hours total)
+const HOURS = Array.from({ length: 20 }, (_, i) => i + 4)
 
 const SLOT_PREFIX = 'slot::'
 function makeTimeSlotDropId(dateKey: string, hour: number) { return `${SLOT_PREFIX}${dateKey}::${hour}` }
@@ -621,7 +636,10 @@ function DayDetailView({
 
       {/* Untimed Items Column */}
       <div className="flex flex-col">
-        <p className="text-sm font-semibold text-gray-500 mb-2 pl-1">Untimed & Packing List</p>
+        <div className="mb-2 pl-1">
+          <p className="text-sm font-semibold text-indigo-900 bg-indigo-100 rounded px-2 py-0.5 inline-block w-fit">Untimed Items</p>
+          <p className="text-[10px] text-gray-400 font-medium mt-0.5 ml-1">Drop here or add items for packing.</p>
+        </div>
         <DayColumn
           date={date}
           dayIndex={dayIndex}
