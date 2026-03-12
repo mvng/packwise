@@ -220,7 +220,7 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
       {/* Toolbar */}
       <div className="flex items-center gap-3 mb-6">
         <div className="flex-1 relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
             🔍
           </span>
           <input
@@ -228,7 +228,7 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
             placeholder="Search items..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
         <button
@@ -254,7 +254,7 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
 
       {/* Empty state */}
       {optimisticCategories.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
           <div className="text-5xl mb-4">🎒</div>
           <h3 className="font-semibold text-gray-900 mb-2">No inventory yet</h3>
           <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
@@ -269,7 +269,7 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
           </button>
         </div>
       ) : filteredCategories.length === 0 && search ? (
-        <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center">
+        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
           <div className="text-4xl mb-3">🔍</div>
           <p className="text-sm text-gray-500">No items match &ldquo;{search}&rdquo;</p>
           <button
@@ -300,7 +300,7 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
 
       {/* Footer count */}
       {totalItems > 0 && !search && (
-        <p className="text-xs text-gray-500 text-center mt-6">
+        <p className="text-xs text-gray-400 text-center mt-6">
           {totalItems} item{totalItems !== 1 ? 's' : ''} across {optimisticCategories.length} categor
           {optimisticCategories.length !== 1 ? 'ies' : 'y'}
         </p>

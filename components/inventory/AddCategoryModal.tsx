@@ -35,7 +35,7 @@ export default function AddCategoryModal({
     >
       <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl">
         <h2 className="font-semibold text-gray-900 mb-1">New Category</h2>
-        <p className="text-xs text-gray-500 mb-4">e.g. Clothing, Electronics, Documents</p>
+        <p className="text-xs text-gray-400 mb-4">e.g. Clothing, Electronics, Documents</p>
         <form onSubmit={handleSubmit}>
           <input
             ref={inputRef}
@@ -43,13 +43,13 @@ export default function AddCategoryModal({
             placeholder="Category name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
           />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 text-sm text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+              className="flex-1 px-4 py-2.5 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-medium"
             >
               Cancel
             </button>

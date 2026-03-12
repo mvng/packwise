@@ -40,6 +40,13 @@ export default async function DashboardPage() {
             >
               ⚙️ <span className="hidden sm:inline">Settings</span>
             </Link>
+            <span className="text-sm text-gray-600 hidden sm:block">{user?.email}</span>
+            <button
+              onClick={handleSignOut}
+              className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Sign out
+            </button>
           </div>
         </div>
       </header>

@@ -94,7 +94,7 @@ export default async function HomePage() {
               description: 'Manage all your upcoming and past trips in one organized dashboard.',
             },
           ].map((feature) => (
-            <div key={feature.title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div key={feature.title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className="text-3xl mb-4">{feature.icon}</div>
               <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
               <p className="text-gray-500 text-sm leading-relaxed">{feature.description}</p>
@@ -118,12 +118,12 @@ export default async function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between border-t border-gray-200">
+      <footer className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between border-t border-gray-100">
         <div className="flex items-center gap-2">
           <span className="text-xl">🧳</span>
           <span className="font-semibold text-gray-900">Packwise</span>
         </div>
-        <p className="text-gray-500 text-sm">Built with Next.js, Supabase & Prisma</p>
+        <p className="text-gray-400 text-sm">Built with Next.js, Supabase & Prisma</p>
       </footer>
     </main>
   )
