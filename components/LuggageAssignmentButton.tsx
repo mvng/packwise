@@ -100,7 +100,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
                 </div>
 
                 {/* Header */}
-                <div className="px-6 pt-2 pb-4 border-b border-gray-200">
+                <div className="px-6 pt-2 pb-4 border-b border-gray-100">
                   <h3 className="font-semibold text-gray-900 text-lg">Move &quot;{itemName}&quot; to:</h3>
                 </div>
 
@@ -115,7 +115,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
                         className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
                           isSelected
                             ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-300 hover:border-gray-300 bg-white'
+                            : 'border-gray-200 hover:border-gray-300 bg-white'
                         }`}
                       >
                         <div className="text-3xl">{luggageIcons[tl.luggage.type as LuggageType]}</div>
@@ -141,7 +141,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
                     className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
                       !currentLuggageId
                         ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-300 hover:border-gray-300 bg-white'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
                     <div className="text-3xl">☐</div>
@@ -192,7 +192,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
       {isOpen && (
         <div
           ref={popoverRef}
-          className="absolute right-0 top-10 z-30 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 animate-in fade-in zoom-in-95 duration-200"
+          className="absolute right-0 top-10 z-30 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 animate-in fade-in zoom-in-95 duration-200"
           style={{ transformOrigin: 'top right' }}
         >
           {tripLuggages.map((tl) => {
@@ -221,7 +221,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
           })}
 
           {/* Separator */}
-          <div className="my-2 border-t border-gray-200" />
+          <div className="my-2 border-t border-gray-100" />
 
           {/* No Bag Option */}
           <button

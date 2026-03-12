@@ -156,7 +156,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden animate-in zoom-in-95 duration-200">
           {/* Header */}
-          <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+          <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
                 {showCreateForm ? 'Create new luggage' : 'Add luggage to trip'}
@@ -167,7 +167,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
             </div>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -211,7 +211,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                         className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
                           newLuggage.type === type.value
                             ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-300 hover:border-gray-300 bg-white'
+                            : 'border-gray-200 hover:border-gray-300 bg-white'
                         }`}
                       >
                         <span className="text-2xl">{luggageIcons[type.value]}</span>
@@ -223,7 +223,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Custom Icon <span className="text-gray-500 text-xs">optional</span>
+                    Custom Icon <span className="text-gray-400 text-xs">optional</span>
                   </label>
                   <div className="flex gap-2">
                     <button
@@ -265,7 +265,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Capacity (liters) <span className="text-gray-500 text-xs">optional</span>
+                    Capacity (liters) <span className="text-gray-400 text-xs">optional</span>
                   </label>
                   <input
                     type="number"
@@ -278,7 +278,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                 </div>
               </div>
             ) : loading ? (
-              <div className="text-center py-12 text-gray-500">Loading your luggage...</div>
+              <div className="text-center py-12 text-gray-400">Loading your luggage...</div>
             ) : (
               <>
                 <button
@@ -295,7 +295,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                   <div className="text-center py-12">
                     <div className="text-5xl mb-4">🎒</div>
                     <p className="text-gray-500">No luggage in your inventory yet.</p>
-                    <p className="text-sm text-gray-500 mt-2">Create your first bag above!</p>
+                    <p className="text-sm text-gray-400 mt-2">Create your first bag above!</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -308,7 +308,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                           className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${
                             isSelected
                               ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-300 hover:border-gray-300 bg-white'
+                              : 'border-gray-200 hover:border-gray-300 bg-white'
                           }`}
                         >
                           <div className="text-3xl">{getDisplayIcon(item)}</div>
@@ -334,7 +334,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
             {showCreateForm ? (
               <>
                 <button

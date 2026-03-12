@@ -69,7 +69,7 @@ export default function TripWeather({ destination, startDate, endDate, variant =
   if (isCard) {
     if (loading) {
       return (
-        <div className="mt-3 pt-3 border-t border-gray-200">
+        <div className="mt-3 pt-3 border-t border-gray-100">
           <div className="flex items-center justify-between animate-pulse">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-gray-200 rounded"></div>
@@ -85,7 +85,7 @@ export default function TripWeather({ destination, startDate, endDate, variant =
 
     if (error) {
       return (
-        <div className="mt-3 pt-3 border-t border-gray-200">
+        <div className="mt-3 pt-3 border-t border-gray-100">
           <div className="text-xs text-red-600">
             Weather unavailable
           </div>
@@ -97,7 +97,7 @@ export default function TripWeather({ destination, startDate, endDate, variant =
 
     return (
       <div 
-        className="mt-3 pt-3 border-t border-gray-200 relative cursor-help"
+        className="mt-3 pt-3 border-t border-gray-100 relative cursor-help"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
       >
@@ -221,7 +221,7 @@ export default function TripWeather({ destination, startDate, endDate, variant =
         </div>
         
         <svg
-          className={`w-4 h-4 text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -336,14 +336,14 @@ export default function TripWeather({ destination, startDate, endDate, variant =
                     <div className="text-xs font-semibold text-gray-700">
                       {day.tempMax}°F
                     </div>
-                    <div className="text-[10px] text-gray-500 mb-1">
+                    <div className="text-[10px] text-gray-400 mb-1">
                       {day.tempMin}°F
                     </div>
                     <div className="text-[10px] text-gray-500 line-clamp-1" title={day.condition}>
                       {day.condition}
                     </div>
                     {day.precipitation > 0 && (
-                      <div className="text-[10px] text-gray-500 flex items-center justify-center gap-0.5 mt-0.5">
+                      <div className="text-[10px] text-gray-400 flex items-center justify-center gap-0.5 mt-0.5">
                         <span>💧</span>
                         <span>{day.precipitation}mm</span>
                       </div>
