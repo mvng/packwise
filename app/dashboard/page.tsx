@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import DashboardClient from './DashboardClient'
 import TripWeather from '@/components/TripWeather'
 import TripWeatherSkeleton from '@/components/TripWeatherSkeleton'
+import { Settings, Backpack } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -53,13 +54,13 @@ export default async function DashboardPage() {
               href="/inventory"
               className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors flex items-center gap-1.5"
             >
-              🎒 <span className="hidden sm:inline">Inventory</span>
+              <Backpack className="w-4 h-4" /> <span className="hidden sm:inline">Inventory</span>
             </Link>
             <Link
               href="/settings"
               className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors flex items-center gap-1.5"
             >
-              ⚙️ <span className="hidden sm:inline">Settings</span>
+              <Settings className="w-4 h-4" /> <span className="hidden sm:inline">Settings</span>
             </Link>
           </div>
         </div>
