@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useTransition, useEffect, useOptimistic } from 'react'
-import { toggleItemPacked, addCustomItem, deleteItem, togglePackLast, updateItemNotes, assignItemToMember } from '@/actions/packing.actions'
+import { toggleItemPacked, addCustomItem, deleteItem, togglePackLast, updateItemNotes, assignItemToMember, generateShareToken } from '@/actions/packing.actions'
 import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
 import LuggagePickerModal from '@/components/LuggagePickerModal'
 import PasteListModal from '@/components/PasteListModal'
 import type { TripLuggage, LuggageType } from '@/types/luggage'
-import { Backpack, X, Plus, Sun, Sunrise, MessageSquare, User, Check } from 'lucide-react'
+import { Backpack, X, Plus, Sunrise, MessageSquare, User, Check, Share2, Copy } from 'lucide-react'
 
 export interface TripMember {
   id: string
@@ -28,6 +28,7 @@ export interface PackingItem {
   assigneeId?: string | null
   assignee?: TripMember | null
   tripLuggageId?: string | null
+  guestClaimant?: string | null
   tripLuggage?: {
     id: string
     luggage: {
@@ -49,6 +50,7 @@ interface Category {
 interface PackingList {
   id: string
   name: string
+  shareToken?: string | null
   categories: Category[]
 }
 
@@ -84,6 +86,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null)
   const [localPackedState, setLocalPackedState] = useState<Record<string, boolean>>({})
   const [isBagsCardExpanded, setIsBagsCardExpanded] = useState(true)
+  const [shareLinkCopied, setShareLinkCopied] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
   const [optimisticLists, addOptimisticListUpdate] = useOptimistic(
@@ -520,6 +523,20 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const getItemPackedState = (item: PackingItem): boolean => {
     if (readOnly) return localPackedState[item.id] ?? item.isPacked
     return item.isPacked
+  }
+
+  const handleShareToClaim = async (packingListId: string) => {
+    if (readOnly) return
+    const result = await generateShareToken(packingListId, trip.id)
+    if (result.success && result.token) {
+      const url = `${window.location.origin}/claim/${result.token}`
+      navigator.clipboard.writeText(url)
+      setShareLinkCopied(packingListId)
+      setTimeout(() => setShareLinkCopied(null), 3000)
+    } else {
+      setAddError(result.error || 'Failed to generate link')
+      setTimeout(() => setAddError(null), 3000)
+    }
   }
 
   const allItems = optimisticLists.flatMap(list =>
@@ -969,8 +986,20 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         ) : (
           optimisticLists.map((list) => (
             <article key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <header className="px-6 py-4 border-b border-gray-50">
+              <header className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900">{list.name}</h3>
+                {!readOnly && (
+                  <button
+                    onClick={(e) => { e.preventDefault(); handleShareToClaim(list.id); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {shareLinkCopied === list.id ? (
+                      <><Check className="w-4 h-4" /> Copied!</>
+                    ) : (
+                      <><Share2 className="w-4 h-4" /> Share to Claim</>
+                    )}
+                  </button>
+                )}
               </header>
               <div className="divide-y divide-gray-50">
                 {list.categories.map((category) => (
@@ -1006,6 +1035,12 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                         {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
                                         {item.name}
                                       </span>
+
+                                      {item.guestClaimant && (
+                                        <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full ml-1 border border-purple-200">
+                                          Claimed by {item.guestClaimant}
+                                        </span>
+                                      )}
 
                                       {/* Assignee display/dropdown */}
                                       {!readOnly && trip.members && trip.members.length > 0 && (
