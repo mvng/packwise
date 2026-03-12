@@ -4,7 +4,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getUserTrips, deleteTrip } from '@/actions/trip.actions'
+import { getUserTrips, deleteTrip, getSharedTripById } from '@/actions/trip.actions'
+import { getTripWeather } from '@/actions/weather.actions'
+import { setCachedTrip, setCachedWeather, startPrefetching, finishPrefetching, isPrefetching, getCachedTrip } from '@/lib/tripClientCache'
 import { formatDate } from '@/lib/utils'
 import TripWeather from '@/components/TripWeather'
 import TripCountdown from '@/components/TripCountdown'
@@ -137,10 +139,35 @@ export default function DashboardPage() {
     loadTrips()
   }
 
+  const handlePrefetchTrip = async (trip: Trip) => {
+    if (isPrefetching(trip.id) || getCachedTrip(trip.id)) return
+    startPrefetching(trip.id)
+
+    try {
+      const { trip: fetchedTrip } = await getSharedTripById(trip.id)
+      if (fetchedTrip) {
+        setCachedTrip(trip.id, fetchedTrip)
+
+        if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
+          const { weather } = await getTripWeather(fetchedTrip.destination, fetchedTrip.startDate, fetchedTrip.endDate)
+          if (weather) {
+            setCachedWeather(trip.id, weather)
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to prefetch trip', e)
+    } finally {
+      finishPrefetching(trip.id)
+    }
+  }
+
   const renderTripCard = (trip: Trip) => (
     <div key={trip.id} className="relative group">
       <Link
         href={`/trip/${trip.id}`}
+        onMouseEnter={() => handlePrefetchTrip(trip)}
+        onFocus={() => handlePrefetchTrip(trip)}
         className="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
       >
         <div className="flex items-start justify-between mb-3">
@@ -201,6 +228,8 @@ export default function DashboardPage() {
     <div key={trip.id} className="relative group">
       <Link
         href={`/trip/${trip.id}`}
+        onMouseEnter={() => handlePrefetchTrip(trip)}
+        onFocus={() => handlePrefetchTrip(trip)}
         className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors"
       >
         <div className="flex items-center gap-3">

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getSharedTripById } from '@/actions/trip.actions'
 import { getTripWeather } from '@/actions/weather.actions'
+import { getCachedTrip, getCachedWeather } from '@/lib/tripClientCache'
 import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
@@ -66,12 +67,24 @@ export default function TripPageClient({ params }: TripPageProps) {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       setUser(authUser)
 
+      // Use cached data to instantly render the page if available
+      const cachedTrip = getCachedTrip(resolvedParams.id)
+      const cachedWeather = getCachedWeather(resolvedParams.id)
+
+      if (cachedTrip) {
+        setTrip(cachedTrip)
+        setLoading(false)
+        if (cachedWeather?.timezone) {
+          setTripTimezone(cachedWeather.timezone)
+        }
+      }
+
       const { trip: fetchedTrip, error } = await getSharedTripById(resolvedParams.id)
-      if (error || !fetchedTrip) { setIsNotFound(true); setLoading(false); return }
+      if (!cachedTrip && (error || !fetchedTrip)) { setIsNotFound(true); setLoading(false); return }
 
-      setTrip(fetchedTrip)
+      if (fetchedTrip) setTrip(fetchedTrip)
 
-      if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
+      if (fetchedTrip?.destination && fetchedTrip?.startDate && fetchedTrip?.endDate) {
         const { weather } = await getTripWeather(fetchedTrip.destination, fetchedTrip.startDate, fetchedTrip.endDate)
         if (weather?.timezone) setTripTimezone(weather.timezone)
       }
