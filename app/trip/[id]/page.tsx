@@ -11,7 +11,7 @@ import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
-import TripLoadingScreen from '@/components/TripLoadingScreen'
+import PackingRating from '@/components/PackingRating'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
 
@@ -104,7 +104,11 @@ export default function TripPageClient({ params }: TripPageProps) {
     }
   }
 
-  if (loading) return <TripLoadingScreen />
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+    </div>
+  )
 
   if (isNotFound || !trip) return notFound()
 
@@ -135,6 +139,11 @@ export default function TripPageClient({ params }: TripPageProps) {
     return icons[tripType] || '✈️'
   }
 
+  const getUserDisplayName = () => {
+    if (!user) return null
+    return user.user_metadata?.full_name || user.user_metadata?.name || user.email
+  }
+
   const getTripOwnerName = () => {
     if (!trip.user) return 'Someone'
     return trip.user.name || trip.user.email || 'Someone'
@@ -149,15 +158,15 @@ export default function TripPageClient({ params }: TripPageProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-300 sticky top-0 z-10">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {user && <Link href="/dashboard" className="text-gray-500 hover:text-gray-600 text-lg">←</Link>}
-            {user ? (
-              <Link href="/dashboard" className="hover:opacity-70 transition-opacity">
+            {user && <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 text-lg">←</Link>}
+            {!isSharedView ? (
+              <button onClick={() => setEditingTrip(trip)} className="text-left hover:opacity-70 transition-opacity">
                 <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
                 {trip.destination && <p className="text-xs text-gray-500">📍 {trip.destination}</p>}
-              </Link>
+              </button>
             ) : (
               <div>
                 <h1 className="font-semibold text-gray-900">{trip.name || trip.destination}</h1>
@@ -166,7 +175,12 @@ export default function TripPageClient({ params }: TripPageProps) {
             )}
           </div>
           <div className="flex items-center gap-4">
-            {!user && (
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600">{getUserDisplayName()}</span>
+                <Link href="/api/auth/signout" className="text-sm text-gray-600 hover:text-gray-900 font-medium">Sign out</Link>
+              </div>
+            ) : (
               <Link href="/login" className="text-sm text-blue-600 hover:text-blue-700 font-medium">Sign in</Link>
             )}
             {!isSharedView && totalItems > 0 && (
@@ -201,15 +215,21 @@ export default function TripPageClient({ params }: TripPageProps) {
         )}
 
         {/* Trip meta card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
               <div className="text-4xl">{getTripEmoji(trip.tripType)}</div>
               <div>
-                <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
+                {!isSharedView ? (
+                  <button onClick={() => setEditingTrip(trip)} className="text-left hover:opacity-70 transition-opacity">
+                    <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
+                  </button>
+                ) : (
+                  <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
+                )}
                 {trip.startDate && (
                   <div className="relative inline-block group">
-                    <p className="text-sm text-gray-500 cursor-help">
+                    <p className="text-sm text-gray-500 cursor-help mt-1">
                       {formatDate(trip.startDate)}
                       {trip.endDate && ` – ${formatDate(trip.endDate)}`}
                     </p>
@@ -225,7 +245,7 @@ export default function TripPageClient({ params }: TripPageProps) {
             {!isSharedView && (
               <button
                 onClick={() => setEditingTrip(trip)}
-                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <circle cx="10" cy="3" r="1.5" />
@@ -297,6 +317,11 @@ export default function TripPageClient({ params }: TripPageProps) {
             readOnly={isSharedView}
             sharedTripLuggages={isSharedView ? trip.tripLuggages : undefined}
           />
+        )}
+
+        {/* Packing Rating Footnote */}
+        {displayTrip.packingLists.length > 0 && (
+          <PackingRating trip={displayTrip} />
         )}
       </main>
 

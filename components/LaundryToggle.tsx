@@ -28,7 +28,7 @@ export default function LaundryToggle({ startDate, endDate, onChange }: LaundryT
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6">
+    <div className="bg-white rounded-2xl border border-gray-100 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-xl">🧺</span>
@@ -61,7 +61,7 @@ export default function LaundryToggle({ startDate, endDate, onChange }: LaundryT
             max={endDate}
             value={laundryDate}
             onChange={e => handleDateChange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full max-w-xs"
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full max-w-xs"
           />
           {laundryDate && (
             <p className="text-xs text-green-600 mt-2">
