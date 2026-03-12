@@ -6,6 +6,7 @@ import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/ac
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
 import LuggagePickerModal from '@/components/LuggagePickerModal'
 import type { TripLuggage, LuggageType } from '@/types/luggage'
+import { Backpack, X, Plus, Sun, Sunrise } from 'lucide-react'
 
 interface PackingItem {
   id: string
@@ -523,21 +524,21 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             <button
               onClick={() => handleTogglePackLast(item.id, item.categoryId, item.packingListId, item.packLast)}
               title={item.packLast ? 'Remove from departure checklist' : 'Add to departure checklist (pack last)'}
-              className={`text-xs px-2 py-0.5 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+              className={`text-xs p-1 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 flex items-center justify-center ${
                 item.packLast
                   ? 'bg-amber-100 text-amber-700 border-amber-300'
                   : 'bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600'
               }`}
               aria-label={item.packLast ? 'Remove from pack last' : 'Mark as pack last'}
             >
-              🌅
+              <Sunrise className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
               className="text-red-400 hover:text-red-600 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
               aria-label={`Remove ${item.name} from packing list`}
             >
-              ×
+              <X className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -561,7 +562,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
               onClick={() => setShowInventoryPicker(true)}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              <span>🎒</span> Add from Inventory
+              <Backpack className="w-4 h-4" /> Add from Inventory
             </button>
             {showInventoryPicker && (
               <InventoryPickerModal tripId={trip.id} onClose={() => setShowInventoryPicker(false)} onSuccess={handleInventorySuccess} />
@@ -624,16 +625,16 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         {itemCount > 0 && <span className="text-xs text-gray-500">({itemCount})</span>}
                         <button
                           onClick={() => handleRemoveLuggage(tl.id, tl.luggageId)}
-                          className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1"
+                          className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1 flex items-center"
                           aria-label={`Remove ${tl.luggage.name}`}
-                        >×</button>
+                        ><X className="w-3.5 h-3.5" /></button>
                       </div>
                     )
                   })}
                   <button
                     onClick={() => setShowLuggagePicker(true)}
                     className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-dashed border-blue-300 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >+ Add bag</button>
+                  ><Plus className="w-4 h-4" /> Add bag</button>
                 </div>
                 {optimisticTripLuggages.length === 0
                   ? <p className="text-sm text-gray-500">Add luggage to organize your items by bag</p>
@@ -647,7 +648,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             onClick={() => setShowInventoryPicker(true)}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <span>🎒</span> Add from Inventory
+            <Backpack className="w-4 h-4" /> Add from Inventory
           </button>
         </>
       )}
@@ -661,7 +662,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             aria-expanded={expandedGroups['pack-last']}
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl">🌅</span>
+              <span className="text-amber-500"><Sunrise className="w-8 h-8" /></span>
               <div className="text-left">
                 <h3 className="font-semibold text-amber-900">Morning of Departure</h3>
                 <p className="text-xs text-amber-700">
@@ -673,7 +674,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
           </button>
           {expandedGroups['pack-last'] && (
             <div className="px-6 pb-4 border-t border-amber-100">
-              <p className="text-xs text-amber-600 mt-3 mb-3">Pack these right before you leave — hover an item and click 🌅 to remove it from this list</p>
+              <p className="text-xs text-amber-600 mt-3 mb-3 flex items-center gap-1">Pack these right before you leave — hover an item and click <Sunrise className="w-3.5 h-3.5 inline" /> to remove it from this list</p>
               <ul className="space-y-2" role="list">
                 {packLastItems.map(item => renderItem(item))}
               </ul>
@@ -809,9 +810,9 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                   <button
                                     onClick={() => handleTogglePackLast(item.id, category.id, list.id, item.packLast)}
                                     title="Add to departure checklist"
-                                    className="text-xs px-2 py-0.5 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400"
-                                  >🌅</button>
-                                  <button onClick={() => handleDelete(item.id, category.id, list.id)} className="text-red-400 hover:text-red-600 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1">×</button>
+                                    className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 flex items-center justify-center"
+                                  ><Sunrise className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDelete(item.id, category.id, list.id)} className="text-red-400 hover:text-red-600 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1 flex items-center"><X className="w-4 h-4" /></button>
                                 </div>
                               )}
                             </li>

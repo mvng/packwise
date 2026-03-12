@@ -13,6 +13,7 @@ import EditTripModal from '@/components/EditTripModal'
 import PackingRating from '@/components/PackingRating'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
+import { Calendar, Check } from 'lucide-react'
 
 const PlanningBoardView = dynamic(() => import('@/components/PlanningBoardView'), {
   ssr: false,
@@ -248,11 +249,11 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
             <button
               disabled={isSyncing || isPending}
               onClick={() => setViewMode('plan')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
                 viewMode === 'plan' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              🗓 Plan
+              <Calendar className="w-4 h-4" /> Plan
             </button>
             <button
               disabled={isSyncing || isPending}
@@ -273,11 +274,11 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
                   setViewMode('pack')
                 }
               }}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
                 viewMode === 'pack' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {(isSyncing || isPending) ? 'Syncing…' : '✅ Pack'}
+              {(isSyncing || isPending) ? 'Syncing…' : <><Check className="w-4 h-4" /> Pack</>}
             </button>
           </div>
         )}
