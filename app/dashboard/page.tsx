@@ -4,9 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getUserTrips, deleteTrip, getSharedTripById } from '@/actions/trip.actions'
-import { getTripWeather } from '@/actions/weather.actions'
-import { setCachedTrip, setCachedWeather, startPrefetching, finishPrefetching, isPrefetching, getCachedTrip } from '@/lib/tripClientCache'
+import { getUserTrips, deleteTrip } from '@/actions/trip.actions'
 import { formatDate } from '@/lib/utils'
 import TripWeather from '@/components/TripWeather'
 import TripCountdown from '@/components/TripCountdown'
@@ -112,18 +110,6 @@ export default function DashboardPage() {
     return () => subscription.unsubscribe()
   }, [router, loadTrips])
 
-  useEffect(() => {
-    // Automatically prefetch the top upcoming trip if available
-    if (upcomingTrips.length > 0) {
-      const topTrip = upcomingTrips[0]
-      // Use a small delay to prioritize initial page render
-      const timeout = setTimeout(() => {
-        handlePrefetchTrip(topTrip)
-      }, 500)
-      return () => clearTimeout(timeout)
-    }
-  }, [upcomingTrips])
-
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -149,29 +135,6 @@ export default function DashboardPage() {
   const handleEditSuccess = () => {
     setEditingTrip(null)
     loadTrips()
-  }
-
-  const handlePrefetchTrip = async (trip: Trip) => {
-    if (isPrefetching(trip.id) || getCachedTrip(trip.id)) return
-    startPrefetching(trip.id)
-
-    try {
-      const { trip: fetchedTrip } = await getSharedTripById(trip.id)
-      if (fetchedTrip) {
-        setCachedTrip(trip.id, fetchedTrip)
-
-        if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
-          const { weather } = await getTripWeather(fetchedTrip.destination, fetchedTrip.startDate, fetchedTrip.endDate)
-          if (weather) {
-            setCachedWeather(trip.id, weather)
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Failed to prefetch trip', e)
-    } finally {
-      finishPrefetching(trip.id)
-    }
   }
 
   const renderTripCard = (trip: Trip) => (
