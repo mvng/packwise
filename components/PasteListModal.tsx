@@ -20,8 +20,44 @@ function parsePastedText(text: string): ParsedItem[] {
   const lines = text.split('\n')
   const items: ParsedItem[] = []
 
+  // Regex to detect common header or separator lines (e.g., "🧳 Bags", "---", "⸻")
+  const headerOrSeparatorRegex = /^[^\w\s]?\s*[\w\s]+:\s*$|^[\W_]+$|^[A-Z][a-z]+(\s+[A-Z][a-z]+)*$/;
+  // Regex to detect pure tips/notes in parentheses on their own lines or lines starting with "Tip:"
+  const pureNoteRegex = /^\(.*?\)$|^Tip:.*$/i;
+  // Emojis at start of line
+  const emojiRegex = /^[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]\s*/g;
+  // Markdown Headers
+  const markdownHeaderRegex = /^#{1,6}\s+/;
+  // HTML Tags
+  const htmlTagsRegex = /<\/?[a-z][\s\S]*?>/gi;
+
   for (const line of lines) {
     let cleanLine = line.trim()
+
+    if (!cleanLine) continue
+
+    // Strip HTML
+    cleanLine = cleanLine.replace(htmlTagsRegex, '').trim()
+
+    if (!cleanLine) continue
+
+    // Ignore lines that are just separators like "---" or "⸻"
+    if (/^[-—⸻_=*]+$/.test(cleanLine)) continue
+
+    // Ignore explicit Markdown headers
+    if (markdownHeaderRegex.test(cleanLine)) continue
+
+    // Check if line looks like a category header from ChatGPT (often no bullets, short)
+    if (pureNoteRegex.test(cleanLine)) continue
+
+    // Check for bullets before stripping emojis to know if it's an actual list item
+    const hasBullet = /^[-*•\d+.)\]]+\s*/.test(cleanLine) || cleanLine.includes('•')
+
+    // Remove bold/italic markdown characters (e.g., **Tops** or *Tops*)
+    cleanLine = cleanLine.replace(/(\*\*|__|\*|_)(.*?)\1/g, '$2').trim()
+
+    // Remove emojis at the start
+    cleanLine = cleanLine.replace(emojiRegex, '').trim()
 
     // Remove common bullet points and numbering at the start
     cleanLine = cleanLine.replace(/^[-*•\d+.)\]]+\s*/, '').trim()
@@ -30,20 +66,67 @@ function parsePastedText(text: string): ParsedItem[] {
 
     let quantity = 1
     let name = cleanLine
+    let isTsv = false
 
-    // Look for patterns like "3x shirts" or "3 shirts"
-    const matchPrefix = cleanLine.match(/^(\d+)[xX\s]+(.*)$/)
-    if (matchPrefix) {
-      quantity = parseInt(matchPrefix[1], 10)
-      name = matchPrefix[2].trim()
-    } else {
-      // Look for patterns like "shirts x 3" or "shirts x3"
-      const matchSuffix = cleanLine.match(/^(.*?)\s+[xX]\s*(\d+)$/)
-      if (matchSuffix) {
-        name = matchSuffix[1].trim()
-        quantity = parseInt(matchSuffix[2], 10)
+    // TSV / Spreadsheet support
+    // If the line contains a tab, it might be from a spreadsheet.
+    // E.g., "3 \t Shirts" or "Pants \t 2"
+    if (cleanLine.includes('\t')) {
+      const parts = cleanLine.split('\t').map(p => p.trim()).filter(Boolean)
+      if (parts.length >= 2) {
+        // Try to figure out which part is the number
+        const p1IsNum = /^\d+$/.test(parts[0])
+        const p2IsNum = /^\d+$/.test(parts[1])
+
+        if (p1IsNum) {
+          quantity = parseInt(parts[0], 10)
+          name = parts.slice(1).join(' ')
+          isTsv = true
+        } else if (p2IsNum) {
+          quantity = parseInt(parts[1], 10)
+          name = parts[0]
+          isTsv = true
+        } else {
+          // If neither is purely a number, just join them back and proceed normally
+          name = parts.join(' ')
+        }
       }
     }
+
+    if (!isTsv) {
+      // If a line has no bullet, no number prefix, and doesn't explicitly start with a quantity,
+      // and is relatively short (1-4 words), it's highly likely a header (e.g., "Clothing", "Tops")
+      const wordsCount = cleanLine.split(/\s+/).length
+      const startsWithQuantity = /^\d+/.test(cleanLine)
+
+      if (!hasBullet && !startsWithQuantity && wordsCount <= 4) {
+        continue;
+      }
+
+      // Look for patterns like "3x shirts" or "3 shirts"
+      const matchPrefix = cleanLine.match(/^(\d+)[xX\s]+(.*)$/)
+      if (matchPrefix) {
+        quantity = parseInt(matchPrefix[1], 10)
+        name = matchPrefix[2].trim()
+      } else {
+        // Look for patterns like "shirts x 3" or "shirts x3"
+        const matchSuffix = cleanLine.match(/^(.*?)\s+[xX]\s*(\d+)$/)
+        if (matchSuffix) {
+          name = matchSuffix[1].trim()
+          quantity = parseInt(matchSuffix[2], 10)
+        }
+      }
+    }
+
+    // Ensure we don't accidentally import a line that is entirely just a number
+    if (/^\d+$/.test(name)) continue
+
+    // Strip out long trailing parentheses like "(great for museums, markets, cafés)"
+    // if it makes the item name excessively long.
+    name = name.replace(/\s*\([^)]*\)$/, '').trim()
+
+    // Strip inline markdown if it's still left over
+    name = name.replace(/(\*\*|__|\*|_)/g, '').trim()
 
     // Capitalize first letter of name
     if (name.length > 0) {
