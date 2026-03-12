@@ -139,7 +139,7 @@ export default function LuggagePage() {
         </div>
 
         {showForm && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
             <h3 className="font-semibold text-gray-900 mb-4">Add New Luggage</h3>
             <div className="space-y-4">
               <div>
@@ -149,7 +149,7 @@ export default function LuggagePage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., 20L Aer Pro Pack"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -157,7 +157,7 @@ export default function LuggagePage() {
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as LuggageType })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="backpack">Backpack</option>
                   <option value="carry-on">Carry-on</option>
@@ -173,7 +173,7 @@ export default function LuggagePage() {
                   value={formData.capacity}
                   onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
                   placeholder="e.g., 20"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div className="flex gap-2">
@@ -195,7 +195,7 @@ export default function LuggagePage() {
         )}
 
         {optimisticLuggage.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
             <div className="text-5xl mb-4">🧳</div>
             <h3 className="font-semibold text-gray-900 mb-2">No luggage yet</h3>
             <p className="text-gray-500 text-sm">Add your bags to get started</p>
@@ -203,7 +203,7 @@ export default function LuggagePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {optimisticLuggage.map((item) => (
-              <div key={item.id} className="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 transition-colors">
+              <div key={item.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:border-gray-300 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
                     <div className="text-3xl">{luggageIcons[item.type as LuggageType]}</div>
@@ -211,13 +211,13 @@ export default function LuggagePage() {
                       <h3 className="font-semibold text-gray-900">{item.name}</h3>
                       <p className="text-sm text-gray-500 capitalize">{item.type}</p>
                       {item.capacity && (
-                        <p className="text-xs text-gray-400 mt-1">{item.capacity}L capacity</p>
+                        <p className="text-xs text-gray-500 mt-1">{item.capacity}L capacity</p>
                       )}
                     </div>
                   </div>
                   <button
                     onClick={() => handleDelete(item.id)}
-                    className="text-gray-400 hover:text-red-600 text-sm"
+                    className="text-gray-600 hover:text-red-600 text-sm"
                   >
                     Delete
                   </button>
