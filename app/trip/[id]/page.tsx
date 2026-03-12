@@ -3,6 +3,9 @@ import { getSharedTripById } from '@/actions/trip.actions'
 import { getTripWeather } from '@/actions/weather.actions'
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
+import { Suspense } from 'react'
+import TripWeather from '@/components/TripWeather'
+import TripWeatherSkeleton from '@/components/TripWeatherSkeleton'
 import TripPageClient from './TripPageClient'
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
@@ -35,11 +38,24 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   }
 
   let tripTimezone: string | null = null
+  let weatherComponent = null
+
   if (fetchedTrip.destination && fetchedTrip.startDate && fetchedTrip.endDate) {
     const { weather } = await getTripWeather(fetchedTrip.destination, fetchedTrip.startDate, fetchedTrip.endDate)
     if (weather?.timezone) {
       tripTimezone = weather.timezone
     }
+
+    weatherComponent = (
+      <Suspense fallback={<TripWeatherSkeleton variant="detail" />}>
+        <TripWeather
+          destination={fetchedTrip.destination}
+          startDate={fetchedTrip.startDate}
+          endDate={fetchedTrip.endDate}
+          variant="detail"
+        />
+      </Suspense>
+    )
   }
 
   return (
@@ -48,6 +64,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
       user={user}
       isOwner={isOwner}
       initialTripTimezone={tripTimezone}
+      weatherComponent={weatherComponent}
     />
   )
 }
