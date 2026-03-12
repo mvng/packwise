@@ -11,6 +11,7 @@ import ForkTripButton from '@/components/ForkTripButton'
 import TripWeather from '@/components/TripWeather'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
+import PackingRating from '@/components/PackingRating'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
 
@@ -260,6 +261,11 @@ export default function TripPageClient({ params }: TripPageProps) {
             <TripWeather destination={trip.destination} startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
           )}
         </div>
+
+        {/* Packing Rating */}
+        {displayTrip.packingLists.length > 0 && (
+          <PackingRating trip={displayTrip} />
+        )}
 
         {/* View toggle */}
         {!isSharedView && (
