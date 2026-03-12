@@ -54,7 +54,7 @@ export default function TripCountdown({ startDate, endDate, variant = 'card' }: 
       </span>
     )
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-50 border border-gray-300 px-2 py-0.5 rounded-full">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">
         🗓 {countdown.daysUntil} days away
       </span>
     )
@@ -90,7 +90,7 @@ export default function TripCountdown({ startDate, endDate, variant = 'card' }: 
     </div>
   )
   return (
-    <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2">
+    <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2">
       <span className="text-xl">🗓</span>
       <div>
         <p className="text-sm font-bold text-gray-800">{countdown.daysUntil} days to go</p>
