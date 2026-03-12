@@ -12,7 +12,15 @@
 import { test, expect } from '@playwright/test'
 
 // Skip auth for now - assumes guest mode or existing session
-test.use({ storageState: { cookies: [], origins: [] } })
+test.use({
+  storageState: {
+    cookies: [
+      { name: 'guest_mode', value: 'true', domain: 'localhost', path: '/' },
+      { name: 'guest_user_id', value: 'test-guest-id', domain: 'localhost', path: '/' }
+    ],
+    origins: []
+  }
+})
 
 test.describe('Luggage Management - Basic Navigation', () => {
   test('should load luggage page', async ({ page }) => {
@@ -41,7 +49,7 @@ test.describe('Luggage Management - Basic Navigation', () => {
     }
     
     // Either has luggage or shows empty state
-    const hasAddButton = await page.getByRole('button', { name: /Add Luggage/i }).isVisible()
+    const hasAddButton = await page.getByRole('button', { name: '+ Add Luggage' }).isVisible()
     const hasEmptyState = await page.getByText('No luggage yet').isVisible()
     
     // If the page is still loading, neither might be visible initially depending on hydration
