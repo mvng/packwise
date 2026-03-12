@@ -221,12 +221,16 @@ export async function getSharedTripById(tripId: string) {
           where: { isActive: true },
           orderBy: { createdAt: 'asc' }
         },
+        members: { orderBy: { createdAt: 'asc' } },
         packingLists: {
           include: {
             categories: {
               include: {
                 items: {
-                  include: { tripLuggage: { include: { luggage: true } } },
+                  include: {
+                    tripLuggage: { include: { luggage: true } },
+                    assignee: true
+                  },
                   orderBy: { order: 'asc' }
                 }
               },
