@@ -67,18 +67,21 @@ model DayPlan {
 }
 
 model DayPlanItem {
-  id        String   @id @default(uuid())
-  dayPlanId String   @map("day_plan_id")
-  name      String
-  category  String?
-  quantity  Int      @default(1)
-  notes     String?
-  order     Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  dayPlan   DayPlan  @relation(fields: [dayPlanId], references: [id], onDelete: Cascade)
+  id         String      @id @default(uuid())
+  dayPlanId  String      @map("day_plan_id")
+  name       String
+  category   String?
+  quantity   Int         @default(1)
+  notes      String?
+  order      Int         @default(0)
+  assigneeId String?     @map("assignee_id")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  dayPlan    DayPlan     @relation(fields: [dayPlanId], references: [id], onDelete: Cascade)
+  assignee   TripMember? @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
 
   @@index([dayPlanId])
+  @@index([assigneeId])
   @@map("day_plan_items")
 }
 
@@ -204,7 +207,8 @@ model TripMember {
 
   trip      Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
   user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  assignedItems PackingItem[]
+  assignedItems        PackingItem[]
+  assignedDayPlanItems DayPlanItem[]
 
   @@index([tripId])
   @@index([userId])

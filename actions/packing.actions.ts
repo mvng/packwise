@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
+import { extractAssigneeName, findOrCreateTripMember } from '@/lib/assignee-parser'
 
 async function getAuthenticatedUser() {
   const supabase = await createClient()
@@ -65,13 +66,27 @@ export async function addCustomItem(
 
     if (!category) return { error: 'Unauthorized' }
 
+    let parsedName = name
+    let assigneeId: string | null = null
+
+    const extracted = extractAssigneeName(name)
+    if (extracted) {
+      parsedName = extracted.cleanText || extracted.name
+      const member = await findOrCreateTripMember(tripId, extracted.name)
+      assigneeId = member.id
+    }
+
     const item = await prisma.packingItem.create({
       data: {
         categoryId,
-        name,
+        name: parsedName,
         quantity,
         isCustom: true,
+        assigneeId,
       },
+      include: {
+        assignee: true,
+      }
     })
     revalidatePath(`/trip/${tripId}`)
     return { item }

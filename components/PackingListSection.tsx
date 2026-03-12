@@ -303,19 +303,37 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
 
   const handleAddItem = (categoryId: string, packingListId: string) => {
     if (readOnly) return
-    const name = newItemName[categoryId]?.trim()
-    if (!name) return
+    const rawName = newItemName[categoryId]?.trim()
+    if (!rawName) return
     setAddError(null)
+
+    let displayName = rawName
+    let assigneeInitial = null
+    const assigneeMatch = rawName.match(/@(\w+)/)
+
+    if (assigneeMatch) {
+      assigneeInitial = assigneeMatch[1].charAt(0).toUpperCase()
+      displayName = rawName.replace(assigneeMatch[0], '').trim() || assigneeMatch[1]
+    }
 
     const tempId = crypto.randomUUID()
     const optimisticItem: PackingItem = {
       id: tempId,
-      name,
+      name: displayName,
       quantity: 1,
       isPacked: false,
       isCustom: true,
       packLast: false,
       order: 0,
+      // optimistically show an assignee if we detected one
+      ...(assigneeInitial ? {
+        assignee: {
+          id: 'temp-assignee',
+          name: assigneeMatch![1],
+          tripId: trip.id,
+          userId: null,
+        }
+      } : {})
     }
 
     startTransition(async () => {
@@ -326,7 +344,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       setNewItemName(prev => ({ ...prev, [categoryId]: '' }))
       setAddingTo(null)
 
-      const result = await addCustomItem(categoryId, name, 1, trip.id)
+      const result = await addCustomItem(categoryId, rawName, 1, trip.id)
 
       if (result.error) {
         setAddError(result.error)
