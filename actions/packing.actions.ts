@@ -119,6 +119,9 @@ export async function assignItemToMember(itemId: string, assigneeId: string | nu
   } catch (error) {
     console.error('Failed to assign item:', error)
     return { error: 'Failed to assign item' }
+  }
+}
+
 export async function importItemsToTrip(
   tripId: string,
   items: { name: string; quantity: number }[]
