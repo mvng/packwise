@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/react'
+// TODO: Import Vercel Analytics here
+// import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import './globals.css'
 
@@ -27,7 +28,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         {children}
-        <Analytics />
+        {/* TODO: Render Vercel Analytics component here */}
+        {/* <Analytics /> */}
         <SpeedInsights />
       </body>
     </html>
