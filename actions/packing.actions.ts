@@ -94,6 +94,31 @@ export async function deleteItem(itemId: string, tripId: string) {
   }
 }
 
+export async function updateItemNotes(itemId: string, notes: string | null, tripId: string) {
+  try {
+    const item = await prisma.packingItem.update({
+      where: { id: itemId },
+      data: { notes },
+    })
+    revalidatePath(`/trip/${tripId}`)
+    return { item }
+  } catch (error) {
+    console.error('Failed to update item notes:', error)
+    return { error: 'Failed to update item notes' }
+  }
+}
+
+export async function assignItemToMember(itemId: string, assigneeId: string | null, tripId: string) {
+  try {
+    const item = await prisma.packingItem.update({
+      where: { id: itemId },
+      data: { assigneeId },
+    })
+    revalidatePath(`/trip/${tripId}`)
+    return { item }
+  } catch (error) {
+    console.error('Failed to assign item:', error)
+    return { error: 'Failed to assign item' }
 export async function importItemsToTrip(
   tripId: string,
   items: { name: string; quantity: number }[]
