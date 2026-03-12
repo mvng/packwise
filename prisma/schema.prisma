@@ -3,17 +3,21 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
+  tripMemberships     TripMember[]
   id                  String              @id @default(uuid())
   email               String              @unique
   name                String?
   avatarUrl           String?             @map("avatar_url")
   authProvider        String              @default("email") @map("auth_provider")
   supabaseId          String              @unique @map("supabase_id")
+  homeCity            String?             @map("home_city")
+  homeCountry         String?             @map("home_country")
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
   inventoryCategories InventoryCategory[]
@@ -24,30 +28,68 @@ model User {
 }
 
 model Trip {
-  id           String        @id @default(uuid())
-  userId       String?       @map("user_id")
-  name         String?
-  destination  String
-  startDate    DateTime      @map("start_date")
-  endDate      DateTime      @map("end_date")
-  tripType     String        @map("trip_type")
-  weather      Json?
-  notes        String?
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  packingLists PackingList[]
-  tripLuggages TripLuggage[]
-  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members              TripMember[]
+  id                   String        @id @default(uuid())
+  userId               String?       @map("user_id")
+  name                 String?
+  destination          String
+  startDate            DateTime      @map("start_date")
+  endDate              DateTime      @map("end_date")
+  tripType             String        @map("trip_type")
+  transportMode        String?       @map("transport_mode")
+  weather              Json?
+  notes                String?
+  hotelConfirmationUrl String?       @map("hotel_confirmation_url")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  dayPlans             DayPlan[]
+  packingLists         PackingList[]
+  tripLuggages         TripLuggage[]
+  user                 User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([startDate])
   @@map("trips")
 }
 
+model DayPlan {
+  id        String        @id @default(uuid())
+  tripId    String        @map("trip_id")
+  date      DateTime
+  label     String?
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  items     DayPlanItem[]
+  trip      Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("day_plans")
+}
+
+model DayPlanItem {
+  id         String      @id @default(uuid())
+  dayPlanId  String      @map("day_plan_id")
+  name       String
+  category   String?
+  quantity   Int         @default(1)
+  notes      String?
+  order      Int         @default(0)
+  assigneeId String?     @map("assignee_id")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  dayPlan    DayPlan     @relation(fields: [dayPlanId], references: [id], onDelete: Cascade)
+  assignee   TripMember? @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([dayPlanId])
+  @@index([assigneeId])
+  @@map("day_plan_items")
+}
+
 model PackingList {
   id         String     @id @default(uuid())
   tripId     String     @map("trip_id")
   name       String     @default("Main Packing List")
+  shareToken String?    @unique @map("share_token")
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @updatedAt @map("updated_at")
   categories Category[]
@@ -79,6 +121,10 @@ model PackingItem {
   order         Int          @default(0)
   tripLuggageId String?      @map("trip_luggage_id")
   packLast      Boolean      @default(false) @map("pack_last")
+  notes         String?      @db.Text
+  assigneeId    String?      @map("assignee_id")
+  assignee      TripMember?  @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  guestClaimant String?      @map("guest_claimant")
   category      Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   tripLuggage   TripLuggage? @relation(fields: [tripLuggageId], references: [id])
 
@@ -149,4 +195,22 @@ model TripLuggage {
   @@index([tripId])
   @@index([luggageId])
   @@map("trip_luggage")
+}
+
+model TripMember {
+  id        String        @id @default(uuid())
+  tripId    String        @map("trip_id")
+  name      String
+  userId    String?       @map("user_id") // Optional link to a registered User
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  trip      Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignedItems        PackingItem[]
+  assignedDayPlanItems DayPlanItem[]
+
+  @@index([tripId])
+  @@index([userId])
+  @@map("trip_members")
 }

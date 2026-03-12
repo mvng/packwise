@@ -7,14 +7,13 @@ import { getTripLocalStorageState } from '@/components/PackingListSection'
 
 interface ForkTripButtonProps {
   tripId: string
-  tripName: string
   isAuthenticated: boolean
   variant?: 'primary' | 'secondary'
 }
 
 export default function ForkTripButton({ 
   tripId, 
-  tripName, 
+
   isAuthenticated,
   variant = 'primary'
 }: ForkTripButtonProps) {

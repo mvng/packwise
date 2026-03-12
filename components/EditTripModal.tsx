@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from 'react'
 import { updateTrip } from '@/actions/trip.actions'
+import { CheckCircle2 } from 'lucide-react'
 
 const LAUNDRY_STORAGE_KEY = (tripId: string) => `packwise_laundry_${tripId}`
 
@@ -45,6 +46,7 @@ interface EditTripModalProps {
     endDate: Date | string | null
     tripType: string | null
     notes: string | null
+    hotelConfirmationUrl?: string | null
   }
   onClose: () => void
   onSuccess: () => void
@@ -76,6 +78,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
     endDate: endDateStr,
     tripType: trip.tripType || 'leisure',
     notes: trip.notes || '',
+    hotelConfirmationUrl: trip.hotelConfirmationUrl || '',
   })
   const [hasLaundry, setHasLaundry] = useState(savedLaundry.hasLaundry)
   const [laundryDate, setLaundryDate] = useState(savedLaundry.laundryDate)
@@ -140,6 +143,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
         endDate: formData.endDate ? new Date(formData.endDate) : null,
         tripType: formData.tripType,
         notes: formData.notes.trim() || null,
+        hotelConfirmationUrl: formData.hotelConfirmationUrl.trim() || null,
       })
       if (result.error) {
         setError(result.error)
@@ -157,7 +161,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
       <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-semibold text-gray-900">Edit Trip</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+          <button onClick={onClose} aria-label="Close modal" className="text-gray-400 hover:text-gray-600 text-2xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded-md">&times;</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -246,6 +250,35 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
             </select>
           </div>
 
+          {/* Hotel Confirmation */}
+          <div className="border border-gray-200 rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">🏨</span>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Hotel Confirmation</p>
+                <p className="text-xs text-gray-500">Paste your online confirmation link — no need to print</p>
+              </div>
+            </div>
+            <input
+              type="url"
+              id="hotelConfirmationUrl"
+              value={formData.hotelConfirmationUrl}
+              onChange={e => setFormData(prev => ({ ...prev, hotelConfirmationUrl: e.target.value }))}
+              placeholder="https://booking.com/confirmation/..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+            {formData.hotelConfirmationUrl && (
+              <a
+                href={formData.hotelConfirmationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1"
+              >
+                Open confirmation ↗
+              </a>
+            )}
+          </div>
+
           {/* Laundry Access */}
           <div className="border border-gray-200 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -282,8 +315,8 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
                   className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
                 />
                 {laundryDate && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✅ Outfit counts after {new Date(laundryDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} are halved
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Outfit counts after {new Date(laundryDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} are halved
                   </p>
                 )}
               </div>

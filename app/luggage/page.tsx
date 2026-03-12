@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useOptimistic, useTransition } from 'react'
 import { getUserLuggage, createLuggage, deleteLuggage } from '@/actions/luggage.actions'
 import type { Luggage, LuggageType } from '@/types/luggage'
 import Link from 'next/link'
@@ -10,40 +10,94 @@ export default function LuggagePage() {
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({ name: '', type: 'backpack' as LuggageType, capacity: '' })
   const [loading, setLoading] = useState(true)
+  const [, startTransition] = useTransition()
+
+  const [optimisticLuggage, addOptimisticLuggageUpdate] = useOptimistic(
+    luggage,
+    (state, action: { type: string, payload: any }) => {
+      switch (action.type) {
+        case 'ADD_LUGGAGE':
+          return [...state, action.payload.luggage]
+        case 'DELETE_LUGGAGE':
+          return state.filter(l => l.id !== action.payload.id)
+        default:
+          return state
+      }
+    }
+  )
 
   useEffect(() => {
     loadLuggage()
   }, [])
 
-  async function loadLuggage() {
+  function loadLuggage() {
     setLoading(true)
-    const result = await getUserLuggage()
-    if (result.luggage) {
-      setLuggage(result.luggage as Luggage[])
-    }
-    setLoading(false)
+    getUserLuggage().then(result => {
+      if (result.luggage) {
+        setLuggage(result.luggage as Luggage[])
+      }
+      setLoading(false)
+    })
   }
 
-  async function handleCreate() {
+  function handleCreate() {
     if (!formData.name.trim()) return
 
-    const result = await createLuggage({
+    const newLuggageData = {
       name: formData.name,
       type: formData.type,
       capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
-    })
+    }
 
-    if (result.success) {
+    const tempId = crypto.randomUUID()
+    const optimisticLuggageItem: Luggage = {
+      id: tempId,
+      userId: 'temp-user-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...newLuggageData,
+      capacity: newLuggageData.capacity || undefined
+    }
+
+    startTransition(async () => {
+      addOptimisticLuggageUpdate({
+        type: 'ADD_LUGGAGE',
+        payload: { luggage: optimisticLuggageItem }
+      })
+
+      const formDataBackup = { ...formData }
       setFormData({ name: '', type: 'backpack', capacity: '' })
       setShowForm(false)
-      loadLuggage()
-    }
+
+      const result = await createLuggage(newLuggageData)
+
+      if (result.error) {
+         alert(`Error creating luggage: ${result.error}`)
+         setFormData(formDataBackup)
+         setShowForm(true)
+      } else if (result.success && result.luggage) {
+         setLuggage(prev => [...prev, result.luggage as Luggage])
+      }
+    })
   }
 
-  async function handleDelete(id: string) {
+  function handleDelete(id: string) {
     if (!confirm('Delete this luggage?')) return
-    await deleteLuggage(id)
-    loadLuggage()
+
+    startTransition(async () => {
+      addOptimisticLuggageUpdate({
+        type: 'DELETE_LUGGAGE',
+        payload: { id }
+      })
+
+      const result = await deleteLuggage(id)
+
+      if (result?.error) {
+        alert(`Error deleting luggage: ${result.error}`)
+      } else {
+        setLuggage(prev => prev.filter(l => l.id !== id))
+      }
+    })
   }
 
   const luggageIcons: Record<LuggageType, string> = {
@@ -60,7 +114,7 @@ export default function LuggagePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-[1600px] mx-auto p-8">
         <Link
           href="/dashboard"
           className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
@@ -140,7 +194,7 @@ export default function LuggagePage() {
           </div>
         )}
 
-        {luggage.length === 0 ? (
+        {optimisticLuggage.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
             <div className="text-5xl mb-4">🧳</div>
             <h3 className="font-semibold text-gray-900 mb-2">No luggage yet</h3>
@@ -148,7 +202,7 @@ export default function LuggagePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {luggage.map((item) => (
+            {optimisticLuggage.map((item) => (
               <div key={item.id} className="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">

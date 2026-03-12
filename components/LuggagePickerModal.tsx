@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { getUserLuggage, addLuggageToTrip, createLuggage } from '@/actions/luggage.actions'
+import { useState, useEffect, useOptimistic, useTransition } from 'react'
+import { getUserLuggage, createLuggage, addLuggagesToTrip, addLuggageToTrip } from '@/actions/luggage.actions'
 import type { Luggage, LuggageType } from '@/types/luggage'
 
 interface Props {
@@ -42,17 +42,31 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [, startTransition] = useTransition()
+
+  const [optimisticLuggage, addOptimisticLuggageUpdate] = useOptimistic(
+    luggage,
+    (state, action: { type: string, payload: any }) => {
+      switch (action.type) {
+        case 'ADD_LUGGAGE':
+          return [...state, action.payload.luggage]
+        default:
+          return state
+      }
+    }
+  )
 
   useEffect(() => {
     loadLuggage()
   }, [])
 
-  async function loadLuggage() {
-    const result = await getUserLuggage()
-    if (result.luggage) {
-      setLuggage(result.luggage as Luggage[])
-    }
-    setLoading(false)
+  function loadLuggage() {
+    getUserLuggage().then(result => {
+      if (result.luggage) {
+        setLuggage(result.luggage as Luggage[])
+      }
+      setLoading(false)
+    })
   }
 
   const toggleSelection = (id: string) => {
@@ -68,13 +82,16 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
   }
 
   const handleAdd = async () => {
-    for (const luggageId of selected) {
-      await addLuggageToTrip(tripId, luggageId)
+    if (selected.size === 0) return
+    const result = await addLuggagesToTrip(tripId, Array.from(selected))
+    if (result.success) {
+      onSuccess()
+    } else {
+      setCreateError(result.error || 'Failed to add luggage')
     }
-    onSuccess()
   }
 
-  const handleCreateLuggage = async () => {
+  const handleCreateLuggage = () => {
     if (!newLuggage.name.trim()) {
       setCreateError('Please enter a name')
       return
@@ -83,25 +100,44 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
     setCreating(true)
     setCreateError(null)
 
-    const result = await createLuggage({
+    const newLuggageData = {
       name: newLuggage.name.trim(),
       type: newLuggage.type,
       icon: newLuggage.icon || undefined,
       capacity: newLuggage.capacity ? parseInt(newLuggage.capacity) : undefined,
+    }
+
+    const tempId = crypto.randomUUID()
+    const optimisticLuggageItem: Luggage = {
+      id: tempId,
+      userId: 'temp-user-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...newLuggageData,
+      icon: newLuggageData.icon || undefined,
+      capacity: newLuggageData.capacity || undefined
+    }
+
+    startTransition(async () => {
+      addOptimisticLuggageUpdate({
+        type: 'ADD_LUGGAGE',
+        payload: { luggage: optimisticLuggageItem }
+      })
+
+      const result = await createLuggage(newLuggageData)
+      setCreating(false)
+
+      if (result.error) {
+        setCreateError(result.error)
+        return
+      }
+
+      if (result.luggage) {
+        // Add to trip immediately
+        await addLuggageToTrip(tripId, result.luggage.id)
+        onSuccess()
+      }
     })
-
-    setCreating(false)
-
-    if (result.error) {
-      setCreateError(result.error)
-      return
-    }
-
-    if (result.luggage) {
-      // Add to trip immediately
-      await addLuggageToTrip(tripId, result.luggage.id)
-      onSuccess()
-    }
   }
 
   const getDisplayIcon = (item: Luggage) => {
@@ -131,7 +167,8 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close modal"
+              className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded-md"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -255,7 +292,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                   Create new luggage
                 </button>
 
-                {luggage.length === 0 ? (
+                {optimisticLuggage.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-5xl mb-4">🎒</div>
                     <p className="text-gray-500">No luggage in your inventory yet.</p>
@@ -263,7 +300,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {luggage.map((item) => {
+                    {optimisticLuggage.map((item) => {
                       const isSelected = selected.has(item.id)
                       return (
                         <button

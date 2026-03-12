@@ -15,6 +15,8 @@ export interface DailyForecast {
   isPreTrip?: boolean   // Day is before trip start date
 }
 
+import { unstable_cache } from 'next/cache'
+
 export interface DetailedWeatherData {
   temperature: {
     min: number
@@ -62,13 +64,6 @@ interface GeocodingResult {
   timezone?: string  // IANA timezone from geocoding
 }
 
-// In-memory caches
-const geocodingCache = new Map<string, { data: GeocodingResult; expires: number }>()
-const weatherCache = new Map<string, { data: WeatherData; expires: number }>()
-const detailedWeatherCache = new Map<string, { data: DetailedWeatherData; expires: number }>()
-
-const GEOCODING_TTL = 30 * 24 * 60 * 60 * 1000 // 30 days (coordinates don't change)
-const WEATHER_TTL = 30 * 60 * 1000 // 30 minutes (balance freshness vs performance)
 const MAX_FORECAST_DAYS = 14 // Open-Meteo free tier limit
 const PRE_TRIP_DAYS = 2 // Days before trip to include
 
@@ -87,56 +82,42 @@ function getDaysBetween(start: Date, end: Date): number {
 export async function getCoordinates(location: string): Promise<GeocodingResult | null> {
   const cacheKey = location.toLowerCase().trim()
   
-  console.log('[Geocoding] Request for:', location)
-  
-  // Check cache
-  const cached = geocodingCache.get(cacheKey)
-  if (cached && Date.now() < cached.expires) {
-    console.log('[Geocoding] Cache hit:', cached.data.name)
-    return cached.data
-  }
-  
-  console.log('[Geocoding] Cache miss')
-  
-  try {
-    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`
-    console.log('[Geocoding] Fetching:', url)
-    
-    const response = await fetch(url)
-    
-    if (!response.ok) {
-      console.error('[Geocoding] API error:', response.status, response.statusText)
-      return null
-    }
-    
-    const data = await response.json()
-    
-    if (!data.results || data.results.length === 0) {
-      console.error('[Geocoding] No results found for:', location)
-      return null
-    }
-    
-    const result = data.results[0]
-    const coords: GeocodingResult = {
-      latitude: result.latitude,
-      longitude: result.longitude,
-      name: result.name,
-      timezone: result.timezone // IANA timezone from geocoding API
-    }
-    
-    console.log('[Geocoding] Success:', coords)
-    
-    // Cache the result
-    geocodingCache.set(cacheKey, {
-      data: coords,
-      expires: Date.now() + GEOCODING_TTL
-    })
-    
-    return coords
-  } catch (error) {
-    console.error('[Geocoding] Exception:', error)
-    return null
-  }
+  const getCachedCoordinates = unstable_cache(
+    async (loc: string) => {
+      console.log('[Geocoding] Fetching fresh data for:', loc)
+      try {
+        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(loc)}&count=1&language=en&format=json`
+        const response = await fetch(url)
+
+        if (!response.ok) {
+          console.error('[Geocoding] API error:', response.status, response.statusText)
+          return null
+        }
+
+        const data = await response.json()
+
+        if (!data.results || data.results.length === 0) {
+          console.error('[Geocoding] No results found for:', loc)
+          return null
+        }
+
+        const result = data.results[0]
+        return {
+          latitude: result.latitude,
+          longitude: result.longitude,
+          name: result.name,
+          timezone: result.timezone // IANA timezone from geocoding API
+        } as GeocodingResult
+      } catch (error) {
+        console.error('[Geocoding] Exception:', error)
+        return null
+      }
+    },
+    ['geocoding', cacheKey],
+    { revalidate: 2592000 } // Cache for 30 days (30 * 24 * 60 * 60 seconds)
+  )
+
+  return getCachedCoordinates(location)
 }
 
 /**
@@ -439,31 +420,24 @@ export async function getLocationWeather(
   startDate: Date,
   endDate: Date
 ): Promise<WeatherData | null> {
-  const cacheKey = `${location}:${startDate.toISOString()}:${endDate.toISOString()}`
+  // Use date string (YYYY-MM-DD) for cache keys instead of exact ISO strings to share cache across times
+  const startStr = startDate.toISOString().split('T')[0]
+  const endStr = endDate.toISOString().split('T')[0]
+  const cacheKey = `${location.toLowerCase().trim()}:${startStr}:${endStr}`
   
-  // Check cache
-  const cached = weatherCache.get(cacheKey)
-  if (cached && Date.now() < cached.expires) {
-    console.log('[Weather] Cache hit for:', location)
-    return cached.data
-  }
-  
-  console.log('[Weather] Cache miss for:', location)
-  const coords = await getCoordinates(location)
-  if (!coords) return null
-  
-  const weather = await getWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name, coords.timezone)
-  
-  // Cache the result
-  if (weather) {
-    weatherCache.set(cacheKey, {
-      data: weather,
-      expires: Date.now() + WEATHER_TTL
-    })
-    console.log('[Weather] Cached for 30 minutes')
-  }
-  
-  return weather
+  const getCachedWeather = unstable_cache(
+    async (loc: string, start: Date, end: Date) => {
+      console.log('[Weather] Cache miss for:', loc, startStr, endStr)
+      const coords = await getCoordinates(loc)
+      if (!coords) return null
+
+      return await getWeatherForecast(coords.latitude, coords.longitude, start, end, coords.name, coords.timezone)
+    },
+    ['weather', cacheKey],
+    { revalidate: 1800 } // Cache for 30 minutes (30 * 60 seconds)
+  )
+
+  return getCachedWeather(location, startDate, endDate)
 }
 
 /**
@@ -474,29 +448,21 @@ export async function getDetailedLocationWeather(
   startDate: Date,
   endDate: Date
 ): Promise<DetailedWeatherData | null> {
-  const cacheKey = `detailed:${location}:${startDate.toISOString()}:${endDate.toISOString()}`
+  const startStr = startDate.toISOString().split('T')[0]
+  const endStr = endDate.toISOString().split('T')[0]
+  const cacheKey = `detailed:${location.toLowerCase().trim()}:${startStr}:${endStr}`
   
-  // Check cache
-  const cached = detailedWeatherCache.get(cacheKey)
-  if (cached && Date.now() < cached.expires) {
-    console.log('[Weather] Detailed cache hit for:', location)
-    return cached.data
-  }
-  
-  console.log('[Weather] Detailed cache miss for:', location)
-  const coords = await getCoordinates(location)
-  if (!coords) return null
-  
-  const weather = await getDetailedWeatherForecast(coords.latitude, coords.longitude, startDate, endDate, coords.name, coords.timezone)
-  
-  // Cache the result
-  if (weather) {
-    detailedWeatherCache.set(cacheKey, {
-      data: weather,
-      expires: Date.now() + WEATHER_TTL
-    })
-    console.log('[Weather] Detailed cached for 30 minutes')
-  }
-  
-  return weather
+  const getCachedDetailedWeather = unstable_cache(
+    async (loc: string, start: Date, end: Date) => {
+      console.log('[Weather] Detailed cache miss for:', loc, startStr, endStr)
+      const coords = await getCoordinates(loc)
+      if (!coords) return null
+
+      return await getDetailedWeatherForecast(coords.latitude, coords.longitude, start, end, coords.name, coords.timezone)
+    },
+    ['detailed_weather', cacheKey],
+    { revalidate: 1800 } // Cache for 30 minutes (30 * 60 seconds)
+  )
+
+  return getCachedDetailedWeather(location, startDate, endDate)
 }
