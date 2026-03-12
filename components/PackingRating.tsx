@@ -54,7 +54,12 @@ export default function PackingRating({ trip }: PackingRatingProps) {
     })
   })
 
-  // Basic logic for rating
+  /**
+   * Basic logic for packing rating:
+   * - Underpacking: Less than 1 clothing item per trip day.
+   * - Overpacking: More than 3 clothing items per trip day.
+   * - Good: Between 1 and 3 clothing items per trip day.
+   */
   let ratingText = "Looking good!"
   let ratingColor = "bg-green-50 border-green-200 text-green-800"
   let icon = "✅"
