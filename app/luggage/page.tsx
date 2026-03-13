@@ -203,7 +203,7 @@ export default function LuggagePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {optimisticLuggage.map((item) => (
-              <div key={item.id} className="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 transition-colors">
+              <div key={item.id} className="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 transition-colors flex flex-col justify-between">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
                     <div className="text-3xl">{luggageIcons[item.type as LuggageType]}</div>
@@ -221,6 +221,14 @@ export default function LuggagePage() {
                   >
                     Delete
                   </button>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                  <Link
+                    href={`/luggage/${item.id}`}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 group"
+                  >
+                    View History <span className="transform transition-transform group-hover:translate-x-1">→</span>
+                  </Link>
                 </div>
               </div>
             ))}

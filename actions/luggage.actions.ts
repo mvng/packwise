@@ -270,3 +270,60 @@ export async function assignItemToLuggage(packingItemId: string, tripLuggageId: 
     return { error: 'Failed to assign item to luggage' }
   }
 }
+
+export async function getLuggageHistory(luggageId: string) {
+  try {
+    const supabaseUserId = await getAuthenticatedUserId()
+    if (!supabaseUserId) return { error: 'Unauthorized' }
+
+    const dbUserId = await ensureUserExists(supabaseUserId)
+
+    // Verify ownership
+    const luggage = await prisma.luggage.findUnique({
+      where: { id: luggageId },
+      include: {
+        user: {
+          select: {
+            homeCity: true,
+            homeCountry: true
+          }
+        },
+        tripLuggages: {
+          where: { isActive: true },
+          include: {
+            trip: {
+              select: {
+                id: true,
+                name: true,
+                destination: true,
+                startDate: true,
+                endDate: true,
+                tripType: true,
+                transportMode: true,
+              },
+            },
+            packingItems: {
+              select: {
+                id: true,
+                name: true,
+                quantity: true,
+                isPacked: true,
+              },
+            },
+          },
+          orderBy: {
+            trip: { startDate: 'desc' },
+          },
+        },
+      },
+    })
+
+    if (!luggage || luggage.userId !== dbUserId) {
+      return { error: 'Luggage not found' }
+    }
+
+    return { success: true, luggage }
+  } catch (error) {
+    return { error: 'Failed to fetch luggage history' }
+  }
+}
