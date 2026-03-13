@@ -71,6 +71,7 @@ const STORAGE_KEY_PREFIX = 'packwise_trip_'
 export default function PackingListSection({ trip, readOnly = false, sharedTripLuggages }: PackingListSectionProps) {
   const [lists, setLists] = useState(trip.packingLists)
   const [newItemName, setNewItemName] = useState<Record<string, string>>({})
+  const [newItemAssignee, setNewItemAssignee] = useState<Record<string, string>>({})
   const [addingTo, setAddingTo] = useState<string | null>(null)
   const [editingNotes, setEditingNotes] = useState<{ id: string, notes: string } | null>(null)
   const [assigningItem, setAssigningItem] = useState<string | null>(null)
@@ -81,7 +82,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const [inventoryToast, setInventoryToast] = useState<string | null>(null)
   const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>(sharedTripLuggages || [])
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'not-assigned': true, 'pack-last': true })
-  const [viewMode, setViewMode] = useState<'category' | 'luggage'>('category')
+  const [viewMode, setViewMode] = useState<'category' | 'luggage' | 'person'>('category')
   const [draggedItem, setDraggedItem] = useState<{ id: string; categoryId: string; packingListId: string } | null>(null)
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null)
   const [localPackedState, setLocalPackedState] = useState<Record<string, boolean>>({})
@@ -303,8 +304,9 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
 
   const handleAddItem = (categoryId: string, packingListId: string) => {
     if (readOnly) return
-    const rawName = newItemName[categoryId]?.trim()
-    if (!rawName) return
+    const name = newItemName[categoryId]?.trim()
+    const assigneeId = newItemAssignee[categoryId] || undefined
+    if (!name) return
     setAddError(null)
 
     let displayName = rawName
@@ -325,6 +327,8 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       isCustom: true,
       packLast: false,
       order: 0,
+      assigneeId,
+      assignee: assigneeId ? (trip.members?.find(m => m.id === assigneeId) || null) : null,
       // optimistically show an assignee if we detected one
       ...(assigneeInitial ? {
         assignee: {
@@ -342,9 +346,10 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         payload: { categoryId, packingListId, item: optimisticItem }
       })
       setNewItemName(prev => ({ ...prev, [categoryId]: '' }))
+      setNewItemAssignee(prev => ({ ...prev, [categoryId]: '' }))
       setAddingTo(null)
 
-      const result = await addCustomItem(categoryId, rawName, 1, trip.id)
+      const result = await addCustomItem(categoryId, name, 1, trip.id, assigneeId)
 
       if (result.error) {
         setAddError(result.error)
@@ -517,6 +522,24 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     setDragOverTarget(null)
   }
 
+  const handleDragOverPerson = (e: React.DragEvent, targetMemberId?: string | null) => {
+    if (readOnly) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverTarget(targetMemberId === undefined ? null : (targetMemberId || 'not-assigned-person'))
+  }
+
+  const handleDropPerson = (e: React.DragEvent, targetMemberId: string | null) => {
+    if (readOnly) return
+    e.preventDefault()
+    e.stopPropagation()
+    if (!draggedItem) return
+    const member = targetMemberId ? trip.members?.find(m => m.id === targetMemberId) || null : null
+    handleAssignMember(draggedItem.id, draggedItem.categoryId, draggedItem.packingListId, targetMemberId, member)
+    setDraggedItem(null)
+    setDragOverTarget(null)
+  }
+
   function handleInventorySuccess(count: number) {
     setInventoryToast(`${count} item${count !== 1 ? 's' : ''} added to your packing list`)
     setTimeout(() => setInventoryToast(null), 3500)
@@ -579,6 +602,15 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   optimisticTripLuggages.forEach(tl => {
     itemsByLuggage[tl.id] = regularItems.filter(item => item.tripLuggageId === tl.id)
   })
+
+  const itemsByPerson: Record<string, typeof allItems> = {
+    'not-assigned': regularItems.filter(item => !item.assigneeId)
+  }
+  if (trip.members) {
+    trip.members.forEach(member => {
+      itemsByPerson[member.id] = regularItems.filter(item => item.assigneeId === member.id)
+    })
+  }
 
   const renderItem = (item: typeof allItems[0]) => {
     const isPacked = getItemPackedState(item)
@@ -917,15 +949,109 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         </section>
       )}
 
-      {optimisticTripLuggages.length > 0 && (
-        <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
-          <button onClick={() => setViewMode('luggage')} aria-label="By Luggage view" disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'luggage' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Luggage</button>
-          <button onClick={() => setViewMode('category')} aria-label="By Category view" disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'category' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Category</button>
+      {(optimisticTripLuggages.length > 0 || (trip.members && trip.members.length > 0)) && (
+        <div className="flex items-center gap-4">
+          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit print:hidden">
+            <button onClick={() => setViewMode('category')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'category' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Category</button>
+            {optimisticTripLuggages.length > 0 && (
+              <button onClick={() => setViewMode('luggage')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'luggage' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Luggage</button>
+            )}
+            {trip.members && trip.members.length > 0 && (
+              <button onClick={() => setViewMode('person')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'person' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Person</button>
+            )}
+          </div>
+          {viewMode === 'person' && (
+            <button
+              onClick={() => window.print()}
+              className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 print:hidden shadow-sm flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Print view
+            </button>
+          )}
         </div>
       )}
 
       <div id="packing-list-content">
-        {viewMode === 'luggage' && optimisticTripLuggages.length > 0 ? (
+        {viewMode === 'person' && trip.members && trip.members.length > 0 ? (
+          <div className="space-y-4">
+            {trip.members.map((member) => {
+              const items = itemsByPerson[member.id] || []
+              const packedCount = items.filter(i => getItemPackedState(i)).length
+              const isExpanded = expandedGroups[member.id] ?? true
+              const isDropTarget = !readOnly && dragOverTarget === member.id
+              return (
+                <section
+                  key={member.id}
+                  onDragOver={(e) => !readOnly && handleDragOverPerson(e, member.id)}
+                  onDragLeave={!readOnly ? handleDragLeave : undefined}
+                  onDrop={(e) => !readOnly && handleDropPerson(e, member.id)}
+                  className={`bg-white rounded-2xl border overflow-hidden transition-all ${ isDropTarget ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]' : 'border-gray-100' }`}
+                >
+                  <button
+                    onClick={() => toggleGroup(member.id)}
+                    aria-expanded={isExpanded}
+                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-bold shadow-sm">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-gray-900">{member.name}</h3>
+                        <p className="text-xs text-gray-500">
+                          {packedCount}/{items.length} items packed
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {items.length > 0 && (
+                        <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden print:hidden">
+                          <div className="h-2 bg-blue-500 rounded-full transition-all" style={{ width: `${(packedCount / items.length) * 100}%` }} />
+                        </div>
+                      )}
+                      <svg className={`w-5 h-5 text-gray-400 transition-transform print:hidden ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="px-6 pb-4 border-t border-gray-50">
+                      {items.length === 0
+                        ? <p className="text-sm text-gray-400 py-4 text-center print:hidden">{readOnly ? 'No items assigned to this person' : 'No items assigned · Drag items here'}</p>
+                        : <ul className="space-y-2 pt-4" role="list">{items.map(item => renderItem(item))}</ul>
+                      }
+                    </div>
+                  )}
+                </section>
+              )
+            })}
+            {itemsByPerson['not-assigned'] && itemsByPerson['not-assigned'].length > 0 && (
+              <section
+                onDragOver={(e) => !readOnly && handleDragOverPerson(e, null)}
+                onDragLeave={!readOnly ? handleDragLeave : undefined}
+                onDrop={(e) => !readOnly && handleDropPerson(e, null)}
+                className={`bg-white rounded-2xl border overflow-hidden transition-all ${ !readOnly && dragOverTarget === 'not-assigned-person' ? 'border-blue-500 border-2 bg-blue-50 shadow-lg scale-[1.02]' : 'border-gray-100' }`}
+              >
+                <button onClick={() => toggleGroup('not-assigned-person')} aria-expanded={expandedGroups['not-assigned-person'] ?? true} className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl text-gray-400"><User className="w-6 h-6" /></span>
+                    <div className="text-left">
+                      <h3 className="font-semibold text-gray-900">Not Assigned</h3>
+                      <p className="text-xs text-gray-500">{itemsByPerson['not-assigned'].length} item{itemsByPerson['not-assigned'].length !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <svg className={`w-5 h-5 text-gray-400 transition-transform print:hidden ${expandedGroups['not-assigned-person'] !== false ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {expandedGroups['not-assigned-person'] !== false && (
+                  <div className="px-6 pb-4 border-t border-gray-50">
+                    <ul className="space-y-2 pt-4" role="list">{itemsByPerson['not-assigned'].map(item => renderItem(item))}</ul>
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+        ) : viewMode === 'luggage' && optimisticTripLuggages.length > 0 ? (
           <div className="space-y-4">
             {optimisticTripLuggages.map((tl) => {
               const items = itemsByLuggage[tl.id] || []
@@ -1173,17 +1299,35 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         })}
                     </ul>
                     {!readOnly && (addingTo === category.id ? (
-                      <div className="mt-3 flex gap-2">
-                        <input
-                          type="text" placeholder="Item name"
-                          value={newItemName[category.id] || ''}
-                          onChange={(e) => setNewItemName(prev => ({ ...prev, [category.id]: e.target.value }))}
-                          onKeyDown={(e) => e.key === 'Enter' && handleAddItem(category.id, list.id)}
-                          className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          autoFocus
-                        />
-                        <button onClick={() => handleAddItem(category.id, list.id)} aria-label={`Add item to ${category.name}`} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Add</button>
-                        <button onClick={() => { setAddingTo(null); setAddError(null) }} aria-label={`Cancel adding item to ${category.name}`} className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">Cancel</button>
+                      <div className="mt-3 flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text" placeholder="Item name"
+                            value={newItemName[category.id] || ''}
+                            onChange={(e) => setNewItemName(prev => ({ ...prev, [category.id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddItem(category.id, list.id)}
+                            className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autoFocus
+                          />
+                          {trip.members && trip.members.length > 0 && (
+                            <select
+                              value={newItemAssignee[category.id] || ''}
+                              onChange={(e) => setNewItemAssignee(prev => ({ ...prev, [category.id]: e.target.value }))}
+                              className="text-sm px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            >
+                              <option value="">Who is this for?</option>
+                              {trip.members.map(member => (
+                                <option key={member.id} value={member.id}>
+                                  {member.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => handleAddItem(category.id, list.id)} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Add</button>
+                          <button onClick={() => { setAddingTo(null); setAddError(null) }} className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">Cancel</button>
+                        </div>
                       </div>
                     ) : (
                       <button onClick={() => setAddingTo(category.id)} aria-label={`+ Add item to ${category.name}`} className="mt-3 text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">+ Add item</button>

@@ -46,7 +46,8 @@ export async function addCustomItem(
   categoryId: string,
   name: string,
   quantity: number,
-  tripId: string
+  tripId: string,
+  assigneeId?: string
 ) {
   try {
     const user = await getAuthenticatedUser()
@@ -82,7 +83,7 @@ export async function addCustomItem(
         name: parsedName,
         quantity,
         isCustom: true,
-        assigneeId,
+        assigneeId: assigneeId || null,
       },
       include: {
         assignee: true,

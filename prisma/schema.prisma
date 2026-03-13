@@ -18,11 +18,13 @@ model User {
   supabaseId          String              @unique @map("supabase_id")
   homeCity            String?             @map("home_city")
   homeCountry         String?             @map("home_country")
+  phone               String?
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
   inventoryCategories InventoryCategory[]
   luggage             Luggage[]
   trips               Trip[]
+  tripTasks           TripTask[]
 
   @@map("users")
 }
@@ -45,6 +47,7 @@ model Trip {
   dayPlans             DayPlan[]
   packingLists         PackingList[]
   tripLuggages         TripLuggage[]
+  tasks                TripTask[]
   user                 User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -198,19 +201,43 @@ model TripLuggage {
 }
 
 model TripMember {
-  id        String        @id @default(uuid())
-  tripId    String        @map("trip_id")
+  id        String   @id @default(uuid())
+  tripId    String   @map("trip_id")
   name      String
-  userId    String?       @map("user_id") // Optional link to a registered User
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  userId    String?  @map("user_id") // Optional link to a registered User
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  trip      Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  trip                 Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user                 User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   assignedItems        PackingItem[]
   assignedDayPlanItems DayPlanItem[]
 
   @@index([tripId])
   @@index([userId])
   @@map("trip_members")
+}
+
+model TripTask {
+  id             String    @id @default(uuid())
+  tripId         String    @map("trip_id")
+  userId         String    @map("user_id")
+  title          String
+  notes          String?
+  category       String
+  dueDate        DateTime? @map("due_date")
+  reminderAt     DateTime? @map("reminder_at")
+  reminderSentAt DateTime? @map("reminder_sent_at")
+  status         String    @default("PENDING")
+  reminderTypes  String[]  @map("reminder_types")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@index([userId])
+  @@index([status, reminderAt, reminderSentAt])
+  @@map("trip_tasks")
 }
