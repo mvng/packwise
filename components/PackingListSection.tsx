@@ -1,22 +1,13 @@
 'use client'
 
 import { useState, useTransition, useEffect, useOptimistic } from 'react'
-import { toggleItemPacked, addCustomItem, deleteItem, togglePackLast, updateItemNotes, assignItemToMember, generateShareToken } from '@/actions/packing.actions'
+import { toggleItemPacked, addCustomItem, deleteItem, togglePackLast } from '@/actions/packing.actions'
 import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
 import LuggagePickerModal from '@/components/LuggagePickerModal'
-import PasteListModal from '@/components/PasteListModal'
 import type { TripLuggage, LuggageType } from '@/types/luggage'
-import { Backpack, X, Plus, Sunrise, MessageSquare, User, Check, Share2, Copy } from 'lucide-react'
 
-export interface TripMember {
-  id: string
-  tripId: string
-  name: string
-  userId?: string | null
-}
-
-export interface PackingItem {
+interface PackingItem {
   id: string
   name: string
   quantity: number
@@ -24,11 +15,7 @@ export interface PackingItem {
   isCustom: boolean
   packLast: boolean
   order: number
-  notes?: string | null
-  assigneeId?: string | null
-  assignee?: TripMember | null
   tripLuggageId?: string | null
-  guestClaimant?: string | null
   tripLuggage?: {
     id: string
     luggage: {
@@ -50,14 +37,12 @@ interface Category {
 interface PackingList {
   id: string
   name: string
-  shareToken?: string | null
   categories: Category[]
 }
 
-export interface Trip {
+interface Trip {
   id: string
   packingLists: PackingList[]
-  members?: TripMember[]
 }
 
 interface PackingListSectionProps {
@@ -72,11 +57,8 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const [lists, setLists] = useState(trip.packingLists)
   const [newItemName, setNewItemName] = useState<Record<string, string>>({})
   const [addingTo, setAddingTo] = useState<string | null>(null)
-  const [editingNotes, setEditingNotes] = useState<{ id: string, notes: string } | null>(null)
-  const [assigningItem, setAssigningItem] = useState<string | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
   const [showInventoryPicker, setShowInventoryPicker] = useState(false)
-  const [showPasteList, setShowPasteList] = useState(false)
   const [showLuggagePicker, setShowLuggagePicker] = useState(false)
   const [inventoryToast, setInventoryToast] = useState<string | null>(null)
   const [tripLuggages, setTripLuggages] = useState<TripLuggage[]>(sharedTripLuggages || [])
@@ -86,7 +68,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null)
   const [localPackedState, setLocalPackedState] = useState<Record<string, boolean>>({})
   const [isBagsCardExpanded, setIsBagsCardExpanded] = useState(true)
-  const [shareLinkCopied, setShareLinkCopied] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
   const [optimisticLists, addOptimisticListUpdate] = useOptimistic(
@@ -131,22 +112,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             categories: list.categories.map(cat => cat.id === action.payload.categoryId ? {
               ...cat,
               items: cat.items.map(item => item.id === action.payload.itemId ? { ...item, tripLuggageId: action.payload.tripLuggageId || undefined } : item)
-            } : cat)
-          } : list)
-        case 'UPDATE_NOTES':
-          return state.map(list => list.id === action.payload.packingListId ? {
-            ...list,
-            categories: list.categories.map(cat => cat.id === action.payload.categoryId ? {
-              ...cat,
-              items: cat.items.map(item => item.id === action.payload.itemId ? { ...item, notes: action.payload.notes } : item)
-            } : cat)
-          } : list)
-        case 'ASSIGN_MEMBER':
-          return state.map(list => list.id === action.payload.packingListId ? {
-            ...list,
-            categories: list.categories.map(cat => cat.id === action.payload.categoryId ? {
-              ...cat,
-              items: cat.items.map(item => item.id === action.payload.itemId ? { ...item, assigneeId: action.payload.assigneeId, assignee: action.payload.assignee } : item)
             } : cat)
           } : list)
         case 'REMOVE_LUGGAGE':
@@ -303,37 +268,19 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
 
   const handleAddItem = (categoryId: string, packingListId: string) => {
     if (readOnly) return
-    const rawName = newItemName[categoryId]?.trim()
-    if (!rawName) return
+    const name = newItemName[categoryId]?.trim()
+    if (!name) return
     setAddError(null)
-
-    let displayName = rawName
-    let assigneeInitial = null
-    const assigneeMatch = rawName.match(/@(\w+)/)
-
-    if (assigneeMatch) {
-      assigneeInitial = assigneeMatch[1].charAt(0).toUpperCase()
-      displayName = rawName.replace(assigneeMatch[0], '').trim() || assigneeMatch[1]
-    }
 
     const tempId = crypto.randomUUID()
     const optimisticItem: PackingItem = {
       id: tempId,
-      name: displayName,
+      name,
       quantity: 1,
       isPacked: false,
       isCustom: true,
       packLast: false,
       order: 0,
-      // optimistically show an assignee if we detected one
-      ...(assigneeInitial ? {
-        assignee: {
-          id: 'temp-assignee',
-          name: assigneeMatch![1],
-          tripId: trip.id,
-          userId: null,
-        }
-      } : {})
     }
 
     startTransition(async () => {
@@ -344,7 +291,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       setNewItemName(prev => ({ ...prev, [categoryId]: '' }))
       setAddingTo(null)
 
-      const result = await addCustomItem(categoryId, rawName, 1, trip.id)
+      const result = await addCustomItem(categoryId, name, 1, trip.id)
 
       if (result.error) {
         setAddError(result.error)
@@ -453,35 +400,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     })
   }
 
-  const handleUpdateNotes = (itemId: string, categoryId: string, packingListId: string, notes: string | null) => {
-    if (readOnly) return
-    startTransition(async () => {
-      addOptimisticListUpdate({ type: 'UPDATE_NOTES', payload: { itemId, categoryId, packingListId, notes } })
-      const result = await updateItemNotes(itemId, notes, trip.id)
-      if (result?.error) {
-        setAddError(result.error)
-        setTimeout(() => setAddError(null), 3000)
-      } else {
-        setLists(prev => prev.map(list => list.id === packingListId ? { ...list, categories: list.categories.map(cat => cat.id === categoryId ? { ...cat, items: cat.items.map(item => item.id === itemId ? { ...item, notes } : item) } : cat) } : list))
-      }
-    })
-  }
-
-  const handleAssignMember = (itemId: string, categoryId: string, packingListId: string, assigneeId: string | null, assignee: TripMember | null) => {
-    if (readOnly) return
-    startTransition(async () => {
-      addOptimisticListUpdate({ type: 'ASSIGN_MEMBER', payload: { itemId, categoryId, packingListId, assigneeId, assignee } })
-      setAssigningItem(null)
-      const result = await assignItemToMember(itemId, assigneeId, trip.id)
-      if (result?.error) {
-        setAddError(result.error)
-        setTimeout(() => setAddError(null), 3000)
-      } else {
-        setLists(prev => prev.map(list => list.id === packingListId ? { ...list, categories: list.categories.map(cat => cat.id === categoryId ? { ...cat, items: cat.items.map(item => item.id === itemId ? { ...item, assigneeId, assignee } : item) } : cat) } : list))
-      }
-    })
-  }
-
   const handleDragStart = (e: React.DragEvent, itemId: string, categoryId: string, packingListId: string) => {
     if (readOnly) return
     setDraggedItem({ id: itemId, categoryId, packingListId })
@@ -523,12 +441,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     window.location.reload()
   }
 
-  function handlePasteListSuccess(count: number) {
-    setInventoryToast(`${count} item${count !== 1 ? 's' : ''} imported to your packing list`)
-    setTimeout(() => setInventoryToast(null), 3500)
-    window.location.reload()
-  }
-
   function handleLuggageSuccess() {
     loadTripLuggage()
     setShowLuggagePicker(false)
@@ -541,20 +453,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
   const getItemPackedState = (item: PackingItem): boolean => {
     if (readOnly) return localPackedState[item.id] ?? item.isPacked
     return item.isPacked
-  }
-
-  const handleShareToClaim = async (packingListId: string) => {
-    if (readOnly) return
-    const result = await generateShareToken(packingListId, trip.id)
-    if (result.success && result.token) {
-      const url = `${window.location.origin}/claim/${result.token}`
-      navigator.clipboard.writeText(url)
-      setShareLinkCopied(packingListId)
-      setTimeout(() => setShareLinkCopied(null), 3000)
-    } else {
-      setAddError(result.error || 'Failed to generate link')
-      setTimeout(() => setAddError(null), 3000)
-    }
   }
 
   const allItems = optimisticLists.flatMap(list =>
@@ -593,155 +491,53 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         }`}
         role="listitem"
       >
-        <div className="flex-1 flex flex-col gap-1">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isPacked}
-              onChange={() => handleToggle(item.id, item.categoryId, item.packingListId, isPacked)}
-              className="sr-only peer"
-              aria-label={`${item.quantity > 1 ? item.quantity + ' ' : ''}${item.name}${isPacked ? ', packed' : ', not packed'}`}
-            />
-            <div
-              className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${
-                isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300'
-              } peer-hover:border-blue-400`}
-              aria-hidden="true"
-            >
-              {isPacked && (
-                <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </div>
-            <div className="flex-1 flex flex-col">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-sm ${isPacked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                  {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
-                  {item.name}
-                  {viewMode === 'luggage' && !item.packLast && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
-                </span>
-
-                {/* Assignee UI code starts */}
-                {!readOnly && trip.members && trip.members.length > 0 && (
-                  <div className="relative inline-block">
-                    <button
-                      onClick={(e) => { e.preventDefault(); setAssigningItem(assigningItem === item.id ? null : item.id); }}
-                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border transition-colors ${item.assignee ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-gray-50 border-dashed border-gray-300 text-gray-400 hover:bg-gray-100'}`}
-                    >
-                      {item.assignee ? (
-                        <>
-                          <div className="w-3.5 h-3.5 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center text-[8px] font-bold">
-                            {item.assignee.name.charAt(0).toUpperCase()}
-                          </div>
-                          {item.assignee.name}
-                        </>
-                      ) : (
-                        <>
-                          <User className="w-3 h-3" /> Claim
-                        </>
-                      )}
-                    </button>
-                    {assigningItem === item.id && (
-                      <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-10 py-1" onClick={e => e.preventDefault()}>
-                        <button
-                          onClick={() => handleAssignMember(item.id, item.categoryId, item.packingListId, null, null)}
-                          className="w-full text-left px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                        >
-                          <div className="w-5 h-5 rounded-full border border-gray-200 flex items-center justify-center"><User className="w-3 h-3 text-gray-400" /></div>
-                          Unassigned
-                          {!item.assigneeId && <Check className="w-3 h-3 ml-auto text-blue-600" />}
-                        </button>
-                        {trip.members.map(member => (
-                          <button
-                            key={member.id}
-                            onClick={() => handleAssignMember(item.id, item.categoryId, item.packingListId, member.id, member)}
-                            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-2"
-                          >
-                            <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
-                              {member.name.charAt(0).toUpperCase()}
-                            </div>
-                            {member.name}
-                            {item.assigneeId === member.id && <Check className="w-3 h-3 ml-auto text-blue-600" />}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* Assignee UI code ends */}
-              </div>
-
-              {/* Notes display */}
-              {editingNotes?.id === item.id ? (
-                <div className="mt-1 flex items-start gap-1" onClick={e => e.preventDefault()}>
-                  <textarea
-                    autoFocus
-                    value={editingNotes?.notes || ""}
-                    onChange={(e) => setEditingNotes({ id: item.id, notes: e.target.value })}
-                    placeholder="Add notes (e.g. buying there)..."
-                    className="text-xs p-1.5 w-full border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-                    rows={2}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        handleUpdateNotes(item.id, item.categoryId, item.packingListId, editingNotes?.notes || "")
-                        setEditingNotes(null)
-                      } else if (e.key === 'Escape') {
-                        setEditingNotes(null)
-                      }
-                    }}
-                  />
-                  <div className="flex flex-col gap-1">
-                    <button
-                      onClick={() => {
-                        handleUpdateNotes(item.id, item.categoryId, item.packingListId, editingNotes?.notes || "")
-                        setEditingNotes(null)
-                      }}
-                      className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    ><Check className="w-3 h-3" /></button>
-                    <button onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200"><X className="w-3 h-3" /></button>
-                  </div>
-                </div>
-              ) : item.notes ? (
-                <p
-                  onClick={(e) => { e.preventDefault(); if(!readOnly) setEditingNotes({ id: item.id, notes: item.notes || '' }); }}
-                  className={`text-xs mt-0.5 text-gray-500 flex items-start gap-1 ${!readOnly ? 'cursor-pointer hover:text-gray-700' : ''}`}
-                >
-                  <MessageSquare className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  {item.notes}
-                </p>
-              ) : null}
-
-            </div>
-          </label>
-        </div>
+        <label className="flex items-center gap-3 flex-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isPacked}
+            onChange={() => handleToggle(item.id, item.categoryId, item.packingListId, isPacked)}
+            className="sr-only peer"
+            aria-label={`${item.quantity > 1 ? item.quantity + ' ' : ''}${item.name}${isPacked ? ', packed' : ', not packed'}`}
+          />
+          <div
+            className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${
+              isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300'
+            } peer-hover:border-blue-400`}
+            aria-hidden="true"
+          >
+            {isPacked && (
+              <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span className={`flex-1 text-sm ${isPacked ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+            {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+            {item.name}
+            {viewMode === 'luggage' && !item.packLast && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
+          </span>
+        </label>
         {!readOnly && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
             {/* Pack Last toggle */}
             <button
-              onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
-              title="Add/Edit Note"
-              className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
-            ><MessageSquare className="w-3.5 h-3.5" /></button>
-            <button
               onClick={() => handleTogglePackLast(item.id, item.categoryId, item.packingListId, item.packLast)}
               title={item.packLast ? 'Remove from departure checklist' : 'Add to departure checklist (pack last)'}
-              className={`text-xs p-1 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 flex items-center justify-center ${
+              className={`text-xs px-2 py-0.5 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 ${
                 item.packLast
                   ? 'bg-amber-100 text-amber-700 border-amber-300'
                   : 'bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600'
               }`}
               aria-label={item.packLast ? 'Remove from pack last' : 'Mark as pack last'}
             >
-              <Sunrise className="w-3.5 h-3.5" />
+              🌅
             </button>
             <button
               onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
               className="text-red-400 hover:text-red-600 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
               aria-label={`Remove ${item.name} from packing list`}
             >
-              <X className="w-4 h-4" />
+              ×
             </button>
           </div>
         )}
@@ -761,31 +557,14 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         </div>
         {!readOnly && (
           <>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => setShowInventoryPicker(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <span>🎒</span> Add from Inventory
-              </button>
-              <button
-                onClick={() => setShowPasteList(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <span>📋</span> Paste a List
-              </button>
-            </div>
             <button
               onClick={() => setShowInventoryPicker(true)}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              <Backpack className="w-4 h-4" /> Add from Inventory
+              <span>🎒</span> Add from Inventory
             </button>
             {showInventoryPicker && (
               <InventoryPickerModal tripId={trip.id} onClose={() => setShowInventoryPicker(false)} onSuccess={handleInventorySuccess} />
-            )}
-            {showPasteList && (
-              <PasteListModal tripId={trip.id} onClose={() => setShowPasteList(false)} onSuccess={handlePasteListSuccess} />
             )}
           </>
         )}
@@ -845,16 +624,16 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         {itemCount > 0 && <span className="text-xs text-gray-500">({itemCount})</span>}
                         <button
                           onClick={() => handleRemoveLuggage(tl.id, tl.luggageId)}
-                          className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1 flex items-center"
+                          className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1"
                           aria-label={`Remove ${tl.luggage.name}`}
-                        ><X className="w-3.5 h-3.5" /></button>
+                        >×</button>
                       </div>
                     )
                   })}
                   <button
                     onClick={() => setShowLuggagePicker(true)}
                     className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-dashed border-blue-300 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  ><Plus className="w-4 h-4" /> Add bag</button>
+                  >+ Add bag</button>
                 </div>
                 {optimisticTripLuggages.length === 0
                   ? <p className="text-sm text-gray-500">Add luggage to organize your items by bag</p>
@@ -864,25 +643,11 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => setShowInventoryPicker(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <span>🎒</span> Add from Inventory
-            </button>
-            <button
-              onClick={() => setShowPasteList(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <span>📋</span> Paste a List
-            </button>
-          </div>
           <button
             onClick={() => setShowInventoryPicker(true)}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <Backpack className="w-4 h-4" /> Add from Inventory
+            <span>🎒</span> Add from Inventory
           </button>
         </>
       )}
@@ -896,7 +661,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             aria-expanded={expandedGroups['pack-last']}
           >
             <div className="flex items-center gap-3">
-              <span className="text-amber-500"><Sunrise className="w-8 h-8" /></span>
+              <span className="text-2xl">🌅</span>
               <div className="text-left">
                 <h3 className="font-semibold text-amber-900">Morning of Departure</h3>
                 <p className="text-xs text-amber-700">
@@ -908,7 +673,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
           </button>
           {expandedGroups['pack-last'] && (
             <div className="px-6 pb-4 border-t border-amber-100">
-              <p className="text-xs text-amber-600 mt-3 mb-3 flex items-center gap-1">Pack these right before you leave — hover an item and click <Sunrise className="w-3.5 h-3.5 inline" /> to remove it from this list</p>
+              <p className="text-xs text-amber-600 mt-3 mb-3">Pack these right before you leave — hover an item and click 🌅 to remove it from this list</p>
               <ul className="space-y-2" role="list">
                 {packLastItems.map(item => renderItem(item))}
               </ul>
@@ -919,8 +684,8 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
 
       {optimisticTripLuggages.length > 0 && (
         <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
-          <button onClick={() => setViewMode('luggage')} aria-label="By Luggage view" disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'luggage' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Luggage</button>
-          <button onClick={() => setViewMode('category')} aria-label="By Category view" disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'category' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Category</button>
+          <button onClick={() => setViewMode('luggage')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'luggage' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Luggage</button>
+          <button onClick={() => setViewMode('category')} disabled={readOnly} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${ viewMode === 'category' ? 'bg-white text-gray-900 shadow-sm' : readOnly ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-gray-900' }`}>By Category</button>
         </div>
       )}
 
@@ -1004,20 +769,8 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         ) : (
           optimisticLists.map((list) => (
             <article key={list.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <header className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+              <header className="px-6 py-4 border-b border-gray-50">
                 <h3 className="font-semibold text-gray-900">{list.name}</h3>
-                {!readOnly && (
-                  <button
-                    onClick={(e) => { e.preventDefault(); handleShareToClaim(list.id); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    {shareLinkCopied === list.id ? (
-                      <><Check className="w-4 h-4" /> Copied!</>
-                    ) : (
-                      <><Share2 className="w-4 h-4" /> Share to Claim</>
-                    )}
-                  </button>
-                )}
               </header>
               <div className="divide-y divide-gray-50">
                 {list.categories.map((category) => (
@@ -1041,131 +794,24 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                               onDragEnd={handleDragEnd}
                               className={`flex items-center gap-3 group ${ !readOnly && optimisticTripLuggages.length > 0 ? 'cursor-move' : '' }`}
                             >
-                              <div className="flex-1 flex flex-col gap-1">
-                                <label className="flex items-start gap-3 cursor-pointer">
-                                  <input type="checkbox" checked={isPacked} onChange={() => handleToggle(item.id, category.id, list.id, isPacked)} className="sr-only peer" />
-                                  <div className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${ isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300' } peer-hover:border-blue-400`}>
-                                    {isPacked && <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                  </div>
-                                  <div className="flex-1 flex flex-col">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span className={`text-sm ${ isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
-                                        {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
-                                        {item.name}
-                                      </span>
-
-                                      {item.guestClaimant && (
-                                        <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full ml-1 border border-purple-200">
-                                          Claimed by {item.guestClaimant}
-                                        </span>
-                                      )}
-
-                                      {/* Assignee display/dropdown */}
-                                      {!readOnly && trip.members && trip.members.length > 0 && (
-                                        <div className="relative inline-block">
-                                          <button
-                                            onClick={(e) => { e.preventDefault(); setAssigningItem(assigningItem === item.id ? null : item.id); }}
-                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border transition-colors ${item.assignee ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-gray-50 border-dashed border-gray-300 text-gray-400 hover:bg-gray-100'}`}
-                                          >
-                                            {item.assignee ? (
-                                              <>
-                                                <div className="w-3.5 h-3.5 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center text-[8px] font-bold">
-                                                  {item.assignee.name.charAt(0).toUpperCase()}
-                                                </div>
-                                                {item.assignee.name}
-                                              </>
-                                            ) : (
-                                              <>
-                                                <User className="w-3 h-3" /> Claim
-                                              </>
-                                            )}
-                                          </button>
-
-                                          {assigningItem === item.id && (
-                                            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-10 py-1" onClick={e => e.preventDefault()}>
-                                              <button
-                                                onClick={() => handleAssignMember(item.id, category.id, list.id, null, null)}
-                                                className="w-full text-left px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2"
-                                              >
-                                                <div className="w-5 h-5 rounded-full border border-gray-200 flex items-center justify-center"><User className="w-3 h-3 text-gray-400" /></div>
-                                                Unassigned
-                                                {!item.assigneeId && <Check className="w-3 h-3 ml-auto text-blue-600" />}
-                                              </button>
-                                              {trip.members.map(member => (
-                                                <button
-                                                  key={member.id}
-                                                  onClick={() => handleAssignMember(item.id, category.id, list.id, member.id, member)}
-                                                  className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-2"
-                                                >
-                                                  <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
-                                                    {member.name.charAt(0).toUpperCase()}
-                                                  </div>
-                                                  {member.name}
-                                                  {item.assigneeId === member.id && <Check className="w-3 h-3 ml-auto text-blue-600" />}
-                                                </button>
-                                              ))}
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Notes display */}
-                                    {editingNotes?.id === item.id ? (
-                                      <div className="mt-1 flex items-start gap-1" onClick={e => e.preventDefault()}>
-                                        <textarea
-                                          autoFocus
-                                          value={editingNotes?.notes || ""}
-                                          onChange={(e) => setEditingNotes({ id: item.id, notes: e.target.value })}
-                                          placeholder="Add notes (e.g. buying there)..."
-                                          className="text-xs p-1.5 w-full border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-                                          rows={2}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                              e.preventDefault()
-                                              handleUpdateNotes(item.id, category.id, list.id, editingNotes?.notes || "")
-                                              setEditingNotes(null)
-                                            } else if (e.key === 'Escape') {
-                                              setEditingNotes(null)
-                                            }
-                                          }}
-                                        />
-                                        <div className="flex flex-col gap-1">
-                                          <button
-                                            onClick={() => {
-                                              handleUpdateNotes(item.id, category.id, list.id, editingNotes?.notes || "")
-                                              setEditingNotes(null)
-                                            }}
-                                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                          ><Check className="w-3 h-3" /></button>
-                                          <button onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200"><X className="w-3 h-3" /></button>
-                                        </div>
-                                      </div>
-                                    ) : item.notes ? (
-                                      <p
-                                        onClick={(e) => { e.preventDefault(); if(!readOnly) setEditingNotes({ id: item.id, notes: item.notes || '' }); }}
-                                        className={`text-xs mt-0.5 text-gray-500 flex items-start gap-1 ${!readOnly ? 'cursor-pointer hover:text-gray-700' : ''}`}
-                                      >
-                                        <MessageSquare className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                        {item.notes}
-                                      </p>
-                                    ) : null}
-                                  </div>
-                                </label>
-                              </div>
+                              <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                                <input type="checkbox" checked={isPacked} onChange={() => handleToggle(item.id, category.id, list.id, isPacked)} className="sr-only peer" />
+                                <div className={`w-5 h-5 rounded border-2 flex-shrink-0 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 peer-focus-visible:ring-offset-2 ${ isPacked ? 'bg-green-500 border-green-500' : 'border-gray-300' } peer-hover:border-blue-400`}>
+                                  {isPacked && <svg className="w-3 h-3 text-white m-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                </div>
+                                <span className={`flex-1 text-sm ${ isPacked ? 'line-through text-gray-400' : 'text-gray-700' }`}>
+                                  {item.quantity > 1 && <span className="font-medium mr-1">{item.quantity}x</span>}
+                                  {item.name}
+                                </span>
+                              </label>
                               {!readOnly && (
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
                                   <button
-                                    onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
-                                    title="Add/Edit Note"
-                                    className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
-                                  ><MessageSquare className="w-3.5 h-3.5" /></button>
-                                  <button
                                     onClick={() => handleTogglePackLast(item.id, category.id, list.id, item.packLast)}
                                     title="Add to departure checklist"
-                                    className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 flex items-center justify-center"
-                                  ><Sunrise className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDelete(item.id, category.id, list.id)} className="text-red-400 hover:text-red-600 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1 flex items-center"><X className="w-4 h-4" /></button>
+                                    className="text-xs px-2 py-0.5 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                  >🌅</button>
+                                  <button onClick={() => handleDelete(item.id, category.id, list.id)} className="text-red-400 hover:text-red-600 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1">×</button>
                                 </div>
                               )}
                             </li>
@@ -1182,11 +828,11 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                           className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           autoFocus
                         />
-                        <button onClick={() => handleAddItem(category.id, list.id)} aria-label={`Add item to ${category.name}`} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Add</button>
-                        <button onClick={() => { setAddingTo(null); setAddError(null) }} aria-label={`Cancel adding item to ${category.name}`} className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">Cancel</button>
+                        <button onClick={() => handleAddItem(category.id, list.id)} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">Add</button>
+                        <button onClick={() => { setAddingTo(null); setAddError(null) }} className="text-sm px-3 py-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 rounded">Cancel</button>
                       </div>
                     ) : (
-                      <button onClick={() => setAddingTo(category.id)} aria-label={`+ Add item to ${category.name}`} className="mt-3 text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">+ Add item</button>
+                      <button onClick={() => setAddingTo(category.id)} className="mt-3 text-xs text-blue-500 hover:text-blue-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">+ Add item</button>
                     ))}
                   </section>
                 ))}
@@ -1198,9 +844,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
 
       {!readOnly && showInventoryPicker && (
         <InventoryPickerModal tripId={trip.id} onClose={() => setShowInventoryPicker(false)} onSuccess={handleInventorySuccess} />
-      )}
-      {!readOnly && showPasteList && (
-        <PasteListModal tripId={trip.id} onClose={() => setShowPasteList(false)} onSuccess={handlePasteListSuccess} />
       )}
       {!readOnly && showLuggagePicker && (
         <LuggagePickerModal tripId={trip.id} onClose={() => setShowLuggagePicker(false)} onSuccess={handleLuggageSuccess} />
