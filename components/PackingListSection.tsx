@@ -792,7 +792,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                 onClick={() => setShowInventoryPicker(true)}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                <span>🎒</span> Add from Inventory
+                <Backpack className="w-4 h-4" /> Add from Inventory
               </button>
               <button
                 onClick={() => setShowPasteList(true)}
@@ -801,12 +801,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                 <span>📋</span> Paste a List
               </button>
             </div>
-            <button
-              onClick={() => setShowInventoryPicker(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              <Backpack className="w-4 h-4" /> Add from Inventory
-            </button>
             {showInventoryPicker && (
               <InventoryPickerModal tripId={trip.id} onClose={() => setShowInventoryPicker(false)} onSuccess={handleInventorySuccess} />
             )}
@@ -895,7 +889,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
               onClick={() => setShowInventoryPicker(true)}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <span>🎒</span> Add from Inventory
+              <Backpack className="w-4 h-4" /> Add from Inventory
             </button>
             <button
               onClick={() => setShowPasteList(true)}
@@ -904,12 +898,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
               <span>📋</span> Paste a List
             </button>
           </div>
-          <button
-            onClick={() => setShowInventoryPicker(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-dashed border-blue-300 rounded-2xl text-sm font-medium text-blue-500 hover:bg-blue-50 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <Backpack className="w-4 h-4" /> Add from Inventory
-          </button>
         </>
       )}
 
