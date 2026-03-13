@@ -328,7 +328,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       packLast: false,
       order: 0,
       assigneeId,
-      assignee: assigneeId ? (trip.members?.find(m => m.id === assigneeId) || null) : null
+      assignee: assigneeId ? (trip.members?.find(m => m.id === assigneeId) || null) : null,
       // optimistically show an assignee if we detected one
       ...(assigneeInitial ? {
         assignee: {
