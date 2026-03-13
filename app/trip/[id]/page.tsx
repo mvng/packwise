@@ -9,12 +9,9 @@ import PackingListSection from '@/components/PackingListSection'
 import ForkTripButton from '@/components/ForkTripButton'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
-import PackingRating from '@/components/PackingRating'
 import TripMembersSection from '@/components/TripMembersSection'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
-import { Calendar, Check, ListTodo } from 'lucide-react'
-import TripPlanningAssistant from '@/components/TripPlanningAssistant'
 
 const PlanningBoardView = dynamic(() => import('@/components/PlanningBoardView'), {
   ssr: false,
@@ -68,9 +65,9 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
     setTripTimezone(initialTripTimezone)
   }, [initialTrip, initialTripTimezone])
 
-  const [viewMode, setViewMode] = useState<'plan' | 'pack' | 'tasks'>('pack')
+  const [viewMode, setViewMode] = useState<'plan' | 'pack'>('pack')
   const [isSyncing, setIsSyncing] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
 
   const handleEditSuccess = async () => {
     setEditingTrip(null)
@@ -118,9 +115,6 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const packedItems = allItems.filter((item: any) => item.isPacked).length
   const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
-
-  // Post-trip: true if end date is in the past
-  const isTripOver = trip.endDate ? new Date(trip.endDate) < new Date() : false
 
   // Hide the meta card when in plan mode to give the board more space
   const isPlanMode = !finalIsSharedView && viewMode === 'plan'
@@ -203,7 +197,7 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
           </div>
         )}
 
-        {/* Merged trip meta card — hidden in plan mode to give board full space */}
+        {/* Trip meta card — hidden in plan mode */}
         {!isPlanMode && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
             <div className="flex items-start justify-between mb-4">
@@ -279,7 +273,7 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
               weatherComponent
             )}
 
-            {/* Members row — inlined below trip details */}
+            {/* Members */}
             <div className="mt-5 pt-5 border-t border-gray-100">
               <TripMembersSection tripId={trip.id} members={trip.members || []} isOwner={finalIsOwner} />
             </div>
@@ -290,53 +284,44 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
         {!finalIsSharedView && (
           <div className={`flex gap-2 bg-gray-100 p-1 rounded-lg w-fit ${isPlanMode ? 'mb-4' : 'mb-6'}`}>
             <button
-              disabled={isSyncing || isPending}
+              disabled={isSyncing}
               onClick={() => setViewMode('plan')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none ${
                 viewMode === 'plan' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Calendar className="w-4 h-4" /> Plan
+              🗓 Plan
             </button>
             <button
-              disabled={isSyncing || isPending}
-              onClick={() => setViewMode('tasks')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
-                viewMode === 'tasks' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <ListTodo className="w-4 h-4" /> Planning
-            </button>
-            <button
-              disabled={isSyncing || isPending}
+              disabled={isSyncing}
               onClick={async () => {
                 if (viewMode === 'plan') {
                   setIsSyncing(true)
-                  await fetch('/api/day-plans/sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tripId: trip.id }),
+                  startTransition(async () => {
+                    await fetch('/api/day-plans/sync', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ tripId: trip.id }),
+                    })
+                    setIsSyncing(false)
+                    setViewMode('pack')
+                    router.refresh()
                   })
-                  setIsSyncing(false)
-                  setViewMode('pack')
-                  startTransition(() => { router.refresh() })
                 } else {
                   setViewMode('pack')
                 }
               }}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none ${
                 viewMode === 'pack' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              {(isSyncing || isPending) ? 'Syncing…' : <><Check className="w-4 h-4" /> Pack</>}
+              {isSyncing ? 'Syncing…' : '✅ Pack'}
             </button>
           </div>
         )}
 
         {/* Content */}
-        {!finalIsSharedView && viewMode === 'tasks' ? (
-          <TripPlanningAssistant tripId={trip.id} startDate={trip.startDate} />
-        ) : !finalIsSharedView && viewMode === 'plan' ? (
+        {!finalIsSharedView && viewMode === 'plan' ? (
           <PlanningBoardView trip={displayTrip} />
         ) : (
           <PackingListSection
@@ -344,11 +329,6 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
             readOnly={finalIsSharedView}
             sharedTripLuggages={finalIsSharedView ? trip.tripLuggages : undefined}
           />
-        )}
-
-        {/* Packing Rating — only shown after the trip has ended */}
-        {isTripOver && displayTrip.packingLists.length > 0 && (
-          <PackingRating trip={displayTrip} />
         )}
       </main>
 
