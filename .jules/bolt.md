@@ -5,3 +5,7 @@
 ## 2025-03-13 - Flattened Cartesian query for getSharedTripById
 **Learning:** When doing deeply nested `include`s in Prisma with Postgres, the database creates a Cartesian product of all relationships (e.g. 5 categories with 20 items creates thousands of duplicated DB rows across network), massively slowing down queries and bloating Node memory.
 **Action:** Flatten the relationships into parallel `Promise.all` `findMany` queries and stitch the JSON tree back together in application memory.
+
+## 2025-03-22 - Expensive array filtering in UI components on every render
+**Learning:** In complex Next.js/React components like `PackingListSection` where arrays are large and mapped over extensively (e.g. hundreds of items in multiple categories), deriving states like `allItems`, `packLastItems`, and grouped objects like `itemsByLuggage` or `itemsByPerson` directly in the component body runs on EVERY re-render. Since `useOptimistic` state or text input changes trigger frequent renders, this `O(N)` repeated calculation creates significant UI lag.
+**Action:** Wrap these heavy array flattening, filtering, and object grouping operations in `useMemo`, and wrap their local dependencies (like inner helper functions) in `useCallback`. This guarantees the expensive derivation only runs when the base list or relevant dependencies (like `localPackedState`) actually change.
