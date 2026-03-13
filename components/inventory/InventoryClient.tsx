@@ -64,7 +64,7 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
         items: cat.items.filter((item: any) => item.name.toLowerCase().includes(q)),
       }))
       .filter((cat) => cat.items.length > 0 || cat.name.toLowerCase().includes(q))
-  }, [categories, search])
+  }, [optimisticCategories, search])
 
   const totalItems = optimisticCategories.reduce((sum, cat) => sum + cat.items.length, 0)
 

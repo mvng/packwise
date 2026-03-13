@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PlusCircle, Loader2 } from 'lucide-react'
 import TaskCard from './TaskCard'
 import TaskForm from './TaskForm'
@@ -28,11 +28,7 @@ export default function TripPlanningAssistant({ tripId, startDate }: TripPlannin
   const [isEditing, setIsEditing] = useState(false)
   const [editingTask, setEditingTask] = useState<TripTask | null>(null)
 
-  useEffect(() => {
-    fetchTasks()
-  }, [tripId])
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setIsLoading(true)
       const res = await fetch(`/api/trips/${tripId}/tasks`)
@@ -44,7 +40,11 @@ export default function TripPlanningAssistant({ tripId, startDate }: TripPlannin
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [tripId])
+
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
 
   const handleSaveTask = async (taskData: Partial<TripTask>) => {
     try {
