@@ -113,6 +113,9 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
   const packedItems = allItems.filter((item: any) => item.isPacked).length
   const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
 
+  // Post-trip: true if end date is in the past
+  const isTripOver = trip.endDate ? new Date(trip.endDate) < new Date() : false
+
   const getTripEmoji = (tripType: string) => {
     const icons: Record<string, string> = { beach: '🏖️', hiking: '🦵', city: '🏙️', skiing: '⛷️', ski: '⛷️', business: '💼', leisure: '🌴' }
     return icons[tripType] || '✈️'
@@ -191,10 +194,7 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
           </div>
         )}
 
-        {/* Trip meta card */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-          <TripMembersSection tripId={trip.id} members={trip.members || []} isOwner={isOwner} />
-        </div>
+        {/* Merged trip meta card: details + members in one card */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -246,6 +246,11 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
           {trip.destination && trip.startDate && trip.endDate && weatherComponent && (
             weatherComponent
           )}
+
+          {/* Members row — inlined below trip details */}
+          <div className="mt-5 pt-5 border-t border-gray-100">
+            <TripMembersSection tripId={trip.id} members={trip.members || []} isOwner={isOwner} />
+          </div>
         </div>
 
         {/* View toggle */}
@@ -298,12 +303,10 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
           </div>
         )}
 
-
         {/* Content */}
         {!isSharedView && viewMode === 'tasks' ? (
           <TripPlanningAssistant tripId={trip.id} startDate={trip.startDate} />
         ) : !isSharedView && viewMode === 'plan' ? (
-
           <PlanningBoardView trip={displayTrip} />
         ) : (
           <PackingListSection
@@ -313,8 +316,8 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
           />
         )}
 
-        {/* Packing Rating Footnote */}
-        {displayTrip.packingLists.length > 0 && (
+        {/* Packing Rating — only shown after the trip has ended */}
+        {isTripOver && displayTrip.packingLists.length > 0 && (
           <PackingRating trip={displayTrip} />
         )}
       </main>

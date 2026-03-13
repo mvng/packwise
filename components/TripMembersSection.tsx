@@ -48,28 +48,28 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Users className="w-5 h-5 text-gray-400" />
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+          <Users className="w-4 h-4 text-gray-400" />
           Trip Members
         </h3>
         {isOwner && !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="text-sm flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+            className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium bg-blue-50 px-2.5 py-1 rounded-lg transition-colors"
           >
-            <Plus className="w-4 h-4" /> Add member
+            <Plus className="w-3.5 h-3.5" /> Add member
           </button>
         )}
       </div>
 
       {error && (
-        <p className="text-sm text-red-500 mb-4 bg-red-50 p-2 rounded-lg border border-red-100">{error}</p>
+        <p className="text-sm text-red-500 mb-3 bg-red-50 p-2 rounded-lg border border-red-100">{error}</p>
       )}
 
       {isAdding && (
-        <div className="flex gap-2 mb-4 bg-gray-50 p-2 rounded-xl border border-gray-100">
+        <div className="flex gap-2 mb-3 bg-gray-50 p-2 rounded-xl border border-gray-100">
           <input
             type="text"
             value={newName}
@@ -96,14 +96,14 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
       )}
 
       {members.length === 0 && !isAdding ? (
-        <p className="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 p-4 rounded-xl text-center">
+        <p className="text-xs text-gray-400">
           No members yet. Add people to assign them packing tasks.
         </p>
       ) : (
         <ul className="flex flex-wrap gap-2">
           {members.map(member => (
             <li key={member.id} className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-full shadow-sm">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 flex items-center justify-center text-xs font-bold shadow-inner">
+              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 flex items-center justify-center text-[10px] font-bold shadow-inner">
                 {member.name.charAt(0).toUpperCase()}
               </div>
               <span className="text-sm font-medium text-gray-700">{member.name}</span>
