@@ -13,7 +13,8 @@ import PackingRating from '@/components/PackingRating'
 import TripMembersSection from '@/components/TripMembersSection'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
-import { Calendar, Check } from 'lucide-react'
+import { Calendar, Check, ListTodo } from 'lucide-react'
+import TripPlanningAssistant from '@/components/TripPlanningAssistant'
 
 const PlanningBoardView = dynamic(() => import('@/components/PlanningBoardView'), {
   ssr: false,
@@ -67,7 +68,7 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
     setTripTimezone(initialTripTimezone)
   }, [initialTrip, initialTripTimezone])
 
-  const [viewMode, setViewMode] = useState<'plan' | 'pack'>('pack')
+  const [viewMode, setViewMode] = useState<'plan' | 'pack' | 'tasks'>('pack')
   const [isSyncing, setIsSyncing] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -261,6 +262,16 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
             </button>
             <button
               disabled={isSyncing || isPending}
+              onClick={() => setViewMode('tasks')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
+                viewMode === 'tasks' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ListTodo className="w-4 h-4" /> Planning
+            </button>
+
+            <button
+              disabled={isSyncing || isPending}
               onClick={async () => {
                 if (viewMode === 'plan') {
                   setIsSyncing(true)
@@ -287,8 +298,12 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
           </div>
         )}
 
+
         {/* Content */}
-        {!isSharedView && viewMode === 'plan' ? (
+        {!isSharedView && viewMode === 'tasks' ? (
+          <TripPlanningAssistant tripId={trip.id} startDate={trip.startDate} />
+        ) : !isSharedView && viewMode === 'plan' ? (
+
           <PlanningBoardView trip={displayTrip} />
         ) : (
           <PackingListSection
