@@ -223,6 +223,19 @@ function InlineTagCard({
 
   function fmtTime(t: string) {
     try {
+      const parts = t.split('-')
+      if (parts.length > 1) {
+        const start = parts[0].trim()
+        const end = parts[1].trim()
+        const [sh, sm] = start.split(':').map(Number)
+        const sd = new Date(); sd.setHours(sh, sm)
+        const [eh, em] = end.split(':').map(Number)
+        const ed = new Date(); ed.setHours(eh, em)
+        const sfmt = sd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+        const efmt = ed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+        // Simplify "8:00 AM - 9:00 AM" to "8:00 - 9:00 AM" if they share AM/PM, but full is safer.
+        return `${sfmt} - ${efmt}`
+      }
       const [h, m] = t.split(':').map(Number)
       const d = new Date(); d.setHours(h, m)
       return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
@@ -246,12 +259,13 @@ function InlineTagCard({
         {editingTime ? (
           <input
             autoFocus
-            type="time"
+            type="text"
+            placeholder="e.g. 10:00 or 10:00-11:30"
             value={timeInput}
             onChange={(e) => setTimeInput(e.target.value)}
             onBlur={commitTime}
             onKeyDown={(e) => { if (e.key === 'Enter') commitTime() }}
-            className="ml-2 text-[11px] bg-white border border-current/20 rounded px-1 py-0.5 focus:outline-none w-24"
+            className="ml-2 text-[11px] bg-white border border-current/20 rounded px-1.5 py-0.5 focus:outline-none w-32"
           />
         ) : (
           <button
@@ -548,6 +562,175 @@ function DayColumn({
   )
 }
 
+// ─── DayDetailView ─────────────────────────────────────────────────────────────
+
+// Start at 4 AM, end at 11 PM (20 hours total)
+const HOURS = Array.from({ length: 20 }, (_, i) => i + 4)
+
+const SLOT_PREFIX = 'slot::'
+function makeTimeSlotDropId(dateKey: string, hour: number) { return `${SLOT_PREFIX}${dateKey}::${hour}` }
+function parseTimeSlotDropId(id: string): { dateKey: string; hour: number } | null {
+  if (!id.startsWith(SLOT_PREFIX)) return null
+  const [dateKey, hourStr] = id.slice(SLOT_PREFIX.length).split('::')
+  return { dateKey, hour: parseInt(hourStr, 10) }
+}
+
+function DayDetailView({
+  date,
+  dayIndex,
+  tripId,
+  dayPlan,
+  isTagOver,
+  onDayPlanChange,
+}: {
+  date: Date
+  dayIndex: number
+  tripId: string
+  dayPlan: DayPlan | undefined
+  isTagOver: boolean
+  onDayPlanChange: (dateKey: string, updated: DayPlan) => void
+}) {
+  const dateKey = toDateKey(date)
+  const allDayTag = getTagById(dayPlan?.label)
+  const items = (dayPlan?.items ?? []).map(decodeItem)
+
+  // Group items by hour. Items without a specific time go to 'untimed'
+  const itemsByHour: Record<number, DayPlanItem[]> = {}
+  const untimedItems: DayPlanItem[] = []
+
+  items.forEach(item => {
+    if (item.time) {
+      const hour = parseInt(item.time.split(':')[0], 10)
+      if (!isNaN(hour)) {
+        if (!itemsByHour[hour]) itemsByHour[hour] = []
+        itemsByHour[hour].push(item)
+      } else {
+        untimedItems.push(item)
+      }
+    } else {
+      untimedItems.push(item)
+    }
+  })
+
+  // We reuse the basic column for untimed items to avoid duplicating all the logic
+  return (
+    <div className="flex gap-4 min-w-max h-full">
+      {/* Time column */}
+      <div className="w-[340px] flex-shrink-0 flex flex-col rounded-xl border border-gray-200 bg-white">
+        <div className="p-3 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+          <p className="text-sm font-semibold text-gray-700">Schedule - {formatColumnDate(date)}</p>
+          {allDayTag && (
+            <div className="mt-1 flex items-center gap-1.5 px-2 py-1 rounded bg-white border border-gray-100 w-fit">
+              <span className="text-sm">{allDayTag.icon}</span>
+              <span className="text-xs font-medium text-gray-600">{allDayTag.label} (All Day)</span>
+            </div>
+          )}
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {HOURS.map(hour => {
+            const slotItems = itemsByHour[hour] || []
+            const timeStr = new Date(0, 0, 0, hour).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
+            return (
+              <TimeSlot
+                key={hour}
+                dateKey={dateKey}
+                hour={hour}
+                timeStr={timeStr}
+                items={slotItems}
+                tripId={tripId}
+                dayPlan={dayPlan}
+                onDayPlanChange={onDayPlanChange}
+              />
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Untimed Items Column */}
+      <div className="flex flex-col">
+        <div className="mb-2 pl-1">
+          <p className="text-sm font-semibold text-indigo-900 bg-indigo-100 rounded px-2 py-0.5 inline-block w-fit">Untimed Items</p>
+          <p className="text-[10px] text-gray-400 font-medium mt-0.5 ml-1">Drop here or add items for packing.</p>
+        </div>
+        <DayColumn
+          date={date}
+          dayIndex={dayIndex}
+          tripId={tripId}
+          dayPlan={{
+            ...(dayPlan ?? { id: `pending-${dateKey}`, tripId, date: dateKey as unknown as Date, items: [] }),
+            items: untimedItems
+          }}
+          isTagOver={isTagOver}
+          onDayPlanChange={(dk, updated) => {
+            // Re-merge with timed items
+            const newTimed = items.filter(i => i.time && !isNaN(parseInt(i.time.split(':')[0], 10)))
+            onDayPlanChange(dk, { ...updated, items: [...newTimed, ...updated.items] })
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function TimeSlot({
+  dateKey,
+  hour,
+  timeStr,
+  items,
+  tripId,
+  dayPlan,
+  onDayPlanChange,
+}: {
+  dateKey: string
+  hour: number
+  timeStr: string
+  items: DayPlanItem[]
+  tripId: string
+  dayPlan: DayPlan | undefined
+  onDayPlanChange: (dateKey: string, updated: DayPlan) => void
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: makeTimeSlotDropId(dateKey, hour) })
+  const [, startTransition] = useTransition()
+
+  function handleDeleteItem(itemId: string) {
+    if (!dayPlan) return
+    onDayPlanChange(dateKey, { ...dayPlan, items: dayPlan.items.filter((i) => i.id !== itemId) })
+    startTransition(async () => { await apiDeleteDayPlanItem(itemId) })
+  }
+
+  function handleTimeChange(itemId: string, time: string | null) {
+    if (!dayPlan) return
+    const updated = dayPlan.items.map((i) => i.id === itemId ? { ...i, notes: time } : i)
+    const sorted = applyTimeSort(updated)
+    onDayPlanChange(dateKey, { ...dayPlan, items: sorted })
+    startTransition(async () => {
+      await apiUpdateDayPlanItemNotes(itemId, time)
+      await apiReorderDayPlanItems(dayPlan.id, sorted.map((i) => i.id))
+    })
+  }
+
+  return (
+    <div ref={setNodeRef} className="flex min-h-[60px] border-b border-gray-100 last:border-0 group">
+      <div className="w-16 flex-shrink-0 border-r border-gray-100 flex justify-end pr-2 pt-2">
+        <span className="text-[10px] text-gray-400 font-medium">{timeStr}</span>
+      </div>
+      <div className={`flex-1 p-2 ${isOver ? 'bg-blue-50/50 ring-1 ring-inset ring-blue-200' : ''}`}>
+        <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+          <div className="flex flex-col gap-1.5">
+            {items.map(item => (
+              item.itemType === 'tag' ? (
+                <InlineTagCard key={item.id} item={item} onDelete={handleDeleteItem} onTimeChange={handleTimeChange} />
+              ) : (
+                <DraggableCard key={item.id} item={item} onDelete={handleDeleteItem} />
+              )
+            ))}
+          </div>
+        </SortableContext>
+      </div>
+    </div>
+  )
+}
+
 // ─── PlanningBoardView ────────────────────────────────────────────────────────
 
 export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
@@ -555,6 +738,8 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
   const [dayPlans, setDayPlans] = useState<DayPlanMap>({})
   const [activeId, setActiveId] = useState<string | null>(null)
   const [tagOverColumn, setTagOverColumn] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'week' | 'day'>('week')
+  const [selectedDay, setSelectedDay] = useState<Date>(days[0] || new Date())
   const [, startTransition] = useTransition()
 
   useEffect(() => {
@@ -599,6 +784,10 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
     let colKey: string | null = null
     if (over) {
       colKey = parseColDropId(over.id as string)
+      if (!colKey) {
+        const slotMatch = parseTimeSlotDropId(over.id as string)
+        if (slotMatch) colKey = slotMatch.dateKey
+      }
       if (!colKey) colKey = findColumnKeyForItem(over.id as string)
     }
     setTagOverColumn(colKey)
@@ -627,6 +816,8 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
       if (!tag) return
 
       const dateKey = parseColDropId(over.id as string)
+      const slotMatch = parseTimeSlotDropId(over.id as string)
+
       if (dateKey) {
         setDayPlans((prev) => {
           const existing = prev[dateKey]
@@ -642,11 +833,12 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
 
       const overItemKey = findColumnKeyForItem(over.id as string)
 
-      if (!overItemKey) {
-        if (!tagOverColumn) return
-        const fallbackKey = tagOverColumn
+      if (slotMatch || !overItemKey) {
+        if (!tagOverColumn && !slotMatch) return
+        const fallbackKey = slotMatch ? slotMatch.dateKey : tagOverColumn!
+        const initialTime = slotMatch ? `${slotMatch.hour.toString().padStart(2, '0')}:00` : undefined
         const plan = getOrSeedPlan(fallbackKey)
-        const encoded = encodeTagItem(tag.id)
+        const encoded = encodeTagItem(tag.id, initialTime)
         const tempId = `temp-tag-${Date.now()}`
         const newItem: DayPlanItem = { id: tempId, dayPlanId: plan.id, order: plan.items.length, ...encoded }
         const withNew = { ...plan, items: [...plan.items, newItem] }
@@ -701,11 +893,49 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
 
     if (active.id === over.id) return
 
-    // Regular item reorder / cross-column move
+    // Regular item reorder / cross-column move / time assignment
     const sourceKey = findColumnKeyForItem(active.id as string)
-    const destKey = findColumnKeyForItem(over.id as string)
+    let destKey = findColumnKeyForItem(over.id as string)
+    const slotMatch = parseTimeSlotDropId(over.id as string)
+
+    if (slotMatch) destKey = slotMatch.dateKey
     if (!sourceKey) return
+
     const sourcePlan = dayPlans[sourceKey]
+    const movingItem = sourcePlan.items.find((i) => i.id === active.id)
+    if (!movingItem) return
+
+    if (slotMatch) {
+      // Assign specific time to an item
+      const newTime = `${slotMatch.hour.toString().padStart(2, '0')}:00`
+      const isCrossDay = sourceKey !== destKey
+      const targetKey = isCrossDay ? destKey! : sourceKey
+      const targetPlan = dayPlans[targetKey] || getOrSeedPlan(targetKey)
+
+      const updatedItem = { ...movingItem, notes: newTime }
+
+      if (isCrossDay) {
+        const newOrder = targetPlan.items.length
+        setDayPlans((prev) => ({
+          ...prev,
+          [sourceKey]: { ...sourcePlan, items: sourcePlan.items.filter((i) => i.id !== active.id) },
+          [targetKey]: { ...targetPlan, items: [...targetPlan.items, { ...updatedItem, dayPlanId: targetPlan.id, order: newOrder }] },
+        }))
+        startTransition(async () => {
+          await apiUpdateDayPlanItemNotes(active.id as string, newTime)
+          await apiMoveDayPlanItem(active.id as string, targetPlan.id, newOrder)
+        })
+      } else {
+        const updatedItems = sourcePlan.items.map(i => i.id === active.id ? updatedItem : i)
+        const sorted = applyTimeSort(updatedItems)
+        setDayPlans((prev) => ({ ...prev, [sourceKey]: { ...sourcePlan, items: sorted } }))
+        startTransition(async () => {
+          await apiUpdateDayPlanItemNotes(active.id as string, newTime)
+          await apiReorderDayPlanItems(sourcePlan.id, sorted.map((i) => i.id))
+        })
+      }
+      return
+    }
 
     if (!destKey || sourceKey === destKey) {
       const oldIndex = sourcePlan.items.findIndex((i) => i.id === active.id)
@@ -740,12 +970,73 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2 bg-gray-100/50 p-1 rounded-lg border border-gray-200/50">
+          <button
+            onClick={() => setViewMode('week')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              viewMode === 'week' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Week View
+          </button>
+          <button
+            onClick={() => setViewMode('day')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              viewMode === 'day' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Day View
+          </button>
+        </div>
+
+        {viewMode === 'day' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const idx = days.findIndex(d => toDateKey(d) === toDateKey(selectedDay))
+                if (idx > 0) setSelectedDay(days[idx - 1])
+              }}
+              disabled={toDateKey(selectedDay) === toDateKey(days[0])}
+              className="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50"
+            >
+              ← Prev
+            </button>
+            <select
+              value={toDateKey(selectedDay)}
+              onChange={(e) => {
+                const day = days.find(d => toDateKey(d) === e.target.value)
+                if (day) setSelectedDay(day)
+              }}
+              className="text-sm font-medium bg-transparent border-none focus:ring-0 cursor-pointer"
+            >
+              {days.map((d, i) => (
+                <option key={toDateKey(d)} value={toDateKey(d)}>
+                  Day {i + 1} - {formatColumnDate(d)}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => {
+                const idx = days.findIndex(d => toDateKey(d) === toDateKey(selectedDay))
+                if (idx < days.length - 1) setSelectedDay(days[idx + 1])
+              }}
+              disabled={toDateKey(selectedDay) === toDateKey(days[days.length - 1])}
+              className="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded disabled:opacity-50"
+            >
+              Next →
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-5">
         <div className="w-40 flex-shrink-0">
           <div className="bg-white rounded-xl border border-gray-200 p-3 sticky top-4">
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Day Tags</p>
             <p className="text-[10px] text-gray-300 mb-1 leading-tight">Drop on <strong>header</strong> = all day</p>
             <p className="text-[10px] text-gray-300 mb-3 leading-tight">Drop on <strong>item</strong> = inline event</p>
+            {viewMode === 'day' && <p className="text-[10px] text-blue-400 mb-3 leading-tight">Drop on <strong>time</strong> = timed event</p>}
             <div className="space-y-1.5">
               {DAY_TAGS.map((tag) => (
                 <DraggableTagChip key={tag.id} tag={tag} />
@@ -755,21 +1046,32 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
         </div>
 
         <div className="flex-1 overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
-          <div className="inline-flex gap-3 pb-4 min-w-max">
-            {days.map((date, index) => {
-              const key = toDateKey(date)
-              return (
-                <DayColumn
-                  key={key}
-                  date={date}
-                  dayIndex={index}
-                  tripId={trip.id}
-                  dayPlan={dayPlans[key]}
-                  isTagOver={tagOverColumn === key}
-                  onDayPlanChange={handleDayPlanChange}
-                />
-              )
-            })}
+          <div className="inline-flex gap-3 pb-4 min-w-max h-full">
+            {viewMode === 'week' ? (
+              days.map((date, index) => {
+                const key = toDateKey(date)
+                return (
+                  <DayColumn
+                    key={key}
+                    date={date}
+                    dayIndex={index}
+                    tripId={trip.id}
+                    dayPlan={dayPlans[key]}
+                    isTagOver={tagOverColumn === key}
+                    onDayPlanChange={handleDayPlanChange}
+                  />
+                )
+              })
+            ) : (
+              <DayDetailView
+                date={selectedDay}
+                dayIndex={days.findIndex(d => toDateKey(d) === toDateKey(selectedDay))}
+                tripId={trip.id}
+                dayPlan={dayPlans[toDateKey(selectedDay)]}
+                isTagOver={tagOverColumn === toDateKey(selectedDay)}
+                onDayPlanChange={handleDayPlanChange}
+              />
+            )}
           </div>
         </div>
       </div>
