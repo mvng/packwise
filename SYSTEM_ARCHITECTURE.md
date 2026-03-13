@@ -7,18 +7,20 @@ This document provides a detailed overview of the system architecture for **Pack
 Packwise is built on a modern full-stack web architecture using **Next.js 14 (App Router)**.
 
 ```mermaid
-architecture-beta
-    group frontend(cloud)[Frontend & Server]
-    group backend(cloud)[Backend Services]
+flowchart TD
+    subgraph Frontend_Server ["Frontend & Server (Vercel)"]
+        Nextjs["Next.js Application"]
+        Prisma["Prisma ORM"]
+    end
 
-    service nextjs(server)[Next.js Application] in frontend
-    service supabase(database)[Supabase Auth] in backend
-    service postgres(database)[PostgreSQL DB] in backend
-    service prisma(server)[Prisma ORM] in frontend
+    subgraph Backend_Services ["Backend Services"]
+        Supabase["Supabase Auth"]
+        Postgres[("PostgreSQL DB")]
+    end
 
-    nextjs:R --> L:prisma
-    prisma:R --> L:postgres
-    nextjs:B --> T:supabase
+    Nextjs -->|"Server Actions / RSC"| Prisma
+    Nextjs -->|"Auth & Sessions"| Supabase
+    Prisma -->|"Queries"| Postgres
 ```
 
 ### Components
