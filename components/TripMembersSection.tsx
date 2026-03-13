@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { addTripMember, removeTripMember } from '@/actions/trip-member.actions'
-import { Users, Plus, X } from 'lucide-react'
+import { Users, Plus, X, Check } from 'lucide-react'
 import type { TripMember } from '@/components/PackingListSection'
 
 interface TripMembersSectionProps {
@@ -21,7 +21,6 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
   const handleAdd = () => {
     if (!newName.trim()) return
     setError(null)
-
     startTransition(async () => {
       const res = await addTripMember(tripId, newName.trim())
       if (res.error) {
@@ -36,7 +35,6 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
 
   const handleRemove = (memberId: string) => {
     if (!confirm('Remove this member? Any items assigned to them will be unassigned.')) return
-
     startTransition(async () => {
       const res = await removeTripMember(tripId, memberId)
       if (res.error) {
@@ -48,77 +46,84 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-600 flex items-center gap-2">
-          <Users className="w-4 h-4 text-gray-400" />
-          Trip Members
-        </h3>
+    <div className="flex flex-col gap-2">
+      {/* Single inline row: icon + label + member pills + add button */}
+      <div className="flex items-center flex-wrap gap-2">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-gray-400 shrink-0">
+          <Users className="w-3.5 h-3.5" />
+          Members
+        </span>
+
+        {members.map(member => (
+          <span
+            key={member.id}
+            className="group flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded-full transition-colors"
+          >
+            <div className="w-4 h-4 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center text-[9px] font-bold">
+              {member.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-xs font-medium text-gray-700">{member.name}</span>
+            {isOwner && (
+              <button
+                onClick={() => handleRemove(member.id)}
+                className="text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 -mr-0.5"
+                title="Remove member"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </span>
+        ))}
+
+        {members.length === 0 && !isAdding && (
+          <span className="text-xs text-gray-300">No members yet</span>
+        )}
+
         {isOwner && !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium bg-blue-50 px-2.5 py-1 rounded-lg transition-colors"
+            className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
           >
-            <Plus className="w-3.5 h-3.5" /> Add member
+            <Plus className="w-3.5 h-3.5" /> Add
           </button>
         )}
       </div>
 
-      {error && (
-        <p className="text-sm text-red-500 mb-3 bg-red-50 p-2 rounded-lg border border-red-100">{error}</p>
-      )}
-
+      {/* Compact inline add form */}
       {isAdding && (
-        <div className="flex gap-2 mb-3 bg-gray-50 p-2 rounded-xl border border-gray-100">
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={newName}
             onChange={e => setNewName(e.target.value)}
             placeholder="Name (e.g. Peter, Grandma)"
-            className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-48"
+            onKeyDown={e => {
+              if (e.key === 'Enter') handleAdd()
+              if (e.key === 'Escape') { setIsAdding(false); setNewName(''); setError(null) }
+            }}
             autoFocus
           />
           <button
             onClick={handleAdd}
             disabled={isPending || !newName.trim()}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            title="Confirm"
           >
-            Add
+            <Check className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => { setIsAdding(false); setNewName(''); setError(null); }}
-            className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={() => { setIsAdding(false); setNewName(''); setError(null) }}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Cancel"
           >
-            Cancel
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {members.length === 0 && !isAdding ? (
-        <p className="text-xs text-gray-400">
-          No members yet. Add people to assign them packing tasks.
-        </p>
-      ) : (
-        <ul className="flex flex-wrap gap-2">
-          {members.map(member => (
-            <li key={member.id} className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-full shadow-sm">
-              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 flex items-center justify-center text-[10px] font-bold shadow-inner">
-                {member.name.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-sm font-medium text-gray-700">{member.name}</span>
-              {isOwner && (
-                <button
-                  onClick={() => handleRemove(member.id)}
-                  className="text-gray-400 hover:text-red-500 transition-colors p-0.5 rounded-full hover:bg-red-50 ml-1"
-                  title="Remove member"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+      {error && (
+        <p className="text-xs text-red-500">{error}</p>
       )}
     </div>
   )
