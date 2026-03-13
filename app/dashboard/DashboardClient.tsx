@@ -237,17 +237,23 @@ export default function DashboardClient({
         </div>
 
         {trips.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">🧳</div>
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">No trips yet</h2>
-            <p className="text-gray-500 mb-6">
-              Create your first trip to get started with smart packing lists.
+          <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-xl border-2 border-dashed border-gray-300 shadow-sm max-w-2xl mx-auto">
+            <div
+              className="text-6xl mb-6 bg-blue-50 w-24 h-24 flex items-center justify-center rounded-full"
+              role="img"
+              aria-label="Empty suitcase icon"
+            >
+              🧳
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Ready for your next adventure?</h2>
+            <p className="text-gray-500 mb-8 text-center max-w-md">
+              Create your first trip to get personalized packing lists, weather forecasts, and smart suggestions.
             </p>
             <Link
               href="/dashboard/new"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 shadow-sm hover:shadow-md"
             >
-              Create Your First Trip
+              + Create Your First Trip
             </Link>
           </div>
         ) : (
