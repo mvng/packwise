@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/utils'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
 import { Edit2, Trash2, MoreHorizontal } from 'lucide-react'
+import DashboardTripWeather from '@/components/DashboardTripWeather'
 
 type Trip = {
   id: string
@@ -35,11 +36,9 @@ const getTripEmoji = (tripType: string | null) => {
 }
 
 export default function DashboardClient({
-  initialTrips,
-  weatherComponents
+  initialTrips
 }: {
-  initialTrips: Trip[],
-  weatherComponents?: Record<string, React.ReactNode>
+  initialTrips: Trip[]
 }) {
   const [trips, setTrips] = useState<Trip[]>(initialTrips)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -148,7 +147,13 @@ export default function DashboardClient({
         </div>
 
         {/* Weather widget */}
-        {weatherComponents && weatherComponents[trip.id]}
+        {trip.destination && trip.startDate && trip.endDate && (
+          <DashboardTripWeather
+            destination={trip.destination}
+            startDate={trip.startDate}
+            endDate={trip.endDate}
+          />
+        )}
       </Link>
 
       {/* Action buttons */}
