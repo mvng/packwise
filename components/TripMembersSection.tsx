@@ -47,32 +47,34 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Single inline row: icon + label + member pills + add button */}
-      <div className="flex items-center flex-wrap gap-2">
-        <span className="flex items-center gap-1.5 text-xs font-medium text-gray-400 shrink-0">
+      <div className="flex items-center flex-wrap gap-1.5">
+        <span className="flex items-center gap-1 text-xs font-medium text-gray-400 shrink-0 mr-1">
           <Users className="w-3.5 h-3.5" />
           Members
         </span>
 
+        {/* Avatar-only pills with hover tooltip */}
         {members.map(member => (
-          <span
-            key={member.id}
-            className="group flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded-full transition-colors"
-          >
-            <div className="w-4 h-4 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center text-[9px] font-bold">
-              {member.name.charAt(0).toUpperCase()}
+          <div key={member.id} className="group relative">
+            <button
+              onClick={isOwner ? () => handleRemove(member.id) : undefined}
+              className={`w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold ring-2 ring-white transition-all ${
+                isOwner ? 'hover:bg-red-100 hover:text-red-600 cursor-pointer' : 'cursor-default'
+              }`}
+              title={member.name}
+            >
+              <span className="group-hover:hidden">{member.name.charAt(0).toUpperCase()}</span>
+              {isOwner && <X className="w-3 h-3 hidden group-hover:block" />}
+            </button>
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              <div className="bg-gray-900 text-white text-[10px] font-medium px-2 py-1 rounded whitespace-nowrap">
+                {member.name}
+                {isOwner && <span className="text-gray-400 ml-1">&middot; click to remove</span>}
+              </div>
+              <div className="w-1.5 h-1.5 bg-gray-900 rotate-45 mx-auto -mt-0.5" />
             </div>
-            <span className="text-xs font-medium text-gray-700">{member.name}</span>
-            {isOwner && (
-              <button
-                onClick={() => handleRemove(member.id)}
-                className="text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 -mr-0.5"
-                title="Remove member"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </span>
+          </div>
         ))}
 
         {members.length === 0 && !isAdding && (
@@ -82,9 +84,10 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
         {isOwner && !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium transition-colors"
+            className="w-7 h-7 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center transition-colors"
+            title="Add member"
           >
-            <Plus className="w-3.5 h-3.5" /> Add
+            <Plus className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
