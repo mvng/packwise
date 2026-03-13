@@ -341,7 +341,7 @@ function AddItemForm({ onAdd, onOpenInventory }: {
   async function handleSubmit() {
     if (!name.trim()) return
     await onAdd({ name: name.trim(), category, quantity, notes: notes.trim() || null })
-    setName(''); setCategory('Outfit'); setQuantity(1); setNotes('')
+    setName(''); setQuantity(1); setNotes('')
     setOpen(false)
   }
 

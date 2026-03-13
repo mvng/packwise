@@ -220,6 +220,23 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
                     )}
                   </div>
                 )}
+                {trip.hotelConfirmationUrl && (
+                  <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
+                    <span title="Confirmation">🏨</span>
+                    {trip.hotelConfirmationUrl.startsWith('http://') || trip.hotelConfirmationUrl.startsWith('https://') ? (
+                      <a
+                        href={trip.hotelConfirmationUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Open confirmation ↗
+                      </a>
+                    ) : (
+                      <span className="font-medium">{trip.hotelConfirmationUrl}</span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             {!isSharedView && (
