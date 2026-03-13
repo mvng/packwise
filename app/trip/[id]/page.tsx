@@ -120,7 +120,6 @@ export default function TripPageClient({ params }: TripPageProps) {
 
   // Test context bypass so Playwright tests can mock owner UI
   const isTestContext = typeof window !== 'undefined' && window.location.search.includes('guest_mode=true')
-  const finalIsOwner = isTestContext ? true : isOwner // eslint-disable-line @typescript-eslint/no-unused-vars
   const finalIsSharedView = isTestContext ? false : isSharedView
 
   const displayTrip = finalIsSharedView ? {
@@ -228,83 +227,56 @@ export default function TripPageClient({ params }: TripPageProps) {
         {/* Trip meta card — hidden in plan mode */}
         {!isPlanMode && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="text-4xl">{getTripEmoji(trip.tripType)}</div>
-                    <div>
-                      {!finalIsSharedView ? (
-                        <button onClick={() => setEditingTrip(trip)} className="text-left hover:opacity-70 transition-opacity">
-                          <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
-                        </button>
-                      ) : (
-                        <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
-                      )}
-                      {trip.startDate && (
-                        <div className="relative inline-block group">
-                          <p className="text-sm text-gray-500 cursor-help mt-1">
-                            {formatDate(trip.startDate)}
-                            {trip.endDate && ` – ${formatDate(trip.endDate)}`}
-                          </p>
-                          {timezoneTooltip && (
-                            <div className="absolute left-0 top-full mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                              <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">{timezoneTooltip}</div>
-                            </div>
-                          )}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <div className="text-4xl">{getTripEmoji(trip.tripType)}</div>
+                <div>
+                  {!finalIsSharedView ? (
+                    <button onClick={() => setEditingTrip(trip)} className="text-left hover:opacity-70 transition-opacity">
+                      <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
+                    </button>
+                  ) : (
+                    <h2 className="font-semibold text-gray-900">{trip.name || trip.destination}</h2>
+                  )}
+                  {trip.startDate && (
+                    <div className="relative inline-block group">
+                      <p className="text-sm text-gray-500 cursor-help mt-1">
+                        {formatDate(trip.startDate)}
+                        {trip.endDate && ` – ${formatDate(trip.endDate)}`}
+                      </p>
+                      {timezoneTooltip && (
+                        <div className="absolute left-0 top-full mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                          <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">{timezoneTooltip}</div>
                         </div>
                       )}
                     </div>
-                  </div>
-                  {!finalIsSharedView && (
-                    <button
-                      onClick={() => setEditingTrip(trip)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <circle cx="10" cy="3" r="1.5" />
-                        <circle cx="10" cy="10" r="1.5" />
-                        <circle cx="10" cy="17" r="1.5" />
-                      </svg>
-                    </button>
                   )}
                 </div>
-
-                {/* Trip type / transport / hotel tags + weather + countdown */}
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-medium px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full capitalize">
-                      {trip.tripType}
-                    </span>
-                    {trip.transportMode && (
-                      <span className="text-xs font-medium px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full capitalize">
-                        {trip.transportMode}
-                      </span>
-                    )}
-                    {trip.hotelConfirmationUrl && (
-                      <a
-                        href={trip.hotelConfirmationUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-medium px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full hover:bg-emerald-100 transition-colors inline-flex items-center gap-1"
-                      >
-                        <span>🏨</span> Hotel Details
-                      </a>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-4">
-                    {trip.destination && trip.startDate && trip.endDate && (
-                      <TripWeather destination={trip.destination} startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
-                    )}
-                    <div className="hidden sm:block w-px h-8 bg-gray-200" />
-                    {trip.startDate && (
-                      <TripCountdown startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
-                    )}
-                  </div>
-                </div>
               </div>
+              {!finalIsSharedView && (
+                <button
+                  onClick={() => setEditingTrip(trip)}
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="3" r="1.5" />
+                    <circle cx="10" cy="10" r="1.5" />
+                    <circle cx="10" cy="17" r="1.5" />
+                  </svg>
+                </button>
+              )}
             </div>
+
+            {/* Countdown banner */}
+            {trip.startDate && (
+              <div className="mb-4">
+                <TripCountdown startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
+              </div>
+            )}
+
+            {trip.destination && trip.startDate && trip.endDate && (
+              <TripWeather destination={trip.destination} startDate={trip.startDate} endDate={trip.endDate} variant="detail" />
+            )}
           </div>
         )}
 
