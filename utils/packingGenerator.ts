@@ -194,7 +194,7 @@ export function generatePackingList(
       {
         name: 'Clothing',
         order: 3,
-        items: [`Swimsuits (${Math.min(duration, 3)})`, `T-shirts (${qty})`, `Shorts (${Math.ceil(qty / 2)})`, `Underwear (${qty + 1})`, 'Light jacket', 'Flip flops', 'Sandals'],
+        items: [`Swimsuits (${Math.min(qty, 3)})`, `T-shirts (${qty})`, `Shorts (${Math.ceil(qty / 2)})`, `Underwear (${qty + 1})`, 'Light jacket', 'Flip flops', 'Sandals'],
       },
       {
         name: 'Beach Accessories',
@@ -206,7 +206,7 @@ export function generatePackingList(
       {
         name: 'Clothing',
         order: 3,
-        items: [`Dress shirts (${qty})`, `Dress pants (${Math.ceil(duration / 2)})`, `Suits (${Math.min(Math.ceil(duration / 3), 2)})`, 'Belt', 'Dress shoes', `Underwear (${qty + 1})`, `Socks (${qty + 1})`],
+        items: [`Dress shirts (${qty})`, `Dress pants (${Math.ceil(qty / 2)})`, `Suits (${Math.min(Math.ceil(qty / 3), 2)})`, 'Belt', 'Dress shoes', `Underwear (${qty + 1})`, `Socks (${qty + 1})`],
       },
       {
         name: 'Work Essentials',
@@ -218,7 +218,7 @@ export function generatePackingList(
       {
         name: 'Clothing',
         order: 3,
-        items: [`Hiking pants (${Math.ceil(duration / 2)})`, `Moisture-wicking shirts (${qty})`, 'Fleece jacket', 'Rain jacket', 'Hiking boots', `Hiking socks (${qty + 2})`],
+        items: [`Hiking pants (${Math.ceil(qty / 2)})`, `Moisture-wicking shirts (${qty})`, 'Fleece jacket', 'Rain jacket', 'Hiking boots', `Hiking socks (${qty + 2})`],
       },
       {
         name: 'Hiking Gear',
@@ -230,7 +230,7 @@ export function generatePackingList(
       {
         name: 'Clothing',
         order: 3,
-        items: [`T-shirts (${qty})`, `Pants (${Math.ceil(duration / 2)})`, 'Comfortable walking shoes', 'Light jacket', `Underwear (${qty + 1})`, 'Dress outfit'],
+        items: [`T-shirts (${qty})`, `Pants (${Math.ceil(qty / 2)})`, 'Comfortable walking shoes', 'Light jacket', `Underwear (${qty + 1})`, 'Dress outfit'],
       },
       {
         name: 'City Essentials',
@@ -254,7 +254,7 @@ export function generatePackingList(
       {
         name: 'Clothing',
         order: 3,
-        items: [`T-shirts (${qty})`, `Casual pants (${Math.ceil(duration / 2)})`, 'Comfortable shoes', 'Sneakers', `Underwear (${qty + 1})`, 'Light jacket', 'Sleepwear'],
+        items: [`T-shirts (${qty})`, `Casual pants (${Math.ceil(qty / 2)})`, 'Comfortable shoes', 'Sneakers', `Underwear (${qty + 1})`, 'Light jacket', 'Sleepwear'],
       },
       {
         name: 'Leisure Essentials',

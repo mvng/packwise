@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { generatePackingList, isDomesticDrive } from '../utils/packingGenerator'
+import { TripType } from '../types'
 
 test.describe('isDomesticDrive', () => {
   test('should return true for cities close to each other', () => {
@@ -99,14 +100,53 @@ test.describe('generatePackingList', () => {
     expect(longClothing?.items).toContain('Underwear (8)') // qty + 1
   })
 
-  test('should cap clothing quantities at 7 for long durations (e.g., 14 days)', () => {
-    // 14 days -> qty = 7 (capped at 7)
-    const extremelyLongTrip = generatePackingList('leisure', 14)
-    const extremelyLongClothing = extremelyLongTrip.find(c => c.name === 'Clothing')
-    expect(extremelyLongClothing?.items).toContain('T-shirts (7)')
-    expect(extremelyLongClothing?.items).not.toContain('T-shirts (14)')
-    expect(extremelyLongClothing?.items).toContain('Underwear (8)') // qty + 1
-    expect(extremelyLongClothing?.items).not.toContain('Underwear (15)')
+  test('should cap clothing quantities at 7 for long durations (e.g., 30 days) across all trip types', () => {
+    const tripTypes: Array<TripType> = ['beach', 'business', 'hiking', 'city', 'skiing', 'leisure'];
+
+    for (const tripType of tripTypes) {
+      const longTrip = generatePackingList(tripType, 30);
+      const clothing = longTrip.find(c => c.name === 'Clothing');
+
+      // qty = Math.min(30 + 1, 7) = 7
+
+      if (tripType === 'beach') {
+        expect(clothing?.items).toContain('Swimsuits (3)'); // Math.min(qty, 3) -> 3
+        expect(clothing?.items).toContain('T-shirts (7)');
+        expect(clothing?.items).toContain('Shorts (4)'); // Math.ceil(7 / 2)
+        expect(clothing?.items).toContain('Underwear (8)');
+      } else if (tripType === 'business') {
+        expect(clothing?.items).toContain('Dress shirts (7)');
+        expect(clothing?.items).toContain('Dress pants (4)'); // Math.ceil(7 / 2)
+        expect(clothing?.items).toContain('Suits (2)'); // Math.min(Math.ceil(7 / 3), 2)
+        expect(clothing?.items).toContain('Underwear (8)');
+        expect(clothing?.items).toContain('Socks (8)');
+      } else if (tripType === 'hiking') {
+        expect(clothing?.items).toContain('Hiking pants (4)'); // Math.ceil(7 / 2)
+        expect(clothing?.items).toContain('Moisture-wicking shirts (7)');
+        expect(clothing?.items).toContain('Hiking socks (9)'); // 7 + 2
+      } else if (tripType === 'city') {
+        expect(clothing?.items).toContain('T-shirts (7)');
+        expect(clothing?.items).toContain('Pants (4)'); // Math.ceil(7 / 2)
+        expect(clothing?.items).toContain('Underwear (8)');
+      } else if (tripType === 'skiing') {
+        // Skiing doesn't use dynamic quantities currently, just check it exists
+        expect(clothing?.items).toContain('Ski jacket');
+      } else if (tripType === 'leisure') {
+        expect(clothing?.items).toContain('T-shirts (7)');
+        expect(clothing?.items).toContain('Casual pants (4)'); // Math.ceil(7 / 2)
+        expect(clothing?.items).toContain('Underwear (8)');
+      }
+
+      // Generic check that no item has a number > 9 in its name
+      // since the highest we expect is 9 for Hiking socks
+      clothing?.items.forEach(item => {
+        const match = item.match(/\((\d+)\)/);
+        if (match) {
+          const num = parseInt(match[1]);
+          expect(num).toBeLessThanOrEqual(9);
+        }
+      });
+    }
   })
 
   test('should replace Hotel confirmations with saved online hint if hotelConfirmationUrl is present', () => {
