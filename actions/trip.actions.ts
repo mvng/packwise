@@ -212,105 +212,37 @@ export async function deleteTrip(tripId: string) {
 
 export async function getSharedTripById(tripId: string) {
   try {
-    // ⚡ Bolt Performance Optimization
-    // Why: Flattened the deeply nested Cartesian product Prisma query into 3 parallel queries.
-    // Impact: Prevents N+1 database explosions, dramatically speeding up DB execution time
-    // and reducing the serialized payload size sent over the network.
-
-    const [baseTrip, rawPackingLists, rawCategories, rawItems] = await Promise.all([
-      // Query 1: Base Trip with minimal relations
-      prisma.trip.findUnique({
-        where: { id: tripId },
-        include: {
-          user: { select: { name: true, email: true } },
-          tripLuggages: {
-            include: { luggage: true },
-            where: { isActive: true },
-            orderBy: { createdAt: 'asc' }
-          },
-          members: { orderBy: { createdAt: 'asc' } }
-        }
-      }),
-      // Query 2: Packing Lists
-      prisma.packingList.findMany({
-        where: { tripId },
-        select: {
-          id: true,
-          tripId: true,
-          name: true,
-          shareToken: true,
-          createdAt: true,
-          updatedAt: true,
-        }
-      }),
-      // Query 3: Categories
-      prisma.category.findMany({
-        where: { packingList: { tripId } },
-        select: {
-          id: true,
-          packingListId: true,
-          name: true,
-          order: true,
+    const trip = await prisma.trip.findUnique({
+      where: { id: tripId },
+      include: {
+        user: { select: { name: true, email: true } },
+        tripLuggages: {
+          include: { luggage: true },
+          where: { isActive: true },
+          orderBy: { createdAt: 'asc' }
         },
-        orderBy: { order: 'asc' }
-      }),
-      // Query 4: Items with relations
-      prisma.packingItem.findMany({
-        where: { category: { packingList: { tripId } } },
-        select: {
-          id: true,
-          categoryId: true,
-          name: true,
-          quantity: true,
-          isPacked: true,
-          isCustom: true,
-          order: true,
-          tripLuggageId: true,
-          packLast: true,
-          notes: true,
-          assigneeId: true,
-          guestClaimant: true,
-          tripLuggage: { include: { luggage: true } },
-          assignee: true,
-        },
-        orderBy: { order: 'asc' }
-      })
-    ]);
-
-    if (!baseTrip) return { error: 'Trip not found' };
-
-    // Stitch the flattened queries back together in memory
-    // Group items by categoryId
-    const itemsByCategoryId: Record<string, typeof rawItems> = {};
-    for (const item of rawItems) {
-      if (!itemsByCategoryId[item.categoryId]) {
-        itemsByCategoryId[item.categoryId] = [];
+        members: { orderBy: { createdAt: 'asc' } },
+        packingLists: {
+          include: {
+            categories: {
+              include: {
+                items: {
+                  include: {
+                    tripLuggage: { include: { luggage: true } },
+                    assignee: true
+                  },
+                  orderBy: { order: 'asc' }
+                }
+              },
+              orderBy: { order: 'asc' }
+            }
+          }
+        }
       }
-      itemsByCategoryId[item.categoryId].push(item);
-    }
+    })
 
-    // Group categories by packingListId
-    const categoriesByListId: Record<string, any[]> = {};
-    for (const category of rawCategories) {
-      if (!categoriesByListId[category.packingListId]) {
-        categoriesByListId[category.packingListId] = [];
-      }
-      categoriesByListId[category.packingListId].push({
-        ...category,
-        items: itemsByCategoryId[category.id] || []
-      });
-    }
-
-    // Attach packingLists to trip
-    const fullTrip = {
-      ...baseTrip,
-      packingLists: rawPackingLists.map((list) => ({
-        ...list,
-        categories: categoriesByListId[list.id] || []
-      }))
-    };
-
-    return { trip: fullTrip };
+    if (!trip) return { error: 'Trip not found' }
+    return { trip }
   } catch (error: any) {
     console.error('Get shared trip error:', error)
     return { error: error.message || 'Failed to fetch trip' }
