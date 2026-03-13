@@ -278,8 +278,9 @@ function InlineTagCard({
       </div>
 
       <button
+        aria-label={`Delete ${tag?.label ?? item.name}`}
         onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
-        className="opacity-0 group-hover:opacity-100 text-current/40 hover:text-red-400 transition-opacity text-sm leading-none flex-shrink-0"
+        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded text-current/40 hover:text-red-400 transition-opacity text-sm leading-none flex-shrink-0"
       >×</button>
     </div>
   )
@@ -317,8 +318,9 @@ function DraggableCard({ item, onDelete }: { item: DayPlanItem; onDelete: (id: s
           )}
         </div>
         <button
+          aria-label={`Delete ${item.name}`}
           onClick={(e) => { e.stopPropagation(); onDelete(item.id) }}
-          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition-opacity text-sm leading-none flex-shrink-0 focus:outline-none rounded ml-1"
+          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded text-gray-300 hover:text-red-400 transition-opacity text-sm leading-none flex-shrink-0 ml-1"
         >×</button>
       </div>
       {item.notes && <p className="text-[11px] text-gray-400 truncate mt-0.5 pl-0.5">{item.notes}</p>}
