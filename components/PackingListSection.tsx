@@ -309,13 +309,13 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     if (!name) return
     setAddError(null)
 
-    let displayName = rawName
+    let displayName = name
     let assigneeInitial = null
-    const assigneeMatch = rawName.match(/@(\w+)/)
+    const assigneeMatch = name.match(/@(\w+)/)
 
     if (assigneeMatch) {
       assigneeInitial = assigneeMatch[1].charAt(0).toUpperCase()
-      displayName = rawName.replace(assigneeMatch[0], '').trim() || assigneeMatch[1]
+      displayName = name.replace(assigneeMatch[0], '').trim() || assigneeMatch[1]
     }
 
     const tempId = crypto.randomUUID()

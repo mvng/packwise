@@ -135,14 +135,8 @@ export default function TripPlanningAssistant({ tripId, startDate }: TripPlannin
         suggestedReminderAt.setDate(suggestedReminderAt.getDate() - 1)
         suggestedReminderAt.setHours(9, 0, 0, 0)
 
-        if (suggestedReminderAt > new Date()) {
-          reminderStr = suggestedReminderAt.toISOString().slice(0, 16)
-        } else {
-          // If reminder would be in the past, set for next hour
-          const soon = new Date()
-          soon.setHours(soon.getHours() + 1)
-          reminderStr = soon.toISOString().slice(0, 16)
-        }
+        // Reminders coming soon: statically set to empty
+        reminderStr = ''
       }
     }
 
@@ -152,8 +146,8 @@ export default function TripPlanningAssistant({ tripId, startDate }: TripPlannin
       category: suggestion.category,
       notes: '',
       dueDate: dueDateStr || null,
-      reminderAt: reminderStr || null,
-      reminderTypes: ['PUSH'],
+      reminderAt: null,
+      reminderTypes: [],
       status: 'PENDING'
     } as TripTask)
     setIsEditing(true)
