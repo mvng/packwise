@@ -1,8 +1,11 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { getDashboardTrips } from '@/actions/trip.actions'
 import { createClient } from '@/lib/supabase/server'
 import DashboardClient from './DashboardClient'
+import TripWeather from '@/components/TripWeather'
+import TripWeatherSkeleton from '@/components/TripWeatherSkeleton'
 import { Settings, Backpack } from 'lucide-react'
 
 export default async function DashboardPage() {
@@ -18,6 +21,24 @@ export default async function DashboardPage() {
   if (error) {
     console.error('Failed to load trips:', error)
   }
+
+  // Pre-generate the Suspense-wrapped Server Components for each trip's weather
+  // This allows the client component to render them seamlessly without making N+1 client requests
+  const weatherComponents = trips.reduce((acc, trip) => {
+    if (trip.destination && trip.startDate && trip.endDate) {
+      acc[trip.id] = (
+        <Suspense fallback={<TripWeatherSkeleton variant="card" />}>
+          <TripWeather
+            destination={trip.destination}
+            startDate={trip.startDate}
+            endDate={trip.endDate}
+            variant="card"
+          />
+        </Suspense>
+      )
+    }
+    return acc
+  }, {} as Record<string, React.ReactNode>)
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -46,7 +67,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* Main content populated by client component for interactions */}
-      <DashboardClient initialTrips={trips as any} />
+      <DashboardClient initialTrips={trips as any} weatherComponents={weatherComponents} />
     </div>
   )
 }

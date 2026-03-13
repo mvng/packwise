@@ -1,6 +1,13 @@
 export type TripType = 'beach' | 'business' | 'hiking' | 'city' | 'skiing' | 'leisure'
 export type TransportMode = 'flight' | 'car' | 'train' | 'cruise'
 
+export interface TripMember {
+  id: string
+  tripId: string
+  name: string
+  userId: string | null
+}
+
 export interface Trip {
   id: string
   userId: string
@@ -43,6 +50,8 @@ export interface PackingItem {
   isPacked: boolean
   isCustom: boolean
   order: number
+  assigneeId?: string | null
+  assignee?: TripMember | null
 }
 
 export interface WeatherData {
@@ -107,6 +116,8 @@ export interface DayPlanItem {
   category?: string | null  // '__tag__' for inline tag items
   notes?: string | null     // for tags: stores optional time string e.g. '10:00'
   order: number
+  assigneeId?: string | null
+  assignee?: TripMember | null
   // derived helpers (not stored, computed on read)
   itemType?: 'item' | 'tag'
   tagId?: string

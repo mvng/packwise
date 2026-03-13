@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from 'react'
 import { getUserInventory, addInventoryItemsToTrip } from '@/actions/inventory.actions'
 import type { InventoryCategoryData, InventoryItemData } from '@/types/inventory'
+import { useEffect } from 'react'
 
 interface InventoryPickerModalProps {
   tripId: string
@@ -25,7 +26,7 @@ export default function InventoryPickerModal({
   const [isPending, startTransition] = useTransition()
 
   // Load inventory on mount
-  useState(() => {
+  useEffect(() => {
     getUserInventory().then((result) => {
       if ('error' in result) {
         setError(result.error)
@@ -34,7 +35,13 @@ export default function InventoryPickerModal({
       }
       setLoading(false)
     })
-  })
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [onClose])
 
   const filteredCategories = useMemo(() => {
     if (!categories) return []
@@ -120,9 +127,10 @@ export default function InventoryPickerModal({
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none"
+            aria-label="Close modal"
+            className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded-md"
           >
-            ×
+            <span aria-hidden="true">&times;</span>
           </button>
         </div>
 

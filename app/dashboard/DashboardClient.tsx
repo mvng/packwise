@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { deleteTrip, getDashboardTrips } from '@/actions/trip.actions'
 import { formatDate } from '@/lib/utils'
-import TripWeather from '@/components/TripWeather'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
 import { Edit2, Trash2, MoreHorizontal } from 'lucide-react'
@@ -35,7 +34,13 @@ const getTripEmoji = (tripType: string | null) => {
   return icons[tripType] || '🧳'
 }
 
-export default function DashboardClient({ initialTrips }: { initialTrips: Trip[] }) {
+export default function DashboardClient({
+  initialTrips,
+  weatherComponents
+}: {
+  initialTrips: Trip[],
+  weatherComponents?: Record<string, React.ReactNode>
+}) {
   const [trips, setTrips] = useState<Trip[]>(initialTrips)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
@@ -51,30 +56,43 @@ export default function DashboardClient({ initialTrips }: { initialTrips: Trip[]
     }
   }
 
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
+  const upcomingTrips = useMemo(() => {
+    // ⚡ Bolt Performance Optimization
+    // Why: Prevents O(n log n) sorting and O(n) filtering of the trips array on every render.
+    // Impact: Avoids unnecessary recalculations when unrelated state changes (e.g. editingTrip, deletingId).
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
 
-  const upcomingTrips = trips.filter(t => {
-    if (!t.endDate) return true
-    const endDate = new Date(t.endDate)
-    endDate.setHours(0, 0, 0, 0)
-    return endDate >= now
-  }).sort((a, b) => {
-    if (!a.startDate) return 1
-    if (!b.startDate) return -1
-    return new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-  })
+    return trips.filter(t => {
+      if (!t.endDate) return true
+      const endDate = new Date(t.endDate)
+      endDate.setHours(0, 0, 0, 0)
+      return endDate >= now
+    }).sort((a, b) => {
+      if (!a.startDate) return 1
+      if (!b.startDate) return -1
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+    })
+  }, [trips])
 
-  const pastTrips = trips.filter(t => {
-    if (!t.endDate) return false
-    const endDate = new Date(t.endDate)
-    endDate.setHours(0, 0, 0, 0)
-    return endDate < now
-  }).sort((a, b) => {
-    if (!a.endDate) return 1
-    if (!b.endDate) return -1
-    return new Date(b.endDate).getTime() - new Date(a.endDate).getTime()
-  })
+  const pastTrips = useMemo(() => {
+    // ⚡ Bolt Performance Optimization
+    // Why: Prevents expensive date instantiation and array sorting on every render cycle.
+    // Impact: Keeps the dashboard UI responsive even for users with extensive travel histories.
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+
+    return trips.filter(t => {
+      if (!t.endDate) return false
+      const endDate = new Date(t.endDate)
+      endDate.setHours(0, 0, 0, 0)
+      return endDate < now
+    }).sort((a, b) => {
+      if (!a.endDate) return 1
+      if (!b.endDate) return -1
+      return new Date(b.endDate).getTime() - new Date(a.endDate).getTime()
+    })
+  }, [trips])
 
   const handleDeleteTrip = async (e: React.MouseEvent, tripId: string) => {
     e.preventDefault()
@@ -130,11 +148,7 @@ export default function DashboardClient({ initialTrips }: { initialTrips: Trip[]
         </div>
 
         {/* Weather widget */}
-        <TripWeather
-          destination={trip.destination}
-          startDate={trip.startDate}
-          endDate={trip.endDate}
-        />
+        {weatherComponents && weatherComponents[trip.id]}
       </Link>
 
       {/* Action buttons */}

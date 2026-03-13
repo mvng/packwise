@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
+import { extractAssigneeName, findOrCreateTripMember } from '@/lib/assignee-parser'
 
 async function getAuthenticatedUser() {
   const supabase = await createClient()
@@ -66,10 +67,20 @@ export async function addCustomItem(
 
     if (!category) return { error: 'Unauthorized' }
 
+    let parsedName = name
+    let assigneeId: string | null = null
+
+    const extracted = extractAssigneeName(name)
+    if (extracted) {
+      parsedName = extracted.cleanText || extracted.name
+      const member = await findOrCreateTripMember(tripId, extracted.name)
+      assigneeId = member.id
+    }
+
     const item = await prisma.packingItem.create({
       data: {
         categoryId,
-        name,
+        name: parsedName,
         quantity,
         isCustom: true,
         assigneeId: assigneeId || null,
@@ -210,5 +221,102 @@ export async function importItemsToTrip(
   } catch (error) {
     console.error('Error importing items:', error)
     return { error: 'Failed to import items' }
+  }
+}
+
+// --- GUEST CLAIMING / COLLABORATION ACTIONS ---
+
+export async function generateShareToken(packingListId: string, tripId: string) {
+  try {
+    const user = await getAuthenticatedUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const prismaUser = await prisma.user.findUnique({ where: { supabaseId: user.id } })
+    if (!prismaUser) return { error: 'Unauthorized' }
+
+    // verify ownership or membership
+    const trip = await prisma.trip.findUnique({
+      where: { id: tripId },
+      include: { members: true }
+    })
+
+    if (!trip) return { error: 'Trip not found' }
+
+    const isOwner = trip.userId === prismaUser.id
+    const isMember = trip.members.some(m => m.userId === prismaUser.id)
+
+    if (!isOwner && !isMember) {
+      return { error: 'Unauthorized' }
+    }
+
+    const token = crypto.randomUUID()
+
+    await prisma.packingList.update({
+      where: { id: packingListId },
+      data: { shareToken: token },
+    })
+
+    revalidatePath(`/trip/${tripId}`)
+    return { success: true, token }
+  } catch (error) {
+    console.error('Error generating share token:', error)
+    return { error: 'Failed to generate token' }
+  }
+}
+
+export async function submitGuestChanges(
+  token: string,
+  claims: { itemId: string, guestClaimant: string | null }[],
+  newItems: { categoryId: string, name: string, quantity: number, guestName: string }[]
+) {
+  try {
+    const list = await prisma.packingList.findUnique({
+      where: { shareToken: token },
+      include: {
+        trip: true,
+        categories: {
+          include: { items: true }
+        }
+      }
+    })
+    if (!list) return { error: 'Invalid share token' }
+
+    // Update claims
+    for (const claim of claims) {
+      // Verify the item belongs to this list
+      const itemExistsInList = list.categories.some(c =>
+        c.items.some(i => i.id === claim.itemId)
+      )
+      if (itemExistsInList) {
+        await prisma.packingItem.update({
+          where: { id: claim.itemId },
+          data: { guestClaimant: claim.guestClaimant }
+        })
+      }
+    }
+
+    // Add new items
+    for (const item of newItems) {
+      // Verify the category belongs to this list
+      const categoryExistsInList = list.categories.some(c => c.id === item.categoryId)
+      if (categoryExistsInList) {
+        await prisma.packingItem.create({
+          data: {
+            categoryId: item.categoryId,
+            name: item.name,
+            quantity: item.quantity,
+            isCustom: true,
+            guestClaimant: item.guestName
+          }
+        })
+      }
+    }
+
+    revalidatePath(`/claim/${token}`)
+    revalidatePath(`/trip/${list.tripId}`)
+    return { success: true }
+  } catch (error) {
+    console.error('Error submitting guest changes:', error)
+    return { error: 'Failed to submit changes' }
   }
 }
