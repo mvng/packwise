@@ -11,10 +11,8 @@ import TripPageClient from './TripPageClient'
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  // Await the asynchronous createClient function first
   const supabase = await createClient()
 
-  // Run initial data fetching concurrently
   const [authResponse, tripResponse] = await Promise.all([
     supabase.auth.getUser(),
     getSharedTripById(id)
@@ -27,7 +25,6 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
     return notFound()
   }
 
-  // Check ownership
   let isOwner = false
   if (user) {
     const prismaUser = await prisma.user.findUnique({
