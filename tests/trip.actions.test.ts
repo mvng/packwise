@@ -168,6 +168,15 @@ test.describe('Trip Actions', () => {
     const mockPrisma = {
       trip: {
         findUnique: async () => ({ id: 'trip-shared-1', name: 'Shared Trip' })
+      },
+      packingList: {
+        findMany: async () => []
+      },
+      category: {
+        findMany: async () => []
+      },
+      packingItem: {
+        findMany: async () => []
       }
     };
 

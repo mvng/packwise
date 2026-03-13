@@ -103,9 +103,18 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
         setShowCountryDropdown(false)
       }
     }
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [onClose])
 
   const handleCountrySelect = (c: string) => {
     setFormData(prev => ({ ...prev, country: c }))
