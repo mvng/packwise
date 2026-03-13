@@ -15,8 +15,8 @@ import { test, expect } from '@playwright/test'
 test.use({
   storageState: {
     cookies: [
-      { name: 'guest_mode', value: 'true', domain: 'localhost', path: '/' },
-      { name: 'guest_user_id', value: 'test-guest-id', domain: 'localhost', path: '/' }
+      { name: 'guest_mode', value: 'true', domain: 'localhost', path: '/', expires: -1, httpOnly: false, secure: false, sameSite: 'Lax' },
+      { name: 'guest_user_id', value: 'test-guest-id', domain: 'localhost', path: '/', expires: -1, httpOnly: false, secure: false, sameSite: 'Lax' }
     ],
     origins: []
   }
