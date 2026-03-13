@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect, useOptimistic } from 'react'
+import { useState, useTransition, useEffect, useCallback, useOptimistic } from 'react'
 import { toggleItemPacked, addCustomItem, deleteItem, togglePackLast, updateItemNotes, assignItemToMember, generateShareToken } from '@/actions/packing.actions'
 import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
@@ -206,7 +206,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     }
   }, [localPackedState, readOnly, trip.id])
 
-  async function loadTripLuggage() {
+  const loadTripLuggage = useCallback(async () => {
     const result = await getTripLuggage(trip.id)
     if (result.tripLuggages) {
       const luggages = result.tripLuggages as TripLuggage[]
@@ -218,7 +218,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       setExpandedGroups(expanded)
       if (luggages.length > 0) setViewMode('luggage')
     }
-  }
+  }, [trip.id])
 
   useEffect(() => {
     if (!readOnly) {
@@ -231,7 +231,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       setExpandedGroups(expanded)
       setViewMode('luggage')
     }
-  }, [readOnly, sharedTripLuggages, trip.id])
+  }, [readOnly, sharedTripLuggages, trip.id, loadTripLuggage])
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }))
@@ -329,7 +329,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
       order: 0,
       assigneeId,
       assignee: assigneeId ? (trip.members?.find(m => m.id === assigneeId) || null) : null,
-      // optimistically show an assignee if we detected one
       ...(assigneeInitial ? {
         assignee: {
           id: 'temp-assignee',
@@ -592,7 +591,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     )
   )
 
-  // Separate pack-last items from regular items
   const packLastItems = !readOnly ? allItems.filter(item => item.packLast) : []
   const regularItems = allItems.filter(item => !item.packLast)
 
@@ -654,7 +652,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                   {viewMode === 'luggage' && !item.packLast && <span className="text-xs text-gray-400 ml-2">• {item.categoryName}</span>}
                 </span>
 
-                {/* Assignee UI code starts */}
                 {!readOnly && trip.members && trip.members.length > 0 && (
                   <div className="relative inline-block">
                     <button
@@ -701,10 +698,8 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                     )}
                   </div>
                 )}
-                {/* Assignee UI code ends */}
               </div>
 
-              {/* Notes display */}
               {editingNotes?.id === item.id ? (
                 <div className="mt-1 flex items-start gap-1" onClick={e => e.preventDefault()}>
                   <textarea
@@ -750,7 +745,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         </div>
         {!readOnly && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
-            {/* Pack Last toggle */}
             <button
               onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
               title="Add/Edit Note"
@@ -919,7 +913,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
         </>
       )}
 
-      {/* 🌅 Morning of Departure — Pack Last section (owner only) */}
       {!readOnly && packLastItems.length > 0 && (
         <section className="bg-amber-50 rounded-2xl border border-amber-200 overflow-hidden">
           <button
@@ -1186,7 +1179,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                         </span>
                                       )}
 
-                                      {/* Assignee display/dropdown */}
                                       {!readOnly && trip.members && trip.members.length > 0 && (
                                         <div className="relative inline-block">
                                           <button
@@ -1236,7 +1228,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                       )}
                                     </div>
 
-                                    {/* Notes display */}
                                     {editingNotes?.id === item.id ? (
                                       <div className="mt-1 flex items-start gap-1" onClick={e => e.preventDefault()}>
                                         <textarea
