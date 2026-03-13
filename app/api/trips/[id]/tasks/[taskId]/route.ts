@@ -29,7 +29,7 @@ export async function PATCH(
     const existingTask = await prisma.tripTask.findFirst({
       where: {
         id: taskId,
-        id,
+        tripId: id,
         userId: prismaUser.id
       }
     })
@@ -97,7 +97,7 @@ export async function DELETE(
     const existingTask = await prisma.tripTask.findFirst({
       where: {
         id: taskId,
-        id,
+        tripId: id,
         userId: prismaUser.id
       }
     })

@@ -29,7 +29,7 @@ export async function GET(
     }
 
     const tasks = await prisma.tripTask.findMany({
-      where: { id },
+      where: { tripId: id },
       orderBy: [
         { dueDate: 'asc' },
         { createdAt: 'asc' }
@@ -87,7 +87,7 @@ export async function POST(
 
     const task = await prisma.tripTask.create({
       data: {
-        id,
+        tripId: id,
         userId: prismaUser.id,
         title,
         notes,
