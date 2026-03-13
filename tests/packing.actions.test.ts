@@ -19,7 +19,14 @@ test.describe('Packing Actions', () => {
     let updateData: any = null;
 
     const mockPrisma = {
+      user: {
+        findUnique: async () => ({ id: 'prisma-user-1' })
+      },
+      trip: {
+        findFirst: async () => ({ id: 'trip-1' })
+      },
       packingItem: {
+        findFirst: async () => ({ id: 'item-1' }),
         update: async (args: any) => {
           updateData = args.data;
           return { id: 'item-1', ...args.data };
@@ -27,10 +34,20 @@ test.describe('Packing Actions', () => {
       }
     };
 
+    const mockAuth = {
+      createClient: async () => ({
+        auth: {
+          getUser: async () => ({ data: { user: { id: 'user-1' } } })
+        }
+      })
+    };
+
     const prismaModule = require('../lib/prisma');
+    const authServer = require('../lib/supabase/server');
     const { toggleItemPacked } = require('../actions/packing.actions');
 
     Object.defineProperty(prismaModule, 'prisma', { value: mockPrisma, configurable: true });
+    Object.defineProperty(authServer, 'createClient', { value: mockAuth.createClient, configurable: true });
 
     const result = await toggleItemPacked('item-1', true, 'trip-1');
 
@@ -42,7 +59,14 @@ test.describe('Packing Actions', () => {
     let updateData: any = null;
 
     const mockPrisma = {
+      user: {
+        findUnique: async () => ({ id: 'prisma-user-1' })
+      },
+      trip: {
+        findFirst: async () => ({ id: 'trip-1' })
+      },
       packingItem: {
+        findFirst: async () => ({ id: 'item-1' }),
         update: async (args: any) => {
           updateData = args.data;
           return { id: 'item-1', ...args.data };
@@ -114,7 +138,14 @@ test.describe('Packing Actions', () => {
     let deletedId: string | null = null;
 
     const mockPrisma = {
+      user: {
+        findUnique: async () => ({ id: 'prisma-user-1' })
+      },
+      trip: {
+        findFirst: async () => ({ id: 'trip-1' })
+      },
       packingItem: {
+        findFirst: async () => ({ id: 'item-1' }),
         delete: async (args: any) => {
           deletedId = args.where.id;
           return { id: args.where.id };
@@ -122,10 +153,20 @@ test.describe('Packing Actions', () => {
       }
     };
 
+    const mockAuth = {
+      createClient: async () => ({
+        auth: {
+          getUser: async () => ({ data: { user: { id: 'user-1' } } })
+        }
+      })
+    };
+
     const prismaModule = require('../lib/prisma');
+    const authServer = require('../lib/supabase/server');
     const { deleteItem } = require('../actions/packing.actions');
 
     Object.defineProperty(prismaModule, 'prisma', { value: mockPrisma, configurable: true });
+    Object.defineProperty(authServer, 'createClient', { value: mockAuth.createClient, configurable: true });
 
     const result = await deleteItem('item-to-delete', 'trip-1');
 

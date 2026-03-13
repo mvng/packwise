@@ -11,8 +11,48 @@ async function getAuthenticatedUser() {
   return user
 }
 
+async function verifyTripItemAccess(itemId: string, tripId: string) {
+  if (!itemId || !tripId) return false
+  const user = await getAuthenticatedUser()
+  if (!user) return false
+
+  const prismaUser = await prisma.user.findUnique({ where: { supabaseId: user.id } })
+  if (!prismaUser) return false
+
+  // Verify the trip exists and the user has access
+  const trip = await prisma.trip.findFirst({
+    where: {
+      id: tripId,
+      OR: [
+        { userId: prismaUser.id },
+        { members: { some: { userId: prismaUser.id } } }
+      ]
+    }
+  })
+
+  if (!trip) return false
+
+  // Verify the item belongs to this trip
+  const item = await prisma.packingItem.findFirst({
+    where: {
+      id: itemId,
+      category: {
+        packingList: {
+          tripId: tripId
+        }
+      }
+    }
+  })
+
+  return !!item
+}
+
+
 export async function toggleItemPacked(itemId: string, isPacked: boolean, tripId: string) {
   try {
+    const hasAccess = await verifyTripItemAccess(itemId, tripId)
+    if (!hasAccess) return { error: 'Unauthorized' }
+
     await prisma.packingItem.update({
       where: { id: itemId },
       data: { isPacked },
@@ -27,8 +67,8 @@ export async function toggleItemPacked(itemId: string, isPacked: boolean, tripId
 
 export async function togglePackLast(itemId: string, packLast: boolean, tripId: string) {
   try {
-    const user = await getAuthenticatedUser()
-    if (!user) return { error: 'Unauthorized' }
+    const hasAccess = await verifyTripItemAccess(itemId, tripId)
+    if (!hasAccess) return { error: 'Unauthorized' }
 
     await prisma.packingItem.update({
       where: { id: itemId },
@@ -99,6 +139,9 @@ export async function addCustomItem(
 
 export async function deleteItem(itemId: string, tripId: string) {
   try {
+    const hasAccess = await verifyTripItemAccess(itemId, tripId)
+    if (!hasAccess) return { error: 'Unauthorized' }
+
     await prisma.packingItem.delete({
       where: { id: itemId },
     })
@@ -112,6 +155,9 @@ export async function deleteItem(itemId: string, tripId: string) {
 
 export async function updateItemNotes(itemId: string, notes: string | null, tripId: string) {
   try {
+    const hasAccess = await verifyTripItemAccess(itemId, tripId)
+    if (!hasAccess) return { error: 'Unauthorized' }
+
     const item = await prisma.packingItem.update({
       where: { id: itemId },
       data: { notes },
@@ -126,6 +172,9 @@ export async function updateItemNotes(itemId: string, notes: string | null, trip
 
 export async function assignItemToMember(itemId: string, assigneeId: string | null, tripId: string) {
   try {
+    const hasAccess = await verifyTripItemAccess(itemId, tripId)
+    if (!hasAccess) return { error: 'Unauthorized' }
+
     const item = await prisma.packingItem.update({
       where: { id: itemId },
       data: { assigneeId },
