@@ -102,6 +102,15 @@ test.describe('Trip Actions', () => {
           { id: 'trip-1', name: 'Trip 1' },
           { id: 'trip-2', name: 'Trip 2' }
         ]
+      },
+      packingList: {
+        findMany: async () => []
+      },
+      category: {
+        findMany: async () => []
+      },
+      packingItem: {
+        findMany: async () => []
       }
     };
 
@@ -122,7 +131,16 @@ test.describe('Trip Actions', () => {
   test('getTripById should fetch a specific trip', async () => {
     const mockPrisma = {
       trip: {
-        findFirst: async () => ({ id: 'trip-1', name: 'Specific Trip' })
+        findMany: async () => [{ id: 'trip-1', name: 'Specific Trip' }]
+      },
+      packingList: {
+        findMany: async () => []
+      },
+      category: {
+        findMany: async () => []
+      },
+      packingItem: {
+        findMany: async () => []
       }
     };
 
@@ -196,28 +214,25 @@ test.describe('Trip Actions', () => {
 
     const mockPrisma = {
       trip: {
-        findUnique: async () => ({
+        findMany: async () => [{
           id: 'trip-source-1',
           userId: 'user-2', // Different from current user
           name: 'Source Trip',
-          destination: 'Tokyo',
-          packingLists: [
-            {
-              name: 'List 1',
-              categories: [
-                {
-                  name: 'Docs',
-                  order: 0,
-                  items: [{ name: 'Passport', quantity: 1, isCustom: false, order: 0 }]
-                }
-              ]
-            }
-          ]
-        }),
+          destination: 'Tokyo'
+        }],
         create: async (args: any) => {
           createTripCalled = true;
           return { id: 'trip-new-1', ...args.data };
         }
+      },
+      packingList: {
+        findMany: async () => [{ id: 'list-1', tripId: 'trip-source-1', name: 'List 1' }]
+      },
+      category: {
+        findMany: async () => [{ id: 'cat-1', packingListId: 'list-1', name: 'Docs', order: 0 }]
+      },
+      packingItem: {
+        findMany: async () => [{ id: 'item-passport', categoryId: 'cat-1', name: 'Passport', quantity: 1, isCustom: false, order: 0 }]
       }
     };
 
