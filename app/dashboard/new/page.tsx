@@ -102,22 +102,22 @@ const COUNTRIES = [
 ].sort();
 
 function getDurationDays(start: string, end: string): number {
-  if (!start || !end) return 5
-  const diff = new Date(end).getTime() - new Date(start).getTime()
-  return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)))
+  if (!start || !end) return 5;
+  const diff = new Date(end).getTime() - new Date(start).getTime();
+  return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)));
 }
 
 function getUpcomingWeekend() {
-  const d = new Date()
+  const d = new Date();
   // 5 is Friday
-  const daysUntilFriday = (5 + 7 - d.getDay()) % 7 || 7
-  const friday = new Date(d.getTime() + daysUntilFriday * 24 * 60 * 60 * 1000)
-  const sunday = new Date(friday.getTime() + 2 * 24 * 60 * 60 * 1000)
+  const daysUntilFriday = (5 + 7 - d.getDay()) % 7 || 7;
+  const friday = new Date(d.getTime() + daysUntilFriday * 24 * 60 * 60 * 1000);
+  const sunday = new Date(friday.getTime() + 2 * 24 * 60 * 60 * 1000);
 
   return {
-    start: friday.toISOString().split('T')[0],
-    end: sunday.toISOString().split('T')[0]
-  }
+    start: friday.toISOString().split("T")[0],
+    end: sunday.toISOString().split("T")[0],
+  };
 }
 
 export default function NewTripPage() {
@@ -580,90 +580,95 @@ export default function NewTripPage() {
           </form>
 
           {/* ── Template Preview Panel ── */}
-          <div className="w-full lg:w-72 flex-shrink-0">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sticky top-8">
-              {formData.generateSuggestions ? (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      Template Preview
-                    </h3>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                      {totalItems} items
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mb-4">
-                    {
-                      TRIP_TYPES.find((t) => t.value === formData.tripType)
-                        ?.icon
-                    }{" "}
-                    {
-                      TRIP_TYPES.find((t) => t.value === formData.tripType)
-                        ?.label
-                    }
-                    {formData.transportMode && (
-                      <>
-                        {" "}
-                        ·{" "}
-                        {
-                          TRANSPORT_MODES.find(
-                            (m) => m.value === formData.transportMode,
-                          )?.icon
-                        }{" "}
-                        {
-                          TRANSPORT_MODES.find(
-                            (m) => m.value === formData.transportMode,
-                          )?.label
-                        }
-                      </>
-                    )}
-                    {" · "}
-                    {duration} day{duration !== 1 ? "s" : ""}
-                  </p>
-                  <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-                    {templateCategories.map((cat) => (
-                      <div key={cat.name}>
-                        <p
-                          className={`text-xs font-semibold uppercase tracking-wide mb-1.5 ${
-                            cat.name.includes("Essentials") &&
-                            formData.transportMode
-                              ? "text-indigo-500"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          {cat.name}
-                        </p>
-                        <div className="space-y-1">
-                          {cat.items.map((item) => (
-                            <div key={item} className="flex items-center gap-2">
-                              <div className="w-3.5 h-3.5 rounded border border-gray-200 flex-shrink-0" />
-                              <span className="text-xs text-gray-600">
-                                {item}
-                              </span>
-                            </div>
-                          ))}
+          {step >= 2 && (
+            <div className="w-full lg:w-72 flex-shrink-0">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sticky top-8">
+                {formData.generateSuggestions ? (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-gray-900">
+                        Template Preview
+                      </h3>
+                      <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                        {totalItems} items
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mb-4">
+                      {
+                        TRIP_TYPES.find((t) => t.value === formData.tripType)
+                          ?.icon
+                      }{" "}
+                      {
+                        TRIP_TYPES.find((t) => t.value === formData.tripType)
+                          ?.label
+                      }
+                      {formData.transportMode && (
+                        <>
+                          {" "}
+                          ·{" "}
+                          {
+                            TRANSPORT_MODES.find(
+                              (m) => m.value === formData.transportMode,
+                            )?.icon
+                          }{" "}
+                          {
+                            TRANSPORT_MODES.find(
+                              (m) => m.value === formData.transportMode,
+                            )?.label
+                          }
+                        </>
+                      )}
+                      {" · "}
+                      {duration} day{duration !== 1 ? "s" : ""}
+                    </p>
+                    <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                      {templateCategories.map((cat) => (
+                        <div key={cat.name}>
+                          <p
+                            className={`text-xs font-semibold uppercase tracking-wide mb-1.5 ${
+                              cat.name.includes("Essentials") &&
+                              formData.transportMode
+                                ? "text-indigo-500"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {cat.name}
+                          </p>
+                          <div className="space-y-1">
+                            {cat.items.map((item) => (
+                              <div
+                                key={item}
+                                className="flex items-center gap-2"
+                              >
+                                <div className="w-3.5 h-3.5 rounded border border-gray-200 flex-shrink-0" />
+                                <span className="text-xs text-gray-600">
+                                  {item}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-4 pt-3 border-t border-gray-100">
+                      You can add, remove, or edit any item after creating the
+                      trip.
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-3xl mb-3">📝</p>
+                    <p className="text-sm font-medium text-gray-700">
+                      Starting blank
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      You&apos;ll build your packing list from scratch.
+                    </p>
                   </div>
-                  <p className="text-[11px] text-gray-400 mt-4 pt-3 border-t border-gray-100">
-                    You can add, remove, or edit any item after creating the
-                    trip.
-                  </p>
-                </>
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-3xl mb-3">📝</p>
-                  <p className="text-sm font-medium text-gray-700">
-                    Starting blank
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    You&apos;ll build your packing list from scratch.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
