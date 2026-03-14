@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface AddPersonModalProps {
   isOpen: boolean
@@ -9,6 +9,16 @@ interface AddPersonModalProps {
 export default function AddPersonModal({ isOpen, onClose, onAdd }: AddPersonModalProps) {
   const [name, setName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -31,7 +41,7 @@ export default function AddPersonModal({ isOpen, onClose, onAdd }: AddPersonModa
       <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Add Person</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+          <button onClick={onClose} aria-label="Close modal" className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
