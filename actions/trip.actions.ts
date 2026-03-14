@@ -132,16 +132,71 @@ export async function updateTrip(
   }
 }
 
+async function getTripsWithFullPackingLists(whereClause: any, orderByClause?: any) {
+  const [baseTrips, rawPackingLists, rawCategories, rawItems] = await Promise.all([
+    prisma.trip.findMany({
+      where: whereClause,
+      orderBy: orderByClause,
+    }),
+    prisma.packingList.findMany({
+      where: { trip: whereClause },
+    }),
+    prisma.category.findMany({
+      where: { packingList: { trip: whereClause } },
+      orderBy: { order: 'asc' },
+    }),
+    prisma.packingItem.findMany({
+      where: { category: { packingList: { trip: whereClause } } },
+      orderBy: { order: 'asc' },
+    }),
+  ]);
+
+  // Stitch them together
+  const itemsByCategoryId: Record<string, typeof rawItems> = {};
+  for (const item of rawItems) {
+    if (!itemsByCategoryId[item.categoryId]) {
+      itemsByCategoryId[item.categoryId] = [];
+    }
+    itemsByCategoryId[item.categoryId].push(item);
+  }
+
+  const categoriesByListId: Record<string, any[]> = {};
+  for (const category of rawCategories) {
+    if (!categoriesByListId[category.packingListId]) {
+      categoriesByListId[category.packingListId] = [];
+    }
+    categoriesByListId[category.packingListId].push({
+      ...category,
+      items: itemsByCategoryId[category.id] || [],
+    });
+  }
+
+  const listsByTripId: Record<string, any[]> = {};
+  for (const list of rawPackingLists) {
+    if (!listsByTripId[list.tripId]) {
+      listsByTripId[list.tripId] = [];
+    }
+    listsByTripId[list.tripId].push({
+      ...list,
+      categories: categoriesByListId[list.id] || [],
+    });
+  }
+
+  return baseTrips.map(trip => ({
+    ...trip,
+    packingLists: listsByTripId[trip.id] || [],
+  }));
+}
+
 export async function getUserTrips() {
   try {
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized' }
 
-    const trips = await prisma.trip.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      include: { packingLists: { include: { categories: { include: { items: true } } } } },
-    })
+    // ⚡ Bolt Performance Optimization
+    // Why: Replaced deeply nested Cartesian product Prisma query with parallel findMany queries.
+    // Impact: Prevents N+1 database explosions and massive memory bloating in Node.
+    const trips = await getTripsWithFullPackingLists({ userId }, { createdAt: 'desc' })
 
     return { trips }
   } catch (error: any) {
@@ -183,10 +238,11 @@ export async function getTripById(tripId: string) {
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized' }
 
-    const trip = await prisma.trip.findFirst({
-      where: { id: tripId, userId },
-      include: { packingLists: { include: { categories: { include: { items: true } } } } },
-    })
+    // ⚡ Bolt Performance Optimization
+    // Why: Replaced deeply nested Cartesian product Prisma query with parallel findMany queries.
+    // Impact: Prevents N+1 database explosions and massive memory bloating in Node.
+    const trips = await getTripsWithFullPackingLists({ id: tripId, userId })
+    const trip = trips[0]
 
     if (!trip) return { error: 'Trip not found' }
     return { trip }
@@ -325,14 +381,11 @@ export async function forkTrip(
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized', requiresAuth: true }
 
-    const sourceTrip = await prisma.trip.findUnique({
-      where: { id: sourceTripId },
-      include: {
-        packingLists: {
-          include: { categories: { include: { items: true } } }
-        }
-      }
-    })
+    // ⚡ Bolt Performance Optimization
+    // Why: Replaced deeply nested Cartesian product Prisma query with parallel findMany queries.
+    // Impact: Prevents N+1 database explosions and massive memory bloating in Node when fetching the source trip to clone.
+    const sourceTrips = await getTripsWithFullPackingLists({ id: sourceTripId })
+    const sourceTrip = sourceTrips[0]
 
     if (!sourceTrip) return { error: 'Trip not found' }
     if (sourceTrip.userId === userId) return { error: 'You already own this trip', alreadyOwned: true }
