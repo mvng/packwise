@@ -48,38 +48,121 @@ const TRANSPORT_MODES: {
   },
 ];
 
+const COUNTRIES = [
+  "United States",
+  "Canada",
+  "Mexico",
+  "United Kingdom",
+  "France",
+  "Germany",
+  "Italy",
+  "Spain",
+  "Japan",
+  "China",
+  "Australia",
+  "New Zealand",
+  "Brazil",
+  "Argentina",
+  "India",
+  "South Korea",
+  "Thailand",
+  "Vietnam",
+  "Singapore",
+  "Malaysia",
+  "Indonesia",
+  "Philippines",
+  "Netherlands",
+  "Belgium",
+  "Switzerland",
+  "Austria",
+  "Portugal",
+  "Greece",
+  "Turkey",
+  "Egypt",
+  "South Africa",
+  "Kenya",
+  "Morocco",
+  "United Arab Emirates",
+  "Israel",
+  "Russia",
+  "Poland",
+  "Czech Republic",
+  "Hungary",
+  "Norway",
+  "Sweden",
+  "Denmark",
+  "Finland",
+  "Iceland",
+  "Ireland",
+  "Croatia",
+  "Chile",
+  "Peru",
+  "Colombia",
+  "Costa Rica",
+].sort();
+
 function getDurationDays(start: string, end: string): number {
-  if (!start || !end) return 5;
-  const diff = new Date(end).getTime() - new Date(start).getTime();
-  return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)));
+  if (!start || !end) return 5
+  const diff = new Date(end).getTime() - new Date(start).getTime()
+  return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)))
 }
 
 function getUpcomingWeekend() {
-  const d = new Date();
+  const d = new Date()
   // 5 is Friday
-  const daysUntilFriday = (5 + 7 - d.getDay()) % 7 || 7;
-  const friday = new Date(d.getTime() + daysUntilFriday * 24 * 60 * 60 * 1000);
-  const sunday = new Date(friday.getTime() + 2 * 24 * 60 * 60 * 1000);
+  const daysUntilFriday = (5 + 7 - d.getDay()) % 7 || 7
+  const friday = new Date(d.getTime() + daysUntilFriday * 24 * 60 * 60 * 1000)
+  const sunday = new Date(friday.getTime() + 2 * 24 * 60 * 60 * 1000)
 
   return {
-    start: friday.toISOString().split("T")[0],
-    end: sunday.toISOString().split("T")[0],
-  };
+    start: friday.toISOString().split('T')[0],
+    end: sunday.toISOString().split('T')[0]
+  }
 }
 
 export default function NewTripPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     destination: "",
+    country: "",
     tripType: "leisure",
     transportMode: null as TransportMode | null,
     startDate: getUpcomingWeekend().start,
     endDate: getUpcomingWeekend().end,
     generateSuggestions: true,
   });
+  const [countrySearch, setCountrySearch] = useState("");
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const countryInputRef = useRef<HTMLInputElement>(null);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+
+  const filteredCountries = COUNTRIES.filter((c) =>
+    c.toLowerCase().includes(countrySearch.toLowerCase()),
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        countryDropdownRef.current &&
+        !countryDropdownRef.current.contains(event.target as Node) &&
+        !countryInputRef.current?.contains(event.target as Node)
+      ) {
+        setShowCountryDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleCountrySelect = (country: string) => {
+    setFormData({ ...formData, country });
+    setCountrySearch("");
+    setShowCountryDropdown(false);
+  };
 
   const handleTransportToggle = (mode: TransportMode) => {
     setFormData((prev) => ({
@@ -93,10 +176,14 @@ export default function NewTripPage() {
     setLoading(true);
     setError(null);
 
+    const fullDestination = formData.country
+      ? `${formData.destination}, ${formData.country}`
+      : formData.destination;
+
     const finalName = formData.name.trim() || `Trip to ${formData.destination}`;
     const result = await createTrip({
       name: finalName,
-      destination: formData.destination || "",
+      destination: fullDestination || "",
       tripType: formData.tripType,
       transportMode: formData.transportMode,
       startDate: formData.startDate ? new Date(formData.startDate) : undefined,
@@ -162,205 +249,334 @@ export default function NewTripPage() {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Trip Name
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Summer in Paris"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            {step === 1 && (
+              <>
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="h-2 flex-1 bg-blue-600 rounded-full" />
+                  <div className="h-2 flex-1 bg-gray-200 rounded-full" />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Where to? *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Paris, France or Aspen, CO"
-                value={formData.destination}
-                onChange={(e) =>
-                  setFormData({ ...formData, destination: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Trip Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Trip Type
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {TRIP_TYPES.map((t) => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, tripType: t.value })
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Where to? *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Paris, France or Aspen, CO"
+                    value={formData.destination}
+                    onChange={(e) =>
+                      setFormData({ ...formData, destination: e.target.value })
                     }
-                    className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all ${
-                      formData.tripType === t.value
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <span className="text-2xl mb-1">{t.icon}</span>
-                    <span className="text-sm font-medium">{t.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
 
-            {/* Transport Mode */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  How are you getting there?
-                </label>
-                {formData.transportMode && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, transportMode: null })
-                    }
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {TRANSPORT_MODES.map((m) => (
-                  <button
-                    key={m.value}
-                    type="button"
-                    onClick={() => handleTransportToggle(m.value)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-all text-left ${
-                      formData.transportMode === m.value
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <span className="text-xl flex-shrink-0">{m.icon}</span>
-                    <div className="min-w-0">
-                      <p
-                        className={`text-sm font-medium ${
-                          formData.transportMode === m.value
-                            ? "text-indigo-700"
-                            : "text-gray-700"
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, startDate: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, endDate: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  disabled={
+                    !formData.destination ||
+                    !formData.startDate ||
+                    !formData.endDate
+                  }
+                  className="w-full py-4 mt-8 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="h-2 flex-1 bg-gray-200 rounded-full" />
+                  <div className="h-2 flex-1 bg-blue-600 rounded-full" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block"
+                >
+                  ← Back
+                </button>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Trip Type
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {TRIP_TYPES.map((t) => (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() =>
+                          setFormData({ ...formData, tripType: t.value })
+                        }
+                        className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all ${
+                          formData.tripType === t.value
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
-                        {m.label}
-                      </p>
-                      <p className="text-[11px] text-gray-400 truncate">
-                        {m.hint}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+                        <span className="text-2xl mb-1">{t.icon}</span>
+                        <span className="text-sm font-medium">{t.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Dates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startDate: e.target.value })
+                {/* Template toggle */}
+                <div
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      generateSuggestions: !formData.generateSuggestions,
+                    })
                   }
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endDate: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Template toggle */}
-            <div
-              onClick={() =>
-                setFormData({
-                  ...formData,
-                  generateSuggestions: !formData.generateSuggestions,
-                })
-              }
-              className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                formData.generateSuggestions
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              <div>
-                <p
-                  className={`text-sm font-medium ${formData.generateSuggestions ? "text-blue-800" : "text-gray-700"}`}
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    formData.generateSuggestions
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
                 >
-                  ✨ Start with a template
-                </p>
-                <p
-                  className={`text-xs mt-0.5 ${formData.generateSuggestions ? "text-blue-600" : "text-gray-400"}`}
-                >
-                  Pre-fill a smart packing list based on your trip type
-                </p>
-              </div>
-              <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                  formData.generateSuggestions
-                    ? "border-blue-500 bg-blue-500"
-                    : "border-gray-300"
-                }`}
-              >
-                {formData.generateSuggestions && (
-                  <svg
-                    className="w-3 h-3 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                  <div>
+                    <p
+                      className={`text-sm font-medium ${formData.generateSuggestions ? "text-blue-800" : "text-gray-700"}`}
+                    >
+                      ✨ Start with a template
+                    </p>
+                    <p
+                      className={`text-xs mt-0.5 ${formData.generateSuggestions ? "text-blue-600" : "text-gray-400"}`}
+                    >
+                      Pre-fill a smart packing list based on your trip type
+                    </p>
+                  </div>
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      formData.generateSuggestions
+                        ? "border-blue-500 bg-blue-500"
+                        : "border-gray-300"
+                    }`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </div>
+                    {formData.generateSuggestions && (
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </div>
 
-            <button
-              type="submit"
-              disabled={loading || !formData.destination}
-              className="w-full py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading
-                ? "Creating Trip…"
-                : formData.generateSuggestions
-                  ? "Create Trip & Generate List"
-                  : "Create Trip"}
-            </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loading
+                    ? "Creating Trip…"
+                    : formData.generateSuggestions
+                      ? "Create Trip & Generate List"
+                      : "Create Trip"}
+                </button>
+
+                <div className="text-center mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
+                  >
+                    Add Advanced Details (Optional)
+                  </button>
+                </div>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="text-sm text-gray-500 hover:text-gray-700 mb-6 inline-block"
+                >
+                  ← Back
+                </button>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Trip Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Summer in Paris"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Country (Optional)
+                  </label>
+                  <input
+                    ref={countryInputRef}
+                    type="text"
+                    placeholder="Type to search..."
+                    value={
+                      showCountryDropdown ? countrySearch : formData.country
+                    }
+                    onChange={(e) => {
+                      setCountrySearch(e.target.value);
+                      setShowCountryDropdown(true);
+                    }}
+                    onFocus={() => setShowCountryDropdown(true)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="absolute right-3 top-[38px] text-gray-400 pointer-events-none">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                  {showCountryDropdown && filteredCountries.length > 0 && (
+                    <div
+                      ref={countryDropdownRef}
+                      className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+                    >
+                      {filteredCountries.map((country) => (
+                        <button
+                          key={country}
+                          type="button"
+                          onClick={() => handleCountrySelect(country)}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors first:rounded-t-xl last:rounded-b-xl"
+                        >
+                          <span
+                            className={
+                              formData.country === country
+                                ? "font-semibold text-blue-600"
+                                : "text-gray-700"
+                            }
+                          >
+                            {country}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      How are you getting there?
+                    </label>
+                    {formData.transportMode && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({ ...formData, transportMode: null })
+                        }
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TRANSPORT_MODES.map((m) => (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={() => handleTransportToggle(m.value)}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-all text-left ${
+                          formData.transportMode === m.value
+                            ? "border-indigo-500 bg-indigo-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="text-xl flex-shrink-0">{m.icon}</span>
+                        <div className="min-w-0">
+                          <p
+                            className={`text-sm font-medium ${
+                              formData.transportMode === m.value
+                                ? "text-indigo-700"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {m.label}
+                          </p>
+                          <p className="text-[11px] text-gray-400 truncate">
+                            {m.hint}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 mt-8 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loading
+                    ? "Creating Trip…"
+                    : formData.generateSuggestions
+                      ? "Create Trip & Generate List"
+                      : "Create Trip"}
+                </button>
+              </>
+            )}
           </form>
 
           {/* ── Template Preview Panel ── */}
