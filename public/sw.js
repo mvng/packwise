@@ -131,6 +131,8 @@ self.addEventListener('sync', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
   if (event.request.method !== 'GET') {
     event.respondWith(
       (async () => {
@@ -138,7 +140,7 @@ self.addEventListener('fetch', (event) => {
           return await fetch(event.request);
         } catch (error) {
           // Only queue API requests or Supabase endpoints
-          if (event.request.url.includes('/api/') || event.request.url.includes('supabase.co')) {
+          if (url.pathname.startsWith('/api/') || url.hostname.includes('supabase.co')) {
              await enqueueRequest(event.request);
              if ('sync' in self.registration) {
                  try {
@@ -159,45 +161,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle GET requests: Cache First for static, Network First for API/Navigation
-  const isApi = event.request.url.includes('/api/') || event.request.url.includes('supabase.co');
+  // Determine if the request is for a static asset
+  const isStaticAsset =
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/_next/image/') ||
+    url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|css|js|woff2?|ttf|eot|ico)$/) ||
+    url.pathname === '/manifest.json';
 
-  if (isApi || event.request.mode === 'navigate') {
-    event.respondWith(
-      (async () => {
-        try {
-          const preloadResponse = await event.preloadResponse;
-          if (preloadResponse) {
-             // Cache the preload response
-             const cache = await caches.open(CACHE_NAME);
-             cache.put(event.request, preloadResponse.clone());
-             return preloadResponse;
-          }
-
-          const networkResponse = await fetch(event.request);
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-              const cache = await caches.open(CACHE_NAME);
-              cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        } catch (error) {
-          const cache = await caches.open(CACHE_NAME);
-          const cachedResponse = await cache.match(event.request);
-
-          if (cachedResponse) {
-              return cachedResponse;
-          }
-
-          if (event.request.mode === 'navigate') {
-              const offlineResponse = await cache.match(OFFLINE_URL);
-              if (offlineResponse) return offlineResponse;
-          }
-
-          throw error;
-        }
-      })()
-    );
-  } else {
+  // Handle GET requests
+  if (isStaticAsset) {
     // Cache First for static assets
     event.respondWith(
       (async () => {
@@ -210,11 +182,50 @@ self.addEventListener('fetch', (event) => {
 
         try {
           const networkResponse = await fetch(event.request);
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          if (networkResponse && networkResponse.status === 200) {
               cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;
         } catch (error) {
+          // No fallback for static assets, let it fail
+          throw error;
+        }
+      })()
+    );
+  } else {
+    // Network First for HTML, RSC payloads (App Router navigation), API requests, and everything else
+    event.respondWith(
+      (async () => {
+        try {
+          const preloadResponse = await event.preloadResponse;
+          if (preloadResponse) {
+             const cache = await caches.open(CACHE_NAME);
+             cache.put(event.request, preloadResponse.clone());
+             return preloadResponse;
+          }
+
+          const networkResponse = await fetch(event.request);
+          if (networkResponse && networkResponse.status === 200) {
+              const cache = await caches.open(CACHE_NAME);
+              cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        } catch (error) {
+          // Network failed, look in cache
+          const cache = await caches.open(CACHE_NAME);
+          const cachedResponse = await cache.match(event.request);
+
+          if (cachedResponse) {
+              return cachedResponse;
+          }
+
+          // If not in cache and it's a navigation or HTML request, serve the offline page
+          const acceptHeader = event.request.headers.get('accept') || '';
+          if (event.request.mode === 'navigate' || acceptHeader.includes('text/html')) {
+              const offlineResponse = await cache.match(OFFLINE_URL);
+              if (offlineResponse) return offlineResponse;
+          }
+
           throw error;
         }
       })()
