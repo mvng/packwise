@@ -1,5 +1,5 @@
 const CACHE_NAME = 'packwise-v1';
-const OFFLINE_URL = '/';
+const OFFLINE_URL = '/offline';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
