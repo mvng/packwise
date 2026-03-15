@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: 'Packwise – Smart Packing Lists',
   description: 'Create smart packing lists for every trip. Organize by category, track what you have packed, and never forget an item again.',
   keywords: ['packing', 'travel', 'packing list', 'trip planner', 'vacation packing', 'travel checklist', 'luggage planner'],
+  manifest: '/manifest.json',
   openGraph: {
     title: 'Packwise – Smart Packing Lists',
     description: 'Create smart packing lists for every trip.',
@@ -24,6 +25,10 @@ export const metadata: Metadata = {
     title: 'Packwise – Smart Packing Lists',
     description: 'Create smart packing lists for every trip. Organize by category, track what you have packed, and never forget an item again.',
   },
+}
+
+export const viewport = {
+  themeColor: '#000000',
 }
 
 export default function RootLayout({
