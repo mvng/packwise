@@ -174,7 +174,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
-        const cachedResponse = await cache.match(event.request);
+        const cachedResponse = await cache.match(event.request, { ignoreSearch: true, ignoreVary: true });
 
         if (cachedResponse) {
           return cachedResponse;
@@ -204,6 +204,8 @@ self.addEventListener('fetch', (event) => {
              return preloadResponse;
           }
 
+          // We don't cache-bust here because it might break some expected headers,
+          // but we ensure we are fetching the request.
           const networkResponse = await fetch(event.request);
           if (networkResponse && networkResponse.status === 200) {
               const cache = await caches.open(CACHE_NAME);
@@ -213,16 +215,20 @@ self.addEventListener('fetch', (event) => {
         } catch (error) {
           // Network failed, look in cache
           const cache = await caches.open(CACHE_NAME);
-          const cachedResponse = await cache.match(event.request);
+
+          // If it's a navigation request or HTML request, we should just return the offline page directly
+          // if the exact request isn't found. Let's prioritize serving the offline page if we know it's a page navigation.
+          const acceptHeader = event.request.headers.get('accept') || '';
+          const isNavigation = event.request.mode === 'navigate' || acceptHeader.includes('text/html');
+
+          let cachedResponse = await cache.match(event.request, { ignoreSearch: true, ignoreVary: true });
 
           if (cachedResponse) {
               return cachedResponse;
           }
 
-          // If not in cache and it's a navigation or HTML request, serve the offline page
-          const acceptHeader = event.request.headers.get('accept') || '';
-          if (event.request.mode === 'navigate' || acceptHeader.includes('text/html')) {
-              const offlineResponse = await cache.match(OFFLINE_URL);
+          if (isNavigation) {
+              const offlineResponse = await cache.match(OFFLINE_URL, { ignoreSearch: true, ignoreVary: true });
               if (offlineResponse) return offlineResponse;
           }
 
