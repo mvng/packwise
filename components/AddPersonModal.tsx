@@ -31,13 +31,14 @@ export default function AddPersonModal({ isOpen, onClose, onAdd }: AddPersonModa
       <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <h2 className="text-xl font-semibold">Add Person</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md" aria-label="Close modal">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label htmlFor="personName" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
               <input
+                id="personName"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
