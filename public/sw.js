@@ -221,14 +221,21 @@ self.addEventListener('fetch', (event) => {
           const acceptHeader = event.request.headers.get('accept') || '';
           const isNavigation = event.request.mode === 'navigate' || acceptHeader.includes('text/html');
 
-          let cachedResponse = await cache.match(event.request, { ignoreSearch: true, ignoreVary: true });
+          // We remove ignoreSearch here because if we are asking for /dashboard we don't want to match /dashboard?_rsc=xyz
+          let cachedResponse = await cache.match(event.request, { ignoreVary: true });
 
           if (cachedResponse) {
-              return cachedResponse;
+              // Ensure we don't serve RSC payloads as full HTML pages
+              const contentType = cachedResponse.headers.get('content-type') || '';
+              if (isNavigation && !contentType.includes('text/html')) {
+                  // Fall through to offline page instead of serving raw JSON
+              } else {
+                  return cachedResponse;
+              }
           }
 
           if (isNavigation) {
-              const offlineResponse = await cache.match(OFFLINE_URL, { ignoreSearch: true, ignoreVary: true });
+              const offlineResponse = await cache.match(OFFLINE_URL, { ignoreVary: true });
               if (offlineResponse) return offlineResponse;
           }
 
