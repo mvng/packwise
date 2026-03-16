@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { POST } from '../app/api/day-plan-items/save-to-inventory/route';
 import { prisma } from '../lib/prisma';
+// @ts-ignore
 import * as auth from '../lib/supabase/server';
 import { NextResponse } from 'next/server';
 
