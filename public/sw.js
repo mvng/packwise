@@ -224,6 +224,20 @@ self.addEventListener('fetch', (event) => {
           // We remove ignoreSearch here because if we are asking for /dashboard we don't want to match /dashboard?_rsc=xyz
           let cachedResponse = await cache.match(event.request, { ignoreVary: true });
 
+          const isRSCRequest = url.searchParams.has('_rsc') || event.request.headers.get('RSC') === '1';
+
+          if (!cachedResponse && isRSCRequest) {
+              // Fuzzy match RSC payloads: if exact `_rsc` token missed, find any cached RSC payload for this path
+              const requests = await cache.keys();
+              for (const req of requests) {
+                  const reqUrl = new URL(req.url);
+                  if (reqUrl.pathname === url.pathname && reqUrl.searchParams.has('_rsc')) {
+                      cachedResponse = await cache.match(req);
+                      break;
+                  }
+              }
+          }
+
           if (cachedResponse) {
               // Ensure we don't serve RSC payloads as full HTML pages
               const contentType = cachedResponse.headers.get('content-type') || '';
