@@ -203,7 +203,7 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
               {step === 1 ? 'Paste your packing list below' : 'Review and import your items'}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none">×</button>
+          <button onClick={onClose} aria-label="Close modal" className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none">×</button>
         </div>
 
         {/* Body */}
