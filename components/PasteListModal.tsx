@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useEffect } from 'react'
 import { importItemsToTrip } from '@/actions/packing.actions'
 
 interface PasteListModalProps {
@@ -148,6 +148,16 @@ function parsePastedText(text: string): ParsedItem[] {
 export default function PasteListModal({ tripId, onClose, onSuccess }: PasteListModalProps) {
   const [step, setStep] = useState<1 | 2>(1)
   const [pastedText, setPastedText] = useState('')
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
   const [parsedItems, setParsedItems] = useState<ParsedItem[]>([])
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -203,7 +213,7 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
               {step === 1 ? 'Paste your packing list below' : 'Review and import your items'}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none">×</button>
+          <button onClick={onClose} aria-label="Close modal" className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded-md">×</button>
         </div>
 
         {/* Body */}
