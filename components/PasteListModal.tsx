@@ -203,7 +203,7 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
               {step === 1 ? 'Paste your packing list below' : 'Review and import your items'}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none">×</button>
+          <button onClick={onClose} aria-label="Close modal" className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded-md">×</button>
         </div>
 
         {/* Body */}
@@ -251,8 +251,8 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
                     />
                     <button
                       onClick={() => handleRemoveItem(item.id)}
-                      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-red-50"
-                      aria-label="Remove item"
+                      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      aria-label={`Remove ${item.name}`}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
