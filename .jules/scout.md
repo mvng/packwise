@@ -7,3 +7,6 @@
 ## 2026-03-14 - [Dynamic Metadata for Claim Pages]
 **Learning:** When building public-facing share or claim pages (e.g., `/claim/[token]`), utilizing Next.js `generateMetadata` to dynamically generate Open Graph and Twitter card meta tags based on the specific entity (like trip destination) improves unfurl previews and click-through rates on messaging platforms.
 **Action:** Always ensure that any publicly shared route has dynamic metadata configured, extracting key identifiers from `params` to populate descriptive titles and descriptions.
+## 2025-02-23 - [Dynamic Metadata for Shared Links]
+**Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
+**Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
