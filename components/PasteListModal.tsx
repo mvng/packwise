@@ -194,16 +194,16 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={(e) => {
       if (e.target === e.currentTarget) onClose()
     }}>
-      <div className="bg-white rounded-2xl w-full max-w-xl flex flex-col shadow-xl max-h-[90vh]">
+      <div role="dialog" aria-modal="true" aria-labelledby="paste-list-title" className="bg-white rounded-2xl w-full max-w-xl flex flex-col shadow-xl max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
           <div>
-            <h2 className="font-semibold text-gray-900">Paste a List</h2>
+            <h2 id="paste-list-title" className="font-semibold text-gray-900">Paste a List</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {step === 1 ? 'Paste your packing list below' : 'Review and import your items'}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none">×</button>
+          <button onClick={onClose} aria-label="Close modal" className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded-md">×</button>
         </div>
 
         {/* Body */}
@@ -220,6 +220,7 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
                 onChange={(e) => setPastedText(e.target.value)}
                 placeholder="Paste your items here...&#10;&#10;e.g.&#10;3 t-shirts&#10;1 pair of jeans&#10;Toothbrush&#10;- socks x4"
                 className="flex-1 min-h-[300px] w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                aria-label="Paste your packing list"
               />
             </div>
           ) : (
@@ -242,17 +243,19 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
                       value={item.quantity}
                       onChange={(e) => handleUpdateItem(item.id, { quantity: parseInt(e.target.value) || 1 })}
                       className="w-16 px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      aria-label={`Quantity for ${item.name}`}
                     />
                     <input
                       type="text"
                       value={item.name}
                       onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
                       className="flex-1 px-3 py-1.5 text-sm border border-transparent hover:border-gray-200 focus:border-blue-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent transition-colors"
+                      aria-label={`Item name for ${item.name}`}
                     />
                     <button
                       onClick={() => handleRemoveItem(item.id)}
-                      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-red-50"
-                      aria-label="Remove item"
+                      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-opacity p-1.5 rounded-md hover:bg-red-50"
+                      aria-label={`Remove ${item.name}`}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
