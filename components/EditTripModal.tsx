@@ -264,27 +264,33 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
             <div className="flex items-center gap-2 mb-1">
               <span className="text-lg">🏨</span>
               <div>
-                <p className="text-sm font-medium text-gray-900">Hotel Confirmation</p>
+                <p className="text-sm font-medium text-gray-900">Confirmation Link or Number</p>
                 <p className="text-xs text-gray-500">Paste your online confirmation link — no need to print</p>
               </div>
             </div>
             <input
-              type="url"
+              type="text"
               id="hotelConfirmationUrl"
               value={formData.hotelConfirmationUrl}
               onChange={e => setFormData(prev => ({ ...prev, hotelConfirmationUrl: e.target.value }))}
-              placeholder="https://booking.com/confirmation/..."
+              placeholder="https://... or confirmation #"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
             {formData.hotelConfirmationUrl && (
-              <a
-                href={formData.hotelConfirmationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1"
-              >
-                Open confirmation ↗
-              </a>
+              formData.hotelConfirmationUrl.startsWith('http://') || formData.hotelConfirmationUrl.startsWith('https://') ? (
+                <a
+                  href={formData.hotelConfirmationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1"
+                >
+                  Open confirmation ↗
+                </a>
+              ) : (
+                <div className="mt-1 flex items-center gap-2 text-xs">
+                  <span className="font-medium text-gray-700">{formData.hotelConfirmationUrl}</span>
+                </div>
+              )
             )}
           </div>
 

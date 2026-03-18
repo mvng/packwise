@@ -6,7 +6,7 @@ import { deleteTrip, getDashboardTrips } from '@/actions/trip.actions'
 import { formatDate } from '@/lib/utils'
 import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
-import { Edit2, Trash2, MoreHorizontal } from 'lucide-react'
+import { Edit2, Trash2, MoreHorizontal, Map, Plus } from 'lucide-react'
 import DashboardTripWeather from '@/components/DashboardTripWeather'
 
 type Trip = {
@@ -237,17 +237,22 @@ export default function DashboardClient({
         </div>
 
         {trips.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">🧳</div>
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">No trips yet</h2>
-            <p className="text-gray-500 mb-6">
-              Create your first trip to get started with smart packing lists.
+          <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-2xl border border-dashed border-gray-300 shadow-sm text-center">
+            <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-6 shadow-sm">
+              <Map className="w-10 h-10" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              Ready for your next adventure?
+            </h2>
+            <p className="text-gray-500 max-w-md mx-auto mb-8 text-lg">
+              Create your first trip to organize your itinerary and get started with smart packing lists.
             </p>
             <Link
               href="/dashboard/new"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-3.5 rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
             >
-              Create Your First Trip
+              <Plus className="w-5 h-5" />
+              Create a Trip
             </Link>
           </div>
         ) : (
