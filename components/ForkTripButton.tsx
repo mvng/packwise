@@ -38,30 +38,36 @@ export default function ForkTripButton({
       // Get localStorage state for this trip (checked items from anonymous viewing)
       const localStorageState = getTripLocalStorageState(tripId)
       
-      // Fork the trip with localStorage state
-      const result = await forkTrip(tripId, localStorageState)
+      try {
+        // Fork the trip with localStorage state
+        const result = await forkTrip(tripId, localStorageState)
 
-      if (result.error) {
-        if (result.alreadyOwned) {
-          setError('You already own this trip')
-        } else if (result.requiresAuth) {
-          sessionStorage.setItem('fork_trip_after_login', tripId)
-          router.push(`/login?redirect=/trip/${tripId}`)
-        } else {
-          setError(result.error)
+        if (result.error) {
+          if (result.alreadyOwned) {
+            setError('You already own this trip')
+          } else if (result.requiresAuth) {
+            sessionStorage.setItem('fork_trip_after_login', tripId)
+            router.push(`/login?redirect=/trip/${tripId}`)
+          } else {
+            setError(result.error)
+          }
+          setIsForking(false)
+        } else if (result.success && result.tripId) {
+          setShowSuccess(true)
+
+          // Clear localStorage for this trip after successful fork
+          if (typeof window !== 'undefined' && localStorageState) {
+            localStorage.removeItem(`packwise_trip_${tripId}`)
+          }
+
+          setTimeout(() => {
+            router.push(`/trip/${result.tripId}`)
+          }, 1500)
         }
+      } catch (err) {
+        console.error('Failed to fork trip:', err)
+        setError('An unexpected error occurred while saving the copy')
         setIsForking(false)
-      } else if (result.success && result.tripId) {
-        setShowSuccess(true)
-        
-        // Clear localStorage for this trip after successful fork
-        if (typeof window !== 'undefined' && localStorageState) {
-          localStorage.removeItem(`packwise_trip_${tripId}`)
-        }
-        
-        setTimeout(() => {
-          router.push(`/trip/${result.tripId}`)
-        }, 1500)
       }
     })
   }

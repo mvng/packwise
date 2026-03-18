@@ -183,12 +183,59 @@ export async function getTripById(tripId: string) {
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized' }
 
-    const trip = await prisma.trip.findFirst({
-      where: { id: tripId, userId },
-      include: { packingLists: { include: { categories: { include: { items: true } } } } },
-    })
+    // ⚡ Bolt Performance Optimization
+    // Why: Flattened the deeply nested Cartesian product Prisma query into parallel queries.
+    // Impact: Prevents N+1 database explosions, dramatically speeding up DB execution time
+    // and reducing the serialized payload size sent over the network.
+    const [baseTrip, rawPackingLists, rawCategories, rawItems] = await Promise.all([
+      prisma.trip.findFirst({
+        where: { id: tripId, userId },
+      }),
+      prisma.packingList.findMany({
+        where: { tripId },
+      }),
+      prisma.category.findMany({
+        where: { packingList: { tripId } },
+        orderBy: { order: 'asc' }
+      }),
+      prisma.packingItem.findMany({
+        where: { category: { packingList: { tripId } } },
+        orderBy: { order: 'asc' }
+      })
+    ]);
 
-    if (!trip) return { error: 'Trip not found' }
+    if (!baseTrip) return { error: 'Trip not found' }
+
+    // Stitch the flattened queries back together in memory
+    const itemsByCategoryId: Record<string, typeof rawItems> = {};
+    for (const item of rawItems) {
+      if (!itemsByCategoryId[item.categoryId]) {
+        itemsByCategoryId[item.categoryId] = [];
+      }
+      itemsByCategoryId[item.categoryId].push(item);
+    }
+
+    const categoriesByListId: Record<string, any[]> = {};
+    for (const category of rawCategories) {
+      if (!categoriesByListId[category.packingListId]) {
+        categoriesByListId[category.packingListId] = [];
+      }
+      categoriesByListId[category.packingListId].push({
+        ...category,
+        items: itemsByCategoryId[category.id] || []
+      });
+    }
+
+    const stitchedPackingLists = rawPackingLists.map(list => ({
+      ...list,
+      categories: categoriesByListId[list.id] || []
+    }));
+
+    const trip = {
+      ...baseTrip,
+      packingLists: stitchedPackingLists
+    };
+
     return { trip }
   } catch (error: any) {
     console.error('Get trip error:', error)
