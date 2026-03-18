@@ -145,7 +145,8 @@ function parseColDropId(id: string): string | null {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PlanningBoardViewProps {
-  trip: { id: string; startDate: Date | string; endDate: Date | string }
+  trip: { id: string; startDate: Date | string; endDate: Date | string; packingLists?: any[] }
+  onUnsyncedItemsChange?: (unsyncedItems: string[]) => void
 }
 type DayPlanMap = Record<string, DayPlan>
 
@@ -735,7 +736,7 @@ function TimeSlot({
 
 // ─── PlanningBoardView ────────────────────────────────────────────────────────
 
-export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
+export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: PlanningBoardViewProps) {
   const days = generateDays(trip.startDate, trip.endDate)
   const [dayPlans, setDayPlans] = useState<DayPlanMap>({})
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -743,6 +744,24 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week')
   const [selectedDay, setSelectedDay] = useState<Date>(days[0] || new Date())
   const [, startTransition] = useTransition()
+
+  useEffect(() => {
+    if (!onUnsyncedItemsChange) return
+
+    const allPlanItems = Object.values(dayPlans).flatMap(dp => dp.items || [])
+    const packingItems = trip.packingLists?.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items)) || []
+
+    const unsyncedItems = allPlanItems
+      .filter(planItem => {
+        if (planItem.category === TAG_CATEGORY) return false
+        return !packingItems.some((pi: any) => pi.name.toLowerCase() === planItem.name.toLowerCase())
+      })
+      .map(item => item.name)
+
+    const uniqueUnsynced = Array.from(new Set(unsyncedItems))
+
+    onUnsyncedItemsChange(uniqueUnsynced)
+  }, [dayPlans, trip.packingLists, onUnsyncedItemsChange])
 
   useEffect(() => {
     async function load() {
@@ -1047,32 +1066,35 @@ export default function PlanningBoardView({ trip }: PlanningBoardViewProps) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
-          <div className="inline-flex gap-3 pb-4 min-w-max h-full">
+        <div className="flex-1">
+          <div className={`flex gap-4 pb-4 h-full ${viewMode === 'week' ? 'flex-col' : 'flex-row'}`}>
             {viewMode === 'week' ? (
               days.map((date, index) => {
                 const key = toDateKey(date)
                 return (
-                  <DayColumn
-                    key={key}
-                    date={date}
-                    dayIndex={index}
-                    tripId={trip.id}
-                    dayPlan={dayPlans[key]}
-                    isTagOver={tagOverColumn === key}
-                    onDayPlanChange={handleDayPlanChange}
-                  />
+                  <div key={key} className="w-full">
+                    <DayColumn
+                      date={date}
+                      dayIndex={index}
+                      tripId={trip.id}
+                      dayPlan={dayPlans[key]}
+                      isTagOver={tagOverColumn === key}
+                      onDayPlanChange={handleDayPlanChange}
+                    />
+                  </div>
                 )
               })
             ) : (
-              <DayDetailView
-                date={selectedDay}
-                dayIndex={days.findIndex(d => toDateKey(d) === toDateKey(selectedDay))}
-                tripId={trip.id}
-                dayPlan={dayPlans[toDateKey(selectedDay)]}
-                isTagOver={tagOverColumn === toDateKey(selectedDay)}
-                onDayPlanChange={handleDayPlanChange}
-              />
+              <div className="w-full max-w-xl">
+                <DayDetailView
+                  date={selectedDay}
+                  dayIndex={days.findIndex(d => toDateKey(d) === toDateKey(selectedDay))}
+                  tripId={trip.id}
+                  dayPlan={dayPlans[toDateKey(selectedDay)]}
+                  isTagOver={tagOverColumn === toDateKey(selectedDay)}
+                  onDayPlanChange={handleDayPlanChange}
+                />
+              </div>
             )}
           </div>
         </div>

@@ -13,8 +13,7 @@ import PackingRating from '@/components/PackingRating'
 import TripMembersSection from '@/components/TripMembersSection'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
-import { Calendar, Check, ListTodo } from 'lucide-react'
-import TripPlanningAssistant from '@/components/TripPlanningAssistant'
+import { Calendar, Check, RefreshCw } from 'lucide-react'
 
 const PlanningBoardView = dynamic(() => import('@/components/PlanningBoardView'), {
   ssr: false,
@@ -68,9 +67,10 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
     setTripTimezone(initialTripTimezone)
   }, [initialTrip, initialTripTimezone])
 
-  const [viewMode, setViewMode] = useState<'plan' | 'pack' | 'tasks'>('pack')
+  const [viewMode, setViewMode] = useState<'plan' | 'pack'>('pack')
   const [isSyncing, setIsSyncing] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [unsyncedItems, setUnsyncedItems] = useState<string[]>([])
 
   const handleEditSuccess = async () => {
     setEditingTrip(null)
@@ -272,66 +272,91 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
 
         {/* View toggle */}
         {!isSharedView && (
-          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit mb-6">
-            <button
-              disabled={isSyncing || isPending}
-              onClick={() => setViewMode('plan')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
-                viewMode === 'plan' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Calendar className="w-4 h-4" /> Plan
-            </button>
-            <button
-              disabled={isSyncing || isPending}
-              onClick={() => setViewMode('tasks')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
-                viewMode === 'tasks' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <ListTodo className="w-4 h-4" /> Planning
-            </button>
+          <div className="flex items-center gap-4 mb-6 lg:hidden">
+            <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
+              <button
+                disabled={isSyncing || isPending}
+                onClick={() => setViewMode('plan')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
+                  viewMode === 'plan' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Calendar className="w-4 h-4" /> Plan
+              </button>
 
-            <button
-              disabled={isSyncing || isPending}
-              onClick={async () => {
-                if (viewMode === 'plan') {
-                  setIsSyncing(true)
-                  await fetch('/api/day-plans/sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tripId: trip.id }),
-                  })
-                  setIsSyncing(false)
-                  setViewMode('pack')
-                  startTransition(() => {
-                    router.refresh()
-                  })
-                } else {
-                  setViewMode('pack')
-                }
-              }}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
-                viewMode === 'pack' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {(isSyncing || isPending) ? 'Syncing…' : <><Check className="w-4 h-4" /> Pack</>}
-            </button>
+              <button
+                disabled={isSyncing || isPending}
+                onClick={() => setViewMode('pack')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none disabled:opacity-50 flex items-center gap-1.5 ${
+                  viewMode === 'pack' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Check className="w-4 h-4" /> Pack
+              </button>
+            </div>
           </div>
         )}
 
         {/* Content */}
-        {!isSharedView && viewMode === 'tasks' ? (
-          <TripPlanningAssistant tripId={trip.id} startDate={trip.startDate} />
-        ) : !isSharedView && viewMode === 'plan' ? (
-          <PlanningBoardView trip={displayTrip} />
-        ) : (
-          <PackingListSection
-            trip={displayTrip}
-            readOnly={isSharedView}
-            sharedTripLuggages={isSharedView ? trip.tripLuggages : undefined}
-          />
-        )}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left Column (Plan) */}
+          <div className={`${isSharedView ? 'hidden' : `lg:w-1/2 flex-1 ${viewMode === 'pack' ? 'hidden lg:block' : 'block'}`}`}>
+            {!isSharedView && (
+              <div className="flex flex-col gap-4">
+                <PlanningBoardView trip={displayTrip} onUnsyncedItemsChange={setUnsyncedItems} />
+                
+                {unsyncedItems.length > 0 && (
+                  <div className="relative group flex items-center justify-center lg:justify-start">
+                    <button
+                      disabled={isSyncing || isPending}
+                      onClick={async () => {
+                        setIsSyncing(true)
+                        await fetch('/api/day-plans/sync', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ tripId: trip.id }),
+                        })
+                        setIsSyncing(false)
+                        setUnsyncedItems([])
+                        startTransition(() => {
+                          router.refresh()
+                        })
+                      }}
+                      className="px-6 py-3 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all disabled:opacity-50 flex items-center gap-2 w-full lg:w-auto justify-center"
+                    >
+                      {isSyncing || isPending ? (
+                        <>Syncing…</>
+                      ) : (
+                        <><RefreshCw className="w-4 h-4" /> Sync {unsyncedItems.length} items to Packing List</>
+                      )}
+                    </button>
+                    <div className="absolute lg:left-0 lg:-translate-x-0 left-1/2 -translate-x-1/2 top-full mt-2 w-max max-w-xs bg-gray-900 text-white text-xs rounded shadow-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                      <p className="font-semibold mb-2 border-b border-gray-700 pb-1 text-left">Adding {unsyncedItems.length} item{unsyncedItems.length !== 1 && 's'}:</p>
+                      <ul className="list-disc pl-4 text-left space-y-1 text-gray-200">
+                        {unsyncedItems.slice(0, 5).map(item => (
+                          <li key={item} className="truncate">{item}</li>
+                        ))}
+                        {unsyncedItems.length > 5 && (
+                          <li className="text-gray-400 italic list-none -ml-4 mt-1">+{unsyncedItems.length - 5} more</li>
+                        )}
+                      </ul>
+                      <div className="absolute -top-1 lg:left-6 left-1/2 -translate-x-1/2 border-solid border-b-gray-900 border-b-4 border-x-transparent border-x-4 border-t-0"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column (Pack) */}
+          <div className={`${isSharedView ? 'w-full block' : `lg:w-1/2 flex-1 ${viewMode === 'plan' ? 'hidden lg:block' : 'block'}`}`}>
+            <PackingListSection
+              trip={displayTrip}
+              readOnly={isSharedView}
+              sharedTripLuggages={isSharedView ? trip.tripLuggages : undefined}
+            />
+          </div>
+        </div>
 
         {/* Packing Rating — only shown after the trip has ended */}
         {isTripOver && displayTrip.packingLists.length > 0 && (
