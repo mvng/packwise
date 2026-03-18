@@ -85,6 +85,15 @@ test.describe('generatePackingList', () => {
     expect(cruiseList.some(c => c.name === 'Cruise Essentials')).toBe(true)
   })
 
+
+  test('should explicitly not suggest 14 t-shirts for a 14 day trip', () => {
+    const tripList = generatePackingList('city', 14)
+    const clothing = tripList.find(c => c.name === 'Clothing')
+
+    expect(clothing?.items).toContain('T-shirts (7)')
+    expect(clothing?.items).not.toContain('T-shirts (14)')
+  })
+
   test('should scale clothing quantities based on duration', () => {
     // Math.min(duration + 1, 7)
     // 2 days -> qty = 3
