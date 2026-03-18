@@ -330,35 +330,52 @@ export async function submitGuestChanges(
     })
     if (!list) return { error: 'Invalid share token' }
 
+    // ⚡ Bolt Performance Optimization
+    // Pre-calculate Set objects for valid IDs to optimize validation complexity from O(N*M) to O(1)
+    const validCategoryIds = new Set<string>();
+    const validItemIds = new Set<string>();
+    for (const category of list.categories) {
+      validCategoryIds.add(category.id);
+      for (const item of category.items) {
+        validItemIds.add(item.id);
+      }
+    }
+
+    // Collect individual operations into an array of promises
+    const promises: any[] = [];
+
     // Update claims
     for (const claim of claims) {
-      // Verify the item belongs to this list
-      const itemExistsInList = list.categories.some(c =>
-        c.items.some(i => i.id === claim.itemId)
-      )
-      if (itemExistsInList) {
-        await prisma.packingItem.update({
-          where: { id: claim.itemId },
-          data: { guestClaimant: claim.guestClaimant }
-        })
+      if (validItemIds.has(claim.itemId)) {
+        promises.push(
+          prisma.packingItem.update({
+            where: { id: claim.itemId },
+            data: { guestClaimant: claim.guestClaimant }
+          })
+        );
       }
     }
 
     // Add new items
     for (const item of newItems) {
-      // Verify the category belongs to this list
-      const categoryExistsInList = list.categories.some(c => c.id === item.categoryId)
-      if (categoryExistsInList) {
-        await prisma.packingItem.create({
-          data: {
-            categoryId: item.categoryId,
-            name: item.name,
-            quantity: item.quantity,
-            isCustom: true,
-            guestClaimant: item.guestName
-          }
-        })
+      if (validCategoryIds.has(item.categoryId)) {
+        promises.push(
+          prisma.packingItem.create({
+            data: {
+              categoryId: item.categoryId,
+              name: item.name,
+              quantity: item.quantity,
+              isCustom: true,
+              guestClaimant: item.guestName
+            }
+          })
+        );
       }
+    }
+
+    // Execute the batch using a transaction to eliminate the N+1 database round-trip problem
+    if (promises.length > 0) {
+      await prisma.$transaction(promises);
     }
 
     revalidatePath(`/claim/${token}`)
