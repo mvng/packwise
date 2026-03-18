@@ -1,8 +1,13 @@
-import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import ClaimPageClient from './ClaimPageClient'
 
+import type { Metadata } from 'next'
+
+// SCOUT SEO RATIONALE:
+// Adding dynamic metadata to the claim page ensures that when users share this link
+// via social media or messaging apps, the Open Graph preview accurately reflects
+// the trip destination and context, significantly improving click-through rates.
 export async function generateMetadata({
   params,
 }: {
