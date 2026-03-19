@@ -1,3 +1,6 @@
 ## 2024-05-24 - Add accessible close buttons to modals
 **Learning:** Found a pattern across multiple modal components (`EditTripModal`, `LuggagePickerModal`, `InventoryPickerModal`) where icon-only close buttons lacked `aria-label`s and the modals lacked `Escape` key close handlers.
 **Action:** When creating or editing modals in the future, ensure that icon-only buttons have descriptive `aria-label`s and that keyboard accessibility (like the Escape key) is implemented to close the modals.
+## 2024-05-25 - Improve keyboard accessibility for hover-revealed action buttons
+**Learning:** Found that secondary action buttons (like Edit/Delete) inside mapped lists are often hidden visually using `opacity-0 group-hover:opacity-100`. While this works for mouse users, keyboard-only users who tab to these buttons cannot see what they are focusing on because the `opacity-0` still applies. Furthermore, icon-only buttons need descriptive, contextual `aria-label`s.
+**Action:** When hiding elements on hover, ensure you also apply `focus-within:opacity-100` to the container and `focus-visible:opacity-100 focus-visible:ring-2 focus:outline-none` directly to the hidden buttons. Always include context-interpolated `aria-label`s (e.g., \`aria-label={"Edit " + item.name}\`) on icon-only action buttons.
