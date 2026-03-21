@@ -35,7 +35,8 @@ export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: Tas
       <div className="flex items-start gap-3">
         <button
           onClick={() => onToggleStatus(task.id, task.status)}
-          className={`mt-1 flex-shrink-0 text-gray-400 hover:text-blue-600 transition-colors ${
+          aria-label={isDone ? 'Mark as not done' : 'Mark as done'}
+          className={`mt-1 flex-shrink-0 text-gray-400 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-full ${
             isDone ? 'text-green-500 hover:text-green-600' : ''
           }`}
         >
@@ -70,18 +71,20 @@ export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: Tas
           </div>
         </div>
 
-        <div className={`flex items-center gap-1 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`flex items-center gap-1 transition-opacity focus-within:opacity-100 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
           <button
             onClick={() => onEdit(task)}
-            className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             title="Edit task"
+            aria-label="Edit task"
           >
             <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(task.id)}
-            className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
             title="Delete task"
+            aria-label="Delete task"
           >
             <Trash2 className="w-4 h-4" />
           </button>
