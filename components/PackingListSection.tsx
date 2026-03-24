@@ -748,6 +748,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             <button
               onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
               title="Add/Edit Note"
+              aria-label="Add or edit note"
               className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
             ><MessageSquare className="w-3.5 h-3.5" /></button>
             <button
@@ -758,14 +759,14 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                   ? 'bg-amber-100 text-amber-700 border-amber-300'
                   : 'bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600'
               }`}
-              aria-label={item.packLast ? 'Remove from pack last' : 'Mark as pack last'}
+              aria-label={item.packLast ? 'Remove from departure checklist' : 'Add to departure checklist'}
             >
               <Sunrise className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => handleDelete(item.id, item.categoryId, item.packingListId)}
               className="text-red-400 hover:text-red-600 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded px-1"
-              aria-label={`Remove ${item.name} from packing list`}
+              aria-label="Remove item"
             >
               <X className="w-4 h-4" />
             </button>
@@ -1263,14 +1264,16 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                   <button
                                     onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
                                     title="Add/Edit Note"
+                                    aria-label="Add or edit note"
                                     className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
                                   ><MessageSquare className="w-3.5 h-3.5" /></button>
                                   <button
                                     onClick={() => handleTogglePackLast(item.id, category.id, list.id, item.packLast)}
                                     title="Add to departure checklist"
+                                    aria-label={item.packLast ? 'Remove from departure checklist' : 'Add to departure checklist'}
                                     className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 flex items-center justify-center"
                                   ><Sunrise className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDelete(item.id, category.id, list.id)} className="text-red-400 hover:text-red-600 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1 flex items-center"><X className="w-4 h-4" /></button>
+                                  <button onClick={() => handleDelete(item.id, category.id, list.id)} aria-label="Remove item" className="text-red-400 hover:text-red-600 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1 flex items-center"><X className="w-4 h-4" /></button>
                                 </div>
                               )}
                             </li>
