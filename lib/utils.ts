@@ -99,3 +99,13 @@ export function getTripDuration(startDate: Date | string, endDate: Date | string
 export function generateId(): string {
   return crypto.randomUUID()
 }
+
+/**
+ * Serializes data to JSON-LD format, safely escaping < and > to prevent XSS script breakouts
+ * without breaking JSON syntax for search engine crawlers.
+ * @param data - The data object to serialize
+ * @returns Serialized JSON string safe for injection into <script type="application/ld+json">
+ */
+export function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+}
