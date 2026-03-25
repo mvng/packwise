@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2024-05-19 - [useMemo for derived nested state]
+**Learning:** This codebase uses deeply nested relational objects passed to client components (e.g., `trip.packingLists[].categories[].items[]`). Performing structural transformations like `.flatMap` followed by `.filter` directly in the render body creates O(N) recalculations on every render, severely impacting performance as state (like modal toggles or sync states) updates.
+**Action:** Always wrap expensive derived calculations of deeply nested structures in a `useMemo` hook, using the top-level parent object (e.g. `displayTrip`) as the single dependency to avoid thrashing CPU on unrelated state changes.
