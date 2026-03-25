@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { serializeJsonLd } from '@/lib/utils'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -26,7 +27,7 @@ export default async function HomePage() {
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       {/* Navigation */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
