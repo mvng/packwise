@@ -18,11 +18,13 @@ export default function TripWeatherDetailClient({ weather, headerChildren, expan
       className="bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 rounded-lg border border-blue-100 relative cursor-help shadow-sm overflow-hidden transition-all"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
+      onFocus={() => setShowTooltip(true)}
+      onBlur={() => setShowTooltip(false)}
     >
       {/* Ultra-compact preview - no capped warning when collapsed */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-3 py-2 flex items-center justify-between hover:bg-white hover:bg-opacity-30 transition-colors text-left gap-2"
+        className="w-full px-3 py-2 flex items-center justify-between hover:bg-white hover:bg-opacity-30 transition-colors text-left gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg"
         aria-expanded={isExpanded}
         aria-controls="weather-details"
       >

@@ -13,9 +13,12 @@ export default function TripWeatherCardClient({ weather, children }: TripWeather
 
   return (
     <div
-      className="mt-3 pt-3 border-t border-gray-100 relative cursor-help"
+      className="mt-3 pt-3 border-t border-gray-100 relative cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 rounded-lg"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
+      onFocus={() => setShowTooltip(true)}
+      onBlur={() => setShowTooltip(false)}
+      tabIndex={0}
     >
       {children}
 
