@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSharedTripById } from '@/actions/trip.actions'
@@ -92,26 +92,39 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
   }
 
   const isSharedView = !isOwner
-  const displayTrip = isSharedView ? {
-    ...trip,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    packingLists: trip.packingLists.map((list: any) => ({
-      ...list,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      categories: list.categories.map((cat: any) => ({
-        ...cat,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        items: cat.items.map((item: any) => ({ ...item, isPacked: false }))
-      }))
-    }))
-  } : trip
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allItems = displayTrip.packingLists.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items))
-  const totalItems = allItems.length
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const packedItems = allItems.filter((item: any) => item.isPacked).length
-  const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
+  // ⚡ Bolt Performance Optimization
+  // Why: `displayTrip` was previously mapped and spread on every render if `isSharedView` was true,
+  // causing its reference to change constantly. Wrapping it in `useMemo` stabilizes the reference.
+  const displayTrip = useMemo(() => {
+    return isSharedView ? {
+      ...trip,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      packingLists: trip.packingLists?.map((list: any) => ({
+        ...list,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        categories: list.categories?.map((cat: any) => ({
+          ...cat,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          items: cat.items?.map((item: any) => ({ ...item, isPacked: false }))
+        }))
+      }))
+    } : trip
+  }, [isSharedView, trip])
+
+  // ⚡ Bolt Performance Optimization
+  // Why: Prevents expensive array flatMap and filter operations on every component render.
+  // Impact: Avoids unnecessary recalculations of derived state (allItems, packedItems, progress)
+  // when unrelated state changes (e.g. viewMode, modal states).
+  const { allItems, totalItems, packedItems, progress } = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const all = displayTrip?.packingLists?.flatMap((list: any) => list.categories?.flatMap((cat: any) => cat.items) || []) || []
+    const total = all.length
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const packed = all.filter((item: any) => item.isPacked).length
+    const prog = total > 0 ? Math.round((packed / total) * 100) : 0
+    return { allItems: all, totalItems: total, packedItems: packed, progress: prog }
+  }, [displayTrip])
 
   // Post-trip: true if end date is in the past
   const isTripOver = trip.endDate ? new Date(trip.endDate) < new Date() : false
