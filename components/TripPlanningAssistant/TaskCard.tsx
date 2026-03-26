@@ -35,11 +35,12 @@ export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: Tas
       <div className="flex items-start gap-3">
         <button
           onClick={() => onToggleStatus(task.id, task.status)}
-          className={`mt-1 flex-shrink-0 text-gray-400 hover:text-blue-600 transition-colors ${
+          aria-label={isDone ? `Mark ${task.title} as pending` : `Mark ${task.title} as done`}
+          className={`mt-1 flex-shrink-0 text-gray-400 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-full ${
             isDone ? 'text-green-500 hover:text-green-600' : ''
           }`}
         >
-          {isDone ? <CheckCircle className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+          {isDone ? <CheckCircle className="w-5 h-5" aria-hidden="true" /> : <Circle className="w-5 h-5" aria-hidden="true" />}
         </button>
 
         <div className="flex-1 min-w-0">
@@ -70,20 +71,20 @@ export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: Tas
           </div>
         </div>
 
-        <div className={`flex items-center gap-1 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`flex items-center gap-1 transition-opacity focus-within:opacity-100 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
           <button
             onClick={() => onEdit(task)}
-            className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
-            title="Edit task"
+            className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+            aria-label={`Edit task: ${task.title}`}
           >
-            <Edit2 className="w-4 h-4" />
+            <Edit2 className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             onClick={() => onDelete(task.id)}
-            className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
-            title="Delete task"
+            className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
+            aria-label={`Delete task: ${task.title}`}
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
