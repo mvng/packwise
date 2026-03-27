@@ -271,6 +271,7 @@ function InlineTagCard({
         ) : (
           <button
             onClick={() => setEditingTime(true)}
+            aria-label={item.time ? `Edit time for ${tag?.label ?? item.name}` : `Add time for ${tag?.label ?? item.name}`}
             className="ml-2 text-[11px] opacity-60 hover:opacity-100 transition-opacity"
           >
             {item.time ? fmtTime(item.time) : <span className="italic">+ time</span>}
@@ -352,8 +353,8 @@ function AddItemForm({ onAdd, onOpenInventory }: {
 
   if (!open) return (
     <div className="flex items-center gap-3 pt-1">
-      <button onClick={() => setOpen(true)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">+ Add item</button>
-      <button onClick={onOpenInventory} className="text-xs text-gray-400 hover:text-blue-500 transition-colors">+ Inventory</button>
+      <button onClick={() => setOpen(true)} aria-label="Add new day plan item" className="text-xs text-blue-500 hover:text-blue-700 font-medium">+ Add item</button>
+      <button onClick={onOpenInventory} aria-label="Add from inventory" className="text-xs text-gray-400 hover:text-blue-500 transition-colors">+ Inventory</button>
     </div>
   )
 
@@ -376,7 +377,7 @@ function AddItemForm({ onAdd, onOpenInventory }: {
         onChange={(e) => setNotes(e.target.value)} className={inputCls} />
       <div className="flex items-center gap-2">
         <button onClick={handleSubmit} className="bg-blue-500 text-white rounded-lg px-3 py-1 text-xs font-medium hover:bg-blue-600">Add</button>
-        <button onClick={() => setOpen(false)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+        <button onClick={() => setOpen(false)} aria-label="Cancel adding item" className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
       </div>
     </div>
   )
@@ -497,7 +498,7 @@ function DayColumn({
               <span className="text-sm">{allDayTag.icon}</span>
               <span className={`text-[11px] font-semibold ${headerText} opacity-90`}>{allDayTag.label}</span>
               <span className={`text-[10px] ml-0.5 opacity-50 ${headerText}`}>— all day</span>
-              <button onClick={() => saveLabel('')} className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none leading-none`}>✕</button>
+              <button onClick={() => saveLabel('')} aria-label="Remove all day tag" className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none leading-none`}>✕</button>
             </div>
           ) : editingLabel ? (
             <input autoFocus type="text" value={labelInput}
@@ -507,7 +508,7 @@ function DayColumn({
               className="mt-1 text-[11px] w-full bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           ) : (
-            <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none rounded w-full text-left">
+            <button onClick={() => setEditingLabel(true)} aria-label={dayPlan?.label ? "Edit day label" : "Add day label"} className="mt-0.5 focus:outline-none rounded w-full text-left">
               {dayPlan?.label
                 ? <span className="text-[11px] text-gray-500 font-medium">{dayPlan.label}</span>
                 : <span className={`text-[11px] italic ${dropping ? 'text-blue-400' : 'text-gray-300'}`}>
@@ -544,7 +545,7 @@ function DayColumn({
               <div className="mb-1.5">
                 {toast
                   ? <p className="text-[11px] text-indigo-500">{toast}</p>
-                  : <button onClick={handleSaveToInventory} className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors">↓ Save to inventory</button>
+                  : <button onClick={handleSaveToInventory} aria-label="Save day plan items to inventory" className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors">↓ Save to inventory</button>
                 }
               </div>
             )}
