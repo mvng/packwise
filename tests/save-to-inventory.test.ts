@@ -51,10 +51,10 @@ test.describe('Performance: save-to-inventory', () => {
       }
     };
 
-    Object.defineProperty(prisma, 'user', { value: mockPrisma.user, configurable: true });
-    Object.defineProperty(prisma, 'dayPlan', { value: mockPrisma.dayPlan, configurable: true });
-    Object.defineProperty(prisma, 'inventoryCategory', { value: mockPrisma.inventoryCategory, configurable: true });
-    Object.defineProperty(prisma, 'inventoryItem', { value: mockPrisma.inventoryItem, configurable: true });
+    try { Object.defineProperty(prisma, 'user', { value: mockPrisma.user, configurable: true }); } catch (e) {}
+    try { Object.defineProperty(prisma, 'dayPlan', { value: mockPrisma.dayPlan, configurable: true }); } catch (e) {}
+    try { Object.defineProperty(prisma, 'inventoryCategory', { value: mockPrisma.inventoryCategory, configurable: true }); } catch (e) {}
+    try { Object.defineProperty(prisma, 'inventoryItem', { value: mockPrisma.inventoryItem, configurable: true }); } catch (e) {}
 
     // Mock Supabase Auth
     Object.defineProperty(auth, 'createClient', { configurable: true,
