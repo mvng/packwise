@@ -157,10 +157,10 @@ export default function DashboardClient({
       </Link>
 
       {/* Action buttons */}
-      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex gap-1 transition-opacity">
         <button
           onClick={(e) => handleEditTrip(e, trip)}
-          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center"
+          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           aria-label="Edit trip"
         >
           <Edit2 className="w-4 h-4" />
@@ -168,7 +168,7 @@ export default function DashboardClient({
         <button
           onClick={(e) => handleDeleteTrip(e, trip.id)}
           disabled={deletingId === trip.id}
-          className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center"
+          className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
           aria-label="Delete trip"
         >
           {deletingId === trip.id ? <MoreHorizontal className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
@@ -200,10 +200,10 @@ export default function DashboardClient({
       </Link>
 
       {/* Action buttons */}
-      <div className="absolute top-1/2 -translate-y-1/2 right-2 opacity-0 group-hover:opacity-100 flex gap-0.5 transition-opacity bg-white/90 rounded-md backdrop-blur-sm shadow-sm">
+      <div className="absolute top-1/2 -translate-y-1/2 right-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex gap-0.5 transition-opacity bg-white/90 rounded-md backdrop-blur-sm shadow-sm">
         <button
           onClick={(e) => handleEditTrip(e, trip)}
-          className="p-1.5 text-gray-500 hover:text-blue-600 rounded transition-all flex items-center justify-center"
+          className="p-1.5 text-gray-500 hover:text-blue-600 rounded transition-all flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
           aria-label="Edit trip"
         >
           <Edit2 className="w-4 h-4" />
@@ -211,7 +211,7 @@ export default function DashboardClient({
         <button
           onClick={(e) => handleDeleteTrip(e, trip.id)}
           disabled={deletingId === trip.id}
-          className="p-1.5 text-gray-500 hover:text-red-500 rounded transition-all disabled:opacity-50 flex items-center justify-center"
+          className="p-1.5 text-gray-500 hover:text-red-500 rounded transition-all disabled:opacity-50 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
           aria-label="Delete trip"
         >
           {deletingId === trip.id ? <MoreHorizontal className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
