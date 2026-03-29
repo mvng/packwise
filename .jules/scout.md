@@ -11,3 +11,6 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2026-03-29 - [Next.js App Router Robots.txt]
+**Learning:** To explicitly guide search engine crawlers away from authenticated or private application sections in Next.js App Router, implement an `app/robots.ts` file that returns a `MetadataRoute.Robots` object with specific `allow` and `disallow` rules, rather than relying solely on a static `robots.txt`.
+**Action:** Always consider explicit route-level exclusion through `robots.ts` for dynamic Next.js applications with large authenticated surface areas.
