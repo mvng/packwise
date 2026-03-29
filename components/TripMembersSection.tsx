@@ -58,13 +58,14 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
           <div key={member.id} className="group relative">
             <button
               onClick={isOwner ? () => handleRemove(member.id) : undefined}
-              className={`w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold ring-2 ring-white transition-all ${
-                isOwner ? 'hover:bg-red-100 hover:text-red-600 cursor-pointer' : 'cursor-default'
+              className={`w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold ring-2 ring-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-1 ${
+                isOwner ? 'hover:bg-red-100 hover:text-red-600 focus-visible:bg-red-100 focus-visible:text-red-600 cursor-pointer' : 'cursor-default'
               }`}
-              title={member.name}
+              title={isOwner ? `Remove ${member.name}` : member.name}
+              aria-label={isOwner ? `Remove ${member.name}` : member.name}
             >
-              <span className="group-hover:hidden">{member.name.charAt(0).toUpperCase()}</span>
-              {isOwner && <X className="w-3 h-3 hidden group-hover:block" />}
+              <span className="group-hover:hidden group-focus-within:hidden">{member.name.charAt(0).toUpperCase()}</span>
+              {isOwner && <X className="w-3 h-3 hidden group-hover:block group-focus-within:block" aria-hidden="true" />}
             </button>
             {/* Tooltip */}
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-20">
