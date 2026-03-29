@@ -11,3 +11,9 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2024-03-16 - [Safe JSON-LD Structured Data Output]
+**Learning:** When generating JSON-LD structured data inside a `<script type="application/ld+json">` tag using `dangerouslySetInnerHTML`, simply using `JSON.stringify(data)` introduces XSS vulnerabilities if the data is dynamic, as it doesn't escape characters like `<`, `>`, and `&`.
+**Action:** Always wrap `JSON.stringify` logic in a serializer function (like `serializeJsonLd`) to securely escape characters using unicode sequences (e.g. replacing `<` with `\u003c`) prior to rendering.
+## 2024-03-16 - [Safe JSON-LD Structured Data Output (Correction)]
+**Learning:** While using a serializer to avoid XSS in `JSON.stringify` within a `<script type="application/ld+json">` tag is crucial, you must *only* escape `<` and `>` (to `\u003c` and `\u003e`). Escaping structural characters like `"` to `\u0022` breaks the JSON syntax for search engine crawlers, rendering the structured data invalid.
+**Action:** When serializing JSON-LD in React (`dangerouslySetInnerHTML`), ensure only angle brackets are escaped to safely prevent the script tag from being closed prematurely while maintaining valid JSON structure.
