@@ -1,0 +1,3 @@
+## 2024-03-31 - [Trip Notes Save Bug]
+**Learning:** When building auto-save `onBlur` components, comparing the current input value against the `initialValue` prop to bail out early is an anti-pattern. If a user modifies the input (triggering a save) and then later reverts the input back to the `initialValue`, the bailout check will falsely trigger, preventing the backend from being updated back to the initial state.
+**Action:** Always introduce a dedicated `lastSavedValue` state variable to track the *most recently saved* state. Compare against `lastSavedValue` rather than `initialValue` inside the `onBlur` handler to correctly trigger saves even when reverting to the initial prop value.
