@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-25 - Improve TripMembersSection accessibility
+**Learning:** Found that multiple interactive elements representing user actions (remove, add, confirm, cancel) inside `TripMembersSection` were relying solely on standard DOM `title` attributes for tooltips without specifying `aria-label` attributes. Additionally, none had specific `focus-visible` styling making keyboard navigation practically invisible.
+**Action:** When adding or editing small inline form buttons (like Add/Remove pills or Confirm/Cancel icon buttons), always provide clear `aria-label`s and `focus-visible:ring-2` styles using Tailwind to ensure the interface is fully usable with screen readers and keyboards. Use `aria-hidden="true"` on nested decorative icons inside those buttons to avoid redundant screen reader noise.
