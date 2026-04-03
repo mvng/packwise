@@ -1241,9 +1241,16 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                               handleUpdateNotes(item.id, category.id, list.id, editingNotes?.notes || "")
                                               setEditingNotes(null)
                                             }}
-                                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
+                                            aria-label="Save note"
+                                            title="Save note"
                                           ><Check className="w-3 h-3" /></button>
-                                          <button onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200"><X className="w-3 h-3" /></button>
+                                          <button
+                                            onClick={() => setEditingNotes(null)}
+                                            className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1"
+                                            aria-label="Cancel editing note"
+                                            title="Cancel"
+                                          ><X className="w-3 h-3" /></button>
                                         </div>
                                       </div>
                                     ) : item.notes ? (

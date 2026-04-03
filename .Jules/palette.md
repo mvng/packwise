@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2025-04-03 - Added ARIA labels and Focus Rings to Icon-Only Buttons
+**Learning:** React elements utilizing `opacity-0 group-hover:opacity-100` are invisible to sighted keyboard users unless accompanied by `focus-within:opacity-100` on the parent group or explicitly styling the element with `focus-visible:opacity-100`. Missing `aria-label`s on generic inline action buttons ("✕" or "✓") prevent screen reader users from understanding the button context.
+**Action:** Always provide explicit `aria-label`s, `title`s, and visually distinct focus rings (`focus-visible:ring-2`) to icon-only action buttons. For nested action buttons inside hover groups, ensure keyboard focus triggers their visibility.
