@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { Filter } from 'lucide-react'
 import Link from 'next/link'
 import { deleteTrip, getDashboardTrips } from '@/actions/trip.actions'
 import { formatDate } from '@/lib/utils'
@@ -43,6 +44,82 @@ export default function DashboardClient({
   const [trips, setTrips] = useState<Trip[]>(initialTrips)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
+
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Upcoming' | 'In Progress' | 'Completed'>('All')
+  const [typeFilter, setTypeFilter] = useState<string>('All')
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+    const savedStatus = sessionStorage.getItem('dashboard_status_filter')
+    const savedType = sessionStorage.getItem('dashboard_type_filter')
+    if (savedStatus) setStatusFilter(savedStatus as any)
+    if (savedType) setTypeFilter(savedType)
+  }, [])
+
+  useEffect(() => {
+    if (isMounted) {
+      sessionStorage.setItem('dashboard_status_filter', statusFilter)
+      sessionStorage.setItem('dashboard_type_filter', typeFilter)
+    }
+  }, [statusFilter, typeFilter, isMounted])
+
+  const distinctTripTypes = useMemo(() => {
+    const types = new Set(trips.map(t => t.tripType).filter(Boolean))
+    return Array.from(types).sort() as string[]
+  }, [trips])
+
+  const getTripStatus = (trip: Trip) => {
+    if (!trip.startDate || !trip.endDate) return 'Upcoming'
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+
+    const start = new Date(trip.startDate)
+    start.setHours(0, 0, 0, 0)
+
+    const end = new Date(trip.endDate)
+    end.setHours(0, 0, 0, 0)
+
+    if (now < start) return 'Upcoming'
+    if (now >= start && now <= end) return 'In Progress'
+    return 'Completed'
+  }
+
+  const statusCounts = useMemo(() => {
+    const counts = { 'All': trips.length, 'Upcoming': 0, 'In Progress': 0, 'Completed': 0 }
+    trips.forEach(t => {
+      const status = getTripStatus(t)
+      counts[status]++
+    })
+    return counts
+  }, [trips])
+
+  const filteredTrips = useMemo(() => {
+    return trips.filter(trip => {
+      if (typeFilter !== 'All' && trip.tripType !== typeFilter) return false
+
+      if (statusFilter !== 'All') {
+        const status = getTripStatus(trip)
+        if (status !== statusFilter) return false
+      }
+
+      return true
+    }).sort((a, b) => {
+      if (!a.startDate) return 1
+      if (!b.startDate) return -1
+
+      // Sort in-progress and upcoming ascending, completed descending
+      const statusA = getTripStatus(a)
+      const statusB = getTripStatus(b)
+
+      if (statusA === 'Completed' && statusB === 'Completed') {
+        return new Date(b.endDate || b.startDate).getTime() - new Date(a.endDate || a.startDate).getTime()
+      }
+
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+    })
+  }, [trips, statusFilter, typeFilter])
+
 
   const reloadTrips = async () => {
     try {
@@ -236,6 +313,50 @@ export default function DashboardClient({
           </Link>
         </div>
 
+        {/* Filters */}
+        {trips.length > 0 && (
+          <div className="flex flex-col sm:flex-row gap-4 mb-8 bg-white p-2 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex flex-1 overflow-x-auto hide-scrollbar gap-1">
+              {(['All', 'Upcoming', 'In Progress', 'Completed'] as const).map(status => (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    statusFilter === status
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  {status}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    statusFilter === status ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {statusCounts[status]}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {distinctTripTypes.length > 0 && (
+              <div className="flex items-center gap-2 px-2 border-t sm:border-t-0 sm:border-l border-gray-200 pt-2 sm:pt-0">
+                <Filter className="w-4 h-4 text-gray-400" />
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="bg-transparent border-none text-sm font-medium text-gray-700 focus:ring-0 cursor-pointer"
+                >
+                  <option value="All">All Types</option>
+                  {distinctTripTypes.map(type => (
+                    <option key={type} value={type} className="capitalize">
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
+
         {trips.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-2xl border border-dashed border-gray-300 shadow-sm text-center">
             <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-6 shadow-sm">
@@ -258,36 +379,25 @@ export default function DashboardClient({
         ) : (
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1">
-              {upcomingTrips.length > 0 ? (
-                <section>
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Upcoming Trips</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {upcomingTrips.map(renderTripCard)}
-                  </div>
-                </section>
+              {filteredTrips.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {filteredTrips.map(renderTripCard)}
+                </div>
               ) : (
                 <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-                  <p className="text-gray-500 mb-4">No upcoming trips planned.</p>
-                  <Link
-                    href="/dashboard/new"
+                  <p className="text-gray-500 mb-2">No trips match your current filters.</p>
+                  <button
+                    onClick={() => {
+                      setStatusFilter('All')
+                      setTypeFilter('All')
+                    }}
                     className="text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    + Plan a new trip
-                  </Link>
+                    Clear filters
+                  </button>
                 </div>
               )}
             </div>
-
-            {pastTrips.length > 0 && (
-              <aside className="w-full lg:w-80 flex-shrink-0">
-                <section className="bg-gray-50/50 rounded-xl p-4 border border-gray-200">
-                  <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4">Past Trips</h2>
-                  <div className="space-y-3 opacity-90 hover:opacity-100 transition-opacity">
-                    {pastTrips.map(renderPastTripItem)}
-                  </div>
-                </section>
-              </aside>
-            )}
           </div>
         )}
       </main>
