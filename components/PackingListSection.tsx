@@ -725,9 +725,16 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         handleUpdateNotes(item.id, item.categoryId, item.packingListId, editingNotes?.notes || "")
                         setEditingNotes(null)
                       }}
-                      className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
+                      aria-label="Save note"
+                      title="Save note"
                     ><Check className="w-3 h-3" /></button>
-                    <button onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200"><X className="w-3 h-3" /></button>
+                    <button
+                      onClick={() => setEditingNotes(null)}
+                      className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400"
+                      aria-label="Cancel editing note"
+                      title="Cancel editing note"
+                    ><X className="w-3 h-3" /></button>
                   </div>
                 </div>
               ) : item.notes ? (
@@ -748,6 +755,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             <button
               onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
               title="Add/Edit Note"
+              aria-label="Add or Edit Note"
               className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
             ><MessageSquare className="w-3.5 h-3.5" /></button>
             <button
