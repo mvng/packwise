@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2026-04-07 - Add accessible labels to inline hover buttons
+**Learning:** Found that inline action buttons revealed via hover/focus states (like notes, pack last, and delete) often rely entirely on visual context or title tooltips, leaving them inaccessible to screen readers.
+**Action:** Always ensure that icon-only buttons, especially those revealed on hover/focus interactions, include descriptive `aria-label` attributes to provide context for screen reader users without altering the visual design.
