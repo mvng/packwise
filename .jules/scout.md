@@ -11,3 +11,6 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2024-03-24 - [Sitemap and Robots Configuration]
+**Learning:** Adding a dynamic `sitemap.xml` and `robots.txt` explicitly controls crawler behavior, preventing indexing of authenticated routes (like `/dashboard`) while directing crawlers to public entry points. When unit testing these configurations, hardcoding fallback URLs in assertions causes brittle tests if `process.env.NEXT_PUBLIC_APP_URL` changes; tests should dynamically compute the `baseUrl` just like the source files.
+**Action:** Always include a `sitemap.ts` and `robots.ts` in Next.js applications, explicitly adding SEO rationale comments within the files, and ensure unit tests dynamically determine the `baseUrl` for assertions to avoid test fragility.
