@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useCallback } from 'react'
+import { useState, useEffect, useTransition, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   DndContext,
@@ -745,11 +745,11 @@ export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: Plann
   const [selectedDay, setSelectedDay] = useState<Date>(days[0] || new Date())
   const [, startTransition] = useTransition()
 
+  const allPlanItems = useMemo(() => Object.values(dayPlans).flatMap(dp => dp.items || []), [dayPlans])
+  const packingItems = useMemo(() => trip.packingLists?.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items)) || [], [trip.packingLists])
+
   useEffect(() => {
     if (!onUnsyncedItemsChange) return
-
-    const allPlanItems = Object.values(dayPlans).flatMap(dp => dp.items || [])
-    const packingItems = trip.packingLists?.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items)) || []
 
     const unsyncedItems = allPlanItems
       .filter(planItem => {
@@ -761,7 +761,7 @@ export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: Plann
     const uniqueUnsynced = Array.from(new Set(unsyncedItems))
 
     onUnsyncedItemsChange(uniqueUnsynced)
-  }, [dayPlans, trip.packingLists, onUnsyncedItemsChange])
+  }, [allPlanItems, packingItems, onUnsyncedItemsChange])
 
   useEffect(() => {
     async function load() {
@@ -980,7 +980,7 @@ export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: Plann
   }
 
   const activeTag = activeId ? getTagById(parseTagDragId(activeId)) : null
-  const allItems = Object.values(dayPlans).flatMap((dp) => dp.items.map(decodeItem))
+  const allItems = useMemo(() => Object.values(dayPlans).flatMap((dp) => dp.items.map(decodeItem)), [dayPlans])
   const activeItem = activeId && !activeTag ? allItems.find((i) => i.id === activeId) : null
 
   return (

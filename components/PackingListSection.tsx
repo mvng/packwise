@@ -560,10 +560,10 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     return tl.luggage.icon || luggageIcons[tl.luggage.type as LuggageType]
   }
 
-  const getItemPackedState = (item: PackingItem): boolean => {
+  const getItemPackedState = useCallback((item: PackingItem): boolean => {
     if (readOnly) return localPackedState[item.id] ?? item.isPacked
     return item.isPacked
-  }
+  }, [readOnly, localPackedState])
 
   const handleShareToClaim = async (packingListId: string) => {
     if (readOnly) return
@@ -579,36 +579,45 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     }
   }
 
-  const allItems = optimisticLists.flatMap(list =>
-    list.categories.flatMap(cat =>
-      cat.items.map(item => ({
-        ...item,
-        categoryId: cat.id,
-        categoryName: cat.name,
-        packingListId: list.id,
-        isPacked: getItemPackedState(item)
-      }))
+  // ⚡ Bolt: Memoize expensive flatMap operations
+  const allItems = useMemo(() => {
+    return optimisticLists.flatMap(list =>
+      list.categories.flatMap(cat =>
+        cat.items.map(item => ({
+          ...item,
+          categoryId: cat.id,
+          categoryName: cat.name,
+          packingListId: list.id,
+          isPacked: getItemPackedState(item)
+        }))
+      )
     )
-  )
+  }, [optimisticLists, getItemPackedState])
 
-  const packLastItems = !readOnly ? allItems.filter(item => item.packLast) : []
-  const regularItems = allItems.filter(item => !item.packLast)
+  const packLastItems = useMemo(() => !readOnly ? allItems.filter(item => item.packLast) : [], [allItems, readOnly])
+  const regularItems = useMemo(() => allItems.filter(item => !item.packLast), [allItems])
 
-  const itemsByLuggage: Record<string, typeof allItems> = {
-    'not-assigned': regularItems.filter(item => !item.tripLuggageId)
-  }
-  optimisticTripLuggages.forEach(tl => {
-    itemsByLuggage[tl.id] = regularItems.filter(item => item.tripLuggageId === tl.id)
-  })
-
-  const itemsByPerson: Record<string, typeof allItems> = {
-    'not-assigned': regularItems.filter(item => !item.assigneeId)
-  }
-  if (trip.members) {
-    trip.members.forEach(member => {
-      itemsByPerson[member.id] = regularItems.filter(item => item.assigneeId === member.id)
+  const itemsByLuggage = useMemo(() => {
+    const result: Record<string, typeof allItems> = {
+      'not-assigned': regularItems.filter(item => !item.tripLuggageId)
+    }
+    optimisticTripLuggages.forEach(tl => {
+      result[tl.id] = regularItems.filter(item => item.tripLuggageId === tl.id)
     })
-  }
+    return result
+  }, [regularItems, optimisticTripLuggages])
+
+  const itemsByPerson = useMemo(() => {
+    const result: Record<string, typeof allItems> = {
+      'not-assigned': regularItems.filter(item => !item.assigneeId)
+    }
+    if (trip.members) {
+      trip.members.forEach(member => {
+        result[member.id] = regularItems.filter(item => item.assigneeId === member.id)
+      })
+    }
+    return result
+  }, [regularItems, trip.members])
 
   const renderItem = (item: typeof allItems[0]) => {
     const isPacked = getItemPackedState(item)

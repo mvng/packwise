@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import type { LuggageTripHistoryEntry } from '@/types/luggage'
 import { calculateRoundTripKm, formatDistance } from '@/utils/distance'
@@ -17,9 +17,9 @@ export function LuggageHistoryStats({
 
   const totalTrips = tripLuggages.length
 
-  const totalItems = new Set(
+  const totalItems = useMemo(() => new Set(
     tripLuggages.flatMap((tl) => tl.packingItems.map((item) => item.name.toLowerCase()))
-  ).size
+  ).size, [tripLuggages])
 
   useEffect(() => {
     async function fetchDistance() {
