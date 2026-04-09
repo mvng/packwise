@@ -721,13 +721,14 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                   />
                   <div className="flex flex-col gap-1">
                     <button
+                      aria-label="Save note"
                       onClick={() => {
                         handleUpdateNotes(item.id, item.categoryId, item.packingListId, editingNotes?.notes || "")
                         setEditingNotes(null)
                       }}
-                      className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                     ><Check className="w-3 h-3" /></button>
-                    <button onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200"><X className="w-3 h-3" /></button>
+                    <button aria-label="Cancel editing note" onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"><X className="w-3 h-3" /></button>
                   </div>
                 </div>
               ) : item.notes ? (
@@ -1237,13 +1238,14 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                         />
                                         <div className="flex flex-col gap-1">
                                           <button
+                                            aria-label="Save note"
                                             onClick={() => {
                                               handleUpdateNotes(item.id, category.id, list.id, editingNotes?.notes || "")
                                               setEditingNotes(null)
                                             }}
-                                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                                           ><Check className="w-3 h-3" /></button>
-                                          <button onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200"><X className="w-3 h-3" /></button>
+                                          <button aria-label="Cancel editing note" onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"><X className="w-3 h-3" /></button>
                                         </div>
                                       </div>
                                     ) : item.notes ? (
