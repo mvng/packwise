@@ -9,3 +9,6 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+## 2025-04-18 - Controlled inputs in form components
+**Learning:** In Next.js client components using controlled inputs for text fields (e.g., `value={formData.name}`), the component re-renders on every keystroke. If expensive calculations (like generating a default packing list layout or performing `.reduce` over large arrays) are present in the render body, it causes severe input lag.
+**Action:** Always wrap expensive synchronous generation or reduction logic in `useMemo`, ensuring its dependency array only includes the variables that actually dictate the output (e.g., dates, trip type) rather than the frequently changing text inputs.
