@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-25 - Fix hidden action buttons on keyboard focus in Task cards
+**Learning:** Found an accessibility anti-pattern in `TaskCard.tsx` where secondary action buttons (Edit/Delete) were hidden using `opacity-0` and only revealed on pointer hover (`opacity-100`). This made them completely inaccessible to keyboard users because tabbing into the buttons didn't make them visible.
+**Action:** When hiding action containers until interaction, always pair `opacity-0` with `focus-within:opacity-100` alongside existing hover states, ensuring keyboard focus makes the actions visible. Also, ensure the individual buttons have `focus-visible:ring-2` to clearly indicate focus once revealed.
