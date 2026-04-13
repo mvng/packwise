@@ -7,3 +7,7 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+
+## 2024-04-20 - Add Missing Keyboard Navigation States and ARIA Labels to TripMembersSection
+**Learning:** In Tailwind, hover-revealed elements inside a container using `group-hover` (like an 'x' icon on a member avatar) must also implement `group-focus-within` utilities (e.g., `group-focus-within:block`) so that they become visible to users navigating via keyboard. Similarly, all interactive `button` elements must use `focus-visible` utilities rather than relying on browser defaults to ensure consistent and obvious keyboard focus states.
+**Action:** When implementing custom hover states or icon-only buttons, always test with `Tab` to ensure they are visually accessible and have explicit `aria-label` attributes. Add `group-focus-within` on parent containers containing hover-revealed children.
