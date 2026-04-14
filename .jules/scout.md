@@ -11,3 +11,6 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2024-04-14 - [Dynamic Sitemap URLs]
+**Learning:** Hardcoding URLs in `app/sitemap.ts` or in assertions for its tests leads to brittle code across environments (e.g., local development versus production deployment). Using `process.env.NEXT_PUBLIC_APP_URL` with a dynamic fallback and calculating the `baseUrl` in tests avoids these issues and ensures robustness. Additionally, `lastModified: new Date()` is an anti-pattern for static routes as it inaccurately tells search engines the content changes on every request.
+**Action:** When implementing or testing `sitemap.ts` in Next.js, always use environment variables for base URLs with appropriate fallback logic, both in the implementation and the corresponding unit tests. Explicitly omit `lastModified` on static routes to prevent crawl efficiency issues.
