@@ -7,3 +7,7 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+
+## 2024-04-14 - Accessible Inline Icon Buttons
+**Learning:** Conditionally rendered inline-edit icon buttons (e.g., in TripMembersSection) without text labels require both a descriptive `title` attribute for mouse users and an `aria-label` attribute for screen reader users, along with explicit `focus-visible:ring-2` (and outline-none) Tailwind utility classes to ensure visibility for keyboard navigators, especially when combined with hover transition animations.
+**Action:** Always ensure that any icon-only button, regardless of its conditionally rendered state or size, is implemented with an `aria-label` and `focus-visible:ring-2` to guarantee standard accessibility and keyboard navigation compliance.
