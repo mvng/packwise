@@ -11,3 +11,7 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+
+## 2024-05-24 - Document dynamic URL fallbacks for metadata
+**Learning:** Next.js uses an explicit environment variable pattern across environments for URLs. Hardcoding absolute fallbacks directly in tests causes brittleness across environments. Next.js metadata API allows rules properties for robots to be evaluated as either objects or arrays dynamically depending on internal typing.
+**Action:** Always test metadata dynamically. Avoid hardcoding testing base URLs. In tests, explicitly check for both array and object responses from Next.js APIs before accessing inner fields to avoid test suite crashes when Next.js alters the typing returned.
