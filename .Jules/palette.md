@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-04-16 - Add missing ARIA labels and focus states to TripMembersSection
+**Learning:** `TripMembersSection` heavily utilized icon-only buttons (remove, add, cancel, confirm) without `aria-label`s, rendering them inaccessible to screen readers. Furthermore, keyboard focus indicators were missing on both these buttons and the inline input field.
+**Action:** Always verify that interactive elements, particularly icon-only buttons, possess descriptive `aria-label` attributes. Ensure keyboard accessibility by consistently applying `focus:outline-none` and `focus-visible:ring-2` (and optionally `focus-visible:ring-offset-1` for better visibility) to all buttons and form inputs.
