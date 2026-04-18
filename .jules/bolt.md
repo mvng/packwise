@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-04-18 - Replacing JS hover state with CSS for performance
+**Learning:** Using React state (`useState`) coupled with `onMouseEnter` and `onMouseLeave` to control hover visibility triggers unnecessary component re-renders every time the mouse enters or leaves the element.
+**Action:** Replace JavaScript-controlled hover states with native Tailwind CSS utilities like `group`, `group-hover:opacity-100`, and `focus-within:opacity-100`. This delegates hover effects to the browser's rendering engine and prevents React from expending main-thread cycles to re-render the component.
