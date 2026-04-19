@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-25 - Improve keyboard accessibility for dashboard trip cards
+**Learning:** Found that container elements holding hover-revealed action buttons lacked `focus-within` styling. If a parent container only reveals children via `group-hover:opacity-100`, keyboard focus into the child element won't make it visible unless the container also has `focus-within:opacity-100`.
+**Action:** When creating hover-revealed menus or action groups, always ensure the parent container uses `focus-within:opacity-100` alongside `group-hover:opacity-100` so that the elements become visible when a keyboard user tabs into them.
