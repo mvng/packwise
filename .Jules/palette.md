@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2025-02-23 - Add accessible close buttons to modals
+**Learning:** Found a pattern across multiple modal components (`PasteListModal`, `inventory/AddCategoryModal`, `inventory/AddItemModal`) where the modals lacked `Escape` key close handlers, preventing proper keyboard accessibility when users needed to close the dialogs.
+**Action:** When creating or editing modals in the future, ensure that keyboard accessibility (specifically the `Escape` key) is implemented using `document.addEventListener('keydown')` to close the modals, and properly cleaned up on unmount.
