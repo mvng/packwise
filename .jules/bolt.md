@@ -9,3 +9,6 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+## 2025-03-24 - Controlled Form Inputs vs Expensive Logic
+**Learning:** In React client form components (e.g., trip creation in `app/dashboard/new/page.tsx`), when controlled text inputs are present, the entire component re-renders on every keystroke. If computationally expensive operations like large list generation or complex `.reduce()` calculations are executed inline in the component body, they are repeatedly re-run, causing severe UI lag.
+**Action:** Always extract expensive inline calculations, like `generatePackingList` or deep iterations, into a `useMemo` hook with strict dependencies. This decouples the expensive operation from rapid state updates like text input, keeping the UI responsive.
