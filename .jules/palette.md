@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-25 - Fix keyboard navigation for Trip Planning Assistant tasks
+**Learning:** Found that the `TaskCard` component used JavaScript `useState` (`onMouseEnter`/`onMouseLeave`) to conditionally render hover actions (Edit/Delete). Because the actions were completely removed from the DOM or hidden via JS state, keyboard-only users could never tab to them.
+**Action:** Replaced JS-based hover state with native Tailwind CSS classes (`group`, `opacity-0`, `group-hover:opacity-100`, `focus-within:opacity-100`). This ensures action buttons remain in the DOM and visibly appear when tab-focused, providing full keyboard accessibility.
