@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createTrip } from '@/actions/trip.actions'
@@ -118,10 +118,19 @@ export default function NewTripPage() {
   }
 
   const duration = getDurationDays(formData.startDate, formData.endDate)
-  const templateCategories = formData.generateSuggestions
-    ? generatePackingList(formData.tripType as "leisure" | "business" | "beach" | "hiking" | "city" | "skiing", duration, formData.transportMode)
-    : []
-  const totalItems = templateCategories.reduce((sum, c) => sum + c.items.length, 0)
+
+  // ⚡ Bolt Performance Optimization
+  // Why: generatePackingList and array reductions are computationally expensive.
+  // Impact: Prevents UI lag by avoiding recalculations on every single keystroke in controlled text inputs.
+  const templateCategories = useMemo(() => {
+    return formData.generateSuggestions
+      ? generatePackingList(formData.tripType as "leisure" | "business" | "beach" | "hiking" | "city" | "skiing", duration, formData.transportMode)
+      : []
+  }, [formData.generateSuggestions, formData.tripType, duration, formData.transportMode])
+
+  const totalItems = useMemo(() => {
+    return templateCategories.reduce((sum, c) => sum + c.items.length, 0)
+  }, [templateCategories])
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
