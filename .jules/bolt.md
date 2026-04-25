@@ -9,3 +9,6 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+## 2025-03-24 - Concurrent cron tasks and cached API clients
+**Learning:** In cron jobs that iterate over tasks to perform I/O bound operations (like SMS API requests or DB updates), sequential `for...of` loops result in accumulated network latency, and re-instantiating third-party clients (like Twilio) per loop iteration adds overhead.
+**Action:** Lift static client instantiations outside of iteration boundaries. Wrap iteration items in an asynchronous callback, and execute them concurrently using `Promise.all` over a mapped array to maximize parallel I/O throughput.

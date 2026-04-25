@@ -33,54 +33,66 @@ export async function GET(request: NextRequest) {
 
     console.log(`Processing ${tasks.length} reminders...`)
 
-    for (const task of tasks) {
-      const { reminderTypes } = task
+    // ⚡ Bolt Performance Optimization
+    // Why: The Twilio client was being instantiated inside the loop for every SMS task,
+    // and the loop was executing independent I/O tasks sequentially.
+    // Impact: Avoids redundant client instantiations and executes the API requests
+    // and database updates concurrently, significantly reducing total execution time.
+    const hasTwilioEnvVars = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER;
+    let twilioClient: twilio.Twilio | null = null;
+    if (hasTwilioEnvVars) {
+      twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    }
 
-      if (reminderTypes.includes('PUSH')) {
-        console.log(`[PUSH] Web Push notification for task: ${task.title}`)
-        // TODO: Get VAPID keys and user's push subscription from DB
-      }
+    await Promise.all(
+      tasks.map(async (task) => {
+        const { reminderTypes } = task
 
-      if (reminderTypes.includes('SMS')) {
-        if (task.user.phone) {
-          if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
-            try {
-              const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-              await client.messages.create({
-                body: `Packwise Reminder: ${task.title} for your trip to ${task.trip.destination}`,
-                from: process.env.TWILIO_PHONE_NUMBER,
-                to: task.user.phone
-              })
-              console.log(`[SMS] Sent to ${task.user.phone} for task: ${task.title}`)
-            } catch (err) {
-              console.error(`[SMS] Failed to send SMS to ${task.user.phone}:`, err)
+        if (reminderTypes.includes('PUSH')) {
+          console.log(`[PUSH] Web Push notification for task: ${task.title}`)
+          // TODO: Get VAPID keys and user's push subscription from DB
+        }
+
+        if (reminderTypes.includes('SMS')) {
+          if (task.user.phone) {
+            if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+              try {
+                await twilioClient.messages.create({
+                  body: `Packwise Reminder: ${task.title} for your trip to ${task.trip.destination}`,
+                  from: process.env.TWILIO_PHONE_NUMBER,
+                  to: task.user.phone
+                })
+                console.log(`[SMS] Sent to ${task.user.phone} for task: ${task.title}`)
+              } catch (err) {
+                console.error(`[SMS] Failed to send SMS to ${task.user.phone}:`, err)
+              }
+            } else {
+              console.log(`[SMS] Twilio env vars missing. Stubbed sending SMS to ${task.user.phone} for task: ${task.title}`)
             }
           } else {
-            console.log(`[SMS] Twilio env vars missing. Stubbed sending SMS to ${task.user.phone} for task: ${task.title}`)
+            console.log(`[SMS] No phone number for user. Stubbed for task: ${task.title}`)
           }
-        } else {
-          console.log(`[SMS] No phone number for user. Stubbed for task: ${task.title}`)
         }
-      }
 
-      if (reminderTypes.includes('CALENDAR')) {
-        const calendar = ical({ name: 'Packwise Reminders' })
-        calendar.createEvent({
-          start: task.dueDate || task.reminderAt || now,
-          end: new Date((task.dueDate || task.reminderAt || now).getTime() + 60 * 60 * 1000),
-          summary: `Packwise: ${task.title}`,
-          description: `Reminder for your trip to ${task.trip.destination}. ${task.notes || ''}`
+        if (reminderTypes.includes('CALENDAR')) {
+          const calendar = ical({ name: 'Packwise Reminders' })
+          calendar.createEvent({
+            start: task.dueDate || task.reminderAt || now,
+            end: new Date((task.dueDate || task.reminderAt || now).getTime() + 60 * 60 * 1000),
+            summary: `Packwise: ${task.title}`,
+            description: `Reminder for your trip to ${task.trip.destination}. ${task.notes || ''}`
+          })
+          const calendarLink = calendar.toString()
+          console.log(`[CALENDAR] Calendar invite generated for task: ${task.title}`)
+        }
+
+        // Mark as sent
+        await prisma.tripTask.update({
+          where: { id: task.id },
+          data: { reminderSentAt: now }
         })
-        const calendarLink = calendar.toString()
-        console.log(`[CALENDAR] Calendar invite generated for task: ${task.title}`)
-      }
-
-      // Mark as sent
-      await prisma.tripTask.update({
-        where: { id: task.id },
-        data: { reminderSentAt: now }
       })
-    }
+    )
 
     return NextResponse.json({ success: true, processed: tasks.length })
   } catch (error) {
