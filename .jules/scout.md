@@ -11,3 +11,6 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2026-03-15 - [Dynamic robots.txt Scope Control]
+**Learning:** Hardcoding a dynamic fallback URL in Playwright tests testing `robots.txt` can lead to brittle assertions if the fallback value doesn't exactly match the application's fallback environment. Next.js `robots.txt` requires careful trimming of trailing slashes to avoid double slashes when generating `host` and `sitemap` rules.
+**Action:** Always dynamically calculate the expected `baseUrl` and ensure trailing slashes are removed in tests for Next.js metadata routes, exactly mimicking the application's logic.
