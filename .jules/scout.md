@@ -11,3 +11,6 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2024-04-29 - [Sitemap and Robots Configuration]
+**Learning:** Generating a sitemap.ts in Next.js improves crawlability, but using `lastModified: new Date()` for static routes is an anti-pattern as it inaccurately signals constant content changes. Additionally, robustly trimming trailing slashes from dynamic `NEXT_PUBLIC_APP_URL` prevents malformed `sitemap.xml` double-slash URLs.
+**Action:** When creating SEO configuration files (sitemap/robots), omit `lastModified: new Date()` unless tied to a real database timestamp, strictly validate trailing slashes on base URLs, and clearly comment why specific private paths are disallowed.
