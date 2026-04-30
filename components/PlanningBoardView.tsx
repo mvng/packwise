@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useCallback } from 'react'
+import { useState, useEffect, useTransition, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   DndContext,
@@ -737,7 +737,10 @@ function TimeSlot({
 // ─── PlanningBoardView ────────────────────────────────────────────────────────
 
 export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: PlanningBoardViewProps) {
-  const days = generateDays(trip.startDate, trip.endDate)
+  // ⚡ Bolt Performance Optimization
+  // Why: Prevents expensive Date instantiations on every render.
+  // Impact: Avoids array reconstruction and mapping when unrelated state changes occur.
+  const days = useMemo(() => generateDays(trip.startDate, trip.endDate), [trip.startDate, trip.endDate])
   const [dayPlans, setDayPlans] = useState<DayPlanMap>({})
   const [activeId, setActiveId] = useState<string | null>(null)
   const [tagOverColumn, setTagOverColumn] = useState<string | null>(null)
@@ -751,10 +754,15 @@ export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: Plann
     const allPlanItems = Object.values(dayPlans).flatMap(dp => dp.items || [])
     const packingItems = trip.packingLists?.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items)) || []
 
+    // ⚡ Bolt Performance Optimization
+    // Why: Replaces O(n) array `.some()` inside `.filter()` with an O(1) Set lookup.
+    // Impact: Improves unsynced item calculation time complexity from O(n²) to O(n), crucial for trips with many items.
+    const packingNames = new Set(packingItems.map((pi: any) => pi.name.toLowerCase()))
+
     const unsyncedItems = allPlanItems
       .filter(planItem => {
         if (planItem.category === TAG_CATEGORY) return false
-        return !packingItems.some((pi: any) => pi.name.toLowerCase() === planItem.name.toLowerCase())
+        return !packingNames.has(planItem.name.toLowerCase())
       })
       .map(item => item.name)
 
