@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Calendar, Trash2, Edit2, Bell, CheckCircle, Circle, Smartphone, Mail, Calendar as CalendarIcon } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
@@ -21,22 +20,20 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: TaskCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
   const isDone = task.status === 'DONE'
 
   return (
     <div
-      className={`relative p-4 rounded-xl border transition-all ${
+      className={`group relative p-4 rounded-xl border transition-all ${
         isDone ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200 shadow-sm hover:shadow-md'
       }`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex items-start gap-3">
         <button
           onClick={() => onToggleStatus(task.id, task.status)}
-          className={`mt-1 flex-shrink-0 text-gray-400 hover:text-blue-600 transition-colors ${
-            isDone ? 'text-green-500 hover:text-green-600' : ''
+          aria-label={isDone ? `Mark "${task.title}" as incomplete` : `Mark "${task.title}" as complete`}
+          className={`mt-1 flex-shrink-0 text-gray-400 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-full ${
+            isDone ? 'text-green-500 hover:text-green-600 focus-visible:ring-green-500' : ''
           }`}
         >
           {isDone ? <CheckCircle className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
@@ -70,18 +67,18 @@ export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: Tas
           </div>
         </div>
 
-        <div className={`flex items-center gap-1 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="flex items-center gap-1 transition-opacity opacity-0 group-hover:opacity-100 focus-within:opacity-100">
           <button
             onClick={() => onEdit(task)}
-            className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
-            title="Edit task"
+            className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:opacity-100"
+            aria-label={`Edit task "${task.title}"`}
           >
             <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(task.id)}
-            className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
-            title="Delete task"
+            className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:opacity-100"
+            aria-label={`Delete task "${task.title}"`}
           >
             <Trash2 className="w-4 h-4" />
           </button>
