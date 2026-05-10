@@ -209,12 +209,12 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
                 )}
                 {trip.startDate && (
                   <div className="relative inline-block group">
-                    <p className="text-sm text-gray-500 cursor-help mt-1">
+                    <p tabIndex={0} className="text-sm text-gray-500 cursor-help mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:rounded-sm">
                       {formatDate(trip.startDate)}
                       {trip.endDate && ` – ${formatDate(trip.endDate)}`}
                     </p>
                     {timezoneTooltip && (
-                      <div className="absolute left-0 top-full mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                      <div className="absolute left-0 top-full mt-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-10">
                         <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">{timezoneTooltip}</div>
                       </div>
                     )}
@@ -306,7 +306,7 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
                 <PlanningBoardView trip={displayTrip} onUnsyncedItemsChange={setUnsyncedItems} />
                 
                 {unsyncedItems.length > 0 && (
-                  <div className="relative group flex items-center justify-center lg:justify-start">
+                  <div className="relative group flex items-center justify-center lg:justify-start focus-within:opacity-100">
                     <button
                       disabled={isSyncing || isPending}
                       onClick={async () => {
@@ -330,7 +330,7 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
                         <><RefreshCw className="w-4 h-4" /> Sync {unsyncedItems.length} items to Packing List</>
                       )}
                     </button>
-                    <div className="absolute lg:left-0 lg:-translate-x-0 left-1/2 -translate-x-1/2 top-full mt-2 w-max max-w-xs bg-gray-900 text-white text-xs rounded shadow-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    <div className="absolute lg:left-0 lg:-translate-x-0 left-1/2 -translate-x-1/2 top-full mt-2 w-max max-w-xs bg-gray-900 text-white text-xs rounded shadow-lg p-3 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
                       <p className="font-semibold mb-2 border-b border-gray-700 pb-1 text-left">Adding {unsyncedItems.length} item{unsyncedItems.length !== 1 && 's'}:</p>
                       <ul className="list-disc pl-4 text-left space-y-1 text-gray-200">
                         {unsyncedItems.slice(0, 5).map(item => (
