@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-05-11 - Batching Concurrent Prisma Updates with Item Deduplication
+**Learning:** When resolving N+1 database queries by batching items to create and update (e.g. `Promise.all(updateOperations)` and `prisma.packingItem.createMany`), if the incoming request payload contains duplicate items, the script might attempt to mutate the database multiple times on the same record or mock internal states causing the API to crash. Attempting to use a mock database record (`{ id: 'temp' }`) in memory as a safeguard fails spectacularly during `Promise.all` resolution.
+**Action:** When batching Prisma create/update operations from a generic payload, explicitly deduplicate the payload *first* by grouping/merging items in application memory before iterating over them to build the `createMany` and `Promise.all(updates)` arrays. Never use fake database IDs (`id: 'temp'`) as placeholders in collections tracked for Prisma update objects.
