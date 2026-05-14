@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-18 - Missing focus states on hover-revealed action containers
+**Learning:** In Packwise, secondary action buttons (like Edit/Delete on Dashboard trip cards) are often hidden via `opacity-0` and revealed on `group-hover:opacity-100`. However, they were completely invisible to keyboard users tabbing through the UI because the containers lacked focus-within states.
+**Action:** When implementing or fixing hover-revealed action button containers (`group-hover:opacity-100`), ensure `focus-within:opacity-100` is applied to the container, and `focus-visible:outline-none focus-visible:ring-2` (plus colors) are applied to the buttons themselves so they become visible during keyboard navigation.
