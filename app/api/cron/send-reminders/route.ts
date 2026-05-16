@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
 
     console.log(`Processing ${tasks.length} reminders...`)
 
+    const taskIdsToUpdate: string[] = []
+
     for (const task of tasks) {
       const { reminderTypes } = task
 
@@ -75,9 +77,15 @@ export async function GET(request: NextRequest) {
         console.log(`[CALENDAR] Calendar invite generated for task: ${task.title}`)
       }
 
-      // Mark as sent
-      await prisma.tripTask.update({
-        where: { id: task.id },
+      taskIdsToUpdate.push(task.id)
+    }
+
+    if (taskIdsToUpdate.length > 0) {
+      // ⚡ Bolt Performance Optimization
+      // Why: Replaced N+1 individual update queries with a single updateMany batch operation.
+      // Impact: Reduces database round-trips from O(N) to O(1), improving cron execution time.
+      await prisma.tripTask.updateMany({
+        where: { id: { in: taskIdsToUpdate } },
         data: { reminderSentAt: now }
       })
     }
