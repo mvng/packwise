@@ -37,50 +37,102 @@ export async function POST(req: Request) {
     let maxCatOrder = existingCategories.reduce((max, c) => Math.max(max, c.order), -1)
     let synced = 0
 
-    for (const [catName, items] of grouped) {
-      let category = existingCategories.find(
+    // ⚡ Bolt Performance Optimization: Batched N+1 queries by grouping inserts/updates into arrays
+    const categoriesToCreate = []
+    const categoryMap = new Map()
+
+    for (const [catName] of grouped) {
+      const category = existingCategories.find(
         (c) => c.name.toLowerCase() === catName.toLowerCase()
       )
 
-      if (!category) {
+      if (category) {
+        categoryMap.set(catName.toLowerCase(), category.id)
+      } else {
         maxCatOrder += 1
-        category = await prisma.category.create({
-          data: { packingListId: packingList.id, name: catName, order: maxCatOrder },
-          include: { items: true },
+        categoriesToCreate.push({
+          packingListId: packingList.id,
+          name: catName,
+          order: maxCatOrder
         })
       }
+    }
 
-      const existingItems = await prisma.packingItem.findMany({
-        where: { categoryId: category.id },
-        orderBy: { order: 'desc' },
+    if (categoriesToCreate.length > 0) {
+      await prisma.category.createMany({ data: categoriesToCreate })
+      const createdNames = categoriesToCreate.map(c => c.name)
+      const newCats = await prisma.category.findMany({
+        where: { packingListId: packingList.id, name: { in: createdNames } }
       })
-      let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
+      for (const cat of newCats) {
+        categoryMap.set(cat.name.toLowerCase(), cat.id)
+      }
+    }
+
+    const catIds = Array.from(categoryMap.values())
+    const existingItems = await prisma.packingItem.findMany({
+      where: { categoryId: { in: catIds } }
+    })
+
+    const existingItemsMap = new Map()
+    for (const item of existingItems) {
+      const key = `${item.categoryId}:${item.name.toLowerCase()}`
+      existingItemsMap.set(key, item)
+    }
+
+    const maxOrders = await prisma.packingItem.groupBy({
+      by: ['categoryId'],
+      where: { categoryId: { in: catIds } },
+      _max: { order: true }
+    })
+    const maxOrderMap = new Map(maxOrders.map(m => [m.categoryId, m._max.order ?? -1]))
+
+    const itemsToCreate = []
+    const itemsToUpdate = []
+
+    for (const [catName, items] of grouped) {
+      const catId = categoryMap.get(catName.toLowerCase())
+      let maxItemOrder = maxOrderMap.get(catId) ?? -1
 
       for (const item of items) {
-        const existing = existingItems.find(
-          (i) => i.name.toLowerCase() === item.name.toLowerCase()
-        )
+        const key = `${catId}:${item.name.toLowerCase()}`
+        const existing = existingItemsMap.get(key)
+
         if (existing) {
-          await prisma.packingItem.update({
-            where: { id: existing.id },
-            data: { quantity: Math.max(existing.quantity, item.quantity) },
+          itemsToUpdate.push({
+            id: existing.id,
+            quantity: Math.max(existing.quantity, item.quantity)
           })
         } else {
           maxItemOrder += 1
-          await prisma.packingItem.create({
-            data: {
-              categoryId: category.id,
-              name: item.name,
-              quantity: item.quantity,
-              isPacked: false,
-              isCustom: true,
-              packLast: false,
-              order: maxItemOrder,
-            },
+          maxOrderMap.set(catId, maxItemOrder)
+          itemsToCreate.push({
+            categoryId: catId,
+            name: item.name,
+            quantity: item.quantity,
+            isPacked: false,
+            isCustom: true,
+            packLast: false,
+            order: maxItemOrder,
           })
           synced++
         }
       }
+    }
+
+    if (itemsToUpdate.length > 0) {
+      await prisma.$transaction(
+        itemsToUpdate.map(item =>
+          prisma.packingItem.update({
+            where: { id: item.id },
+            data: { quantity: item.quantity }
+          })
+        )
+      )
+    }
+
+    if (itemsToCreate.length > 0) {
+      await prisma.packingItem.createMany({ data: itemsToCreate })
     }
 
     return NextResponse.json({ synced })
