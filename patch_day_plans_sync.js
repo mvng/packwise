@@ -1,4 +1,7 @@
-import { NextResponse } from 'next/server'
+const fs = require('fs');
+const filepath = 'app/api/day-plans/sync/route.ts';
+
+const newCode = `import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(req: Request) {
@@ -111,3 +114,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
+`
+fs.writeFileSync(filepath, newCode);
+console.log('patched app/api/day-plans/sync/route.ts again');
