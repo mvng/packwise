@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-25 - Improve keyboard accessibility of hover-revealed member avatars
+**Learning:** Found that custom tooltip designs combined with mouse hover interactions (`group-hover:block`, `group-hover:opacity-100`) on icon-only buttons entirely lock out keyboard users. In `TripMembersSection`, replacing native `title` attributes with built-in custom tooltips meant screen readers couldn't announce the action, and tab-navigators couldn't see the "X" button or the member name.
+**Action:** Always ensure that any custom tooltip or icon swap relying on a parent `.group` and `group-hover` is mirrored with `group-focus-within` utilities (e.g., `group-focus-within:opacity-100`, `group-focus-within:block`). Additionally, when removing a native `title` attribute, it must immediately be replaced with a semantic `aria-label`.
