@@ -75,9 +75,15 @@ export async function GET(request: NextRequest) {
         console.log(`[CALENDAR] Calendar invite generated for task: ${task.title}`)
       }
 
-      // Mark as sent
-      await prisma.tripTask.update({
-        where: { id: task.id },
+
+    }
+
+    // ⚡ Bolt Performance Optimization:
+    // Replaced N+1 query pattern with a batched updateMany operation.
+    // Previously, this fired a database update for every single task inside the loop.
+    if (tasks.length > 0) {
+      await prisma.tripTask.updateMany({
+        where: { id: { in: tasks.map(t => t.id) } },
         data: { reminderSentAt: now }
       })
     }
