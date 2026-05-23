@@ -41,6 +41,7 @@ test.describe('Performance: save-to-inventory', () => {
         create: async () => { createCategoryCallCount++; return {}; }
       },
       inventoryItem: {
+        findFirst: async () => null,
         findMany: async () => [],
         groupBy: async () => [],
         createMany: async (args: any) => {
