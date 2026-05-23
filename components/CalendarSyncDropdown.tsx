@@ -16,8 +16,17 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
         setShowCalendarMenu(false)
       }
     }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setShowCalendarMenu(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
+
+      document.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
@@ -25,6 +34,8 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
   return (
     <div className="relative" ref={calendarMenuRef}>
       <button
+        aria-expanded={showCalendarMenu}
+        aria-haspopup="true"
         onClick={() => setShowCalendarMenu(!showCalendarMenu)}
         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
         title="Calendar Sync"
@@ -34,11 +45,12 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
       </button>
 
       {showCalendarMenu && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
+        <div role="menu" className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
           <div className="p-3 bg-gray-50 border-b border-gray-100">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Auto-updating</h3>
           </div>
           <a
+            role="menuitem"
             href={typeof window !== 'undefined' ? `webcal://${window.location.host}/api/calendar/${tripId}` : `/api/calendar/${tripId}`}
             className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 border-b border-gray-100"
             onClick={() => setShowCalendarMenu(false)}
@@ -51,6 +63,7 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">One-time Export</h3>
           </div>
           <a
+            role="menuitem"
             href={`/api/calendar/${tripId}`}
             className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
             onClick={() => setShowCalendarMenu(false)}
