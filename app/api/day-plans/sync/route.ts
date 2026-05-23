@@ -37,6 +37,10 @@ export async function POST(req: Request) {
     let maxCatOrder = existingCategories.reduce((max, c) => Math.max(max, c.order), -1)
     let synced = 0
 
+    // ⚡ Bolt Performance Optimization
+    // Accumulate all operations to execute them in a single transaction, preventing N+1 queries.
+    const promises: any[] = []
+
     for (const [catName, items] of grouped) {
       let category = existingCategories.find(
         (c) => c.name.toLowerCase() === catName.toLowerCase()
@@ -50,37 +54,58 @@ export async function POST(req: Request) {
         })
       }
 
-      const existingItems = await prisma.packingItem.findMany({
-        where: { categoryId: category.id },
-        orderBy: { order: 'desc' },
-      })
-      let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
+      // Avoid N+1 query: reuse existing items pre-fetched from existingCategories or the newly created category
+      const existingItems = category.items || []
+      let maxItemOrder = existingItems.reduce((max: number, i: any) => Math.max(max, i.order), -1)
 
+      // Deduplicate incoming items for this category to prevent intra-batch conflict
+      // if multiple day plans have the same item.
+      const uniqueItems = new Map<string, typeof items[0]>()
       for (const item of items) {
+        const lowerName = item.name.toLowerCase()
+        if (uniqueItems.has(lowerName)) {
+           // update quantity to max
+           const existing = uniqueItems.get(lowerName)!
+           existing.quantity = Math.max(existing.quantity, item.quantity)
+        } else {
+           uniqueItems.set(lowerName, { ...item })
+        }
+      }
+
+      for (const item of Array.from(uniqueItems.values())) {
         const existing = existingItems.find(
-          (i) => i.name.toLowerCase() === item.name.toLowerCase()
+          (i: any) => i.name.toLowerCase() === item.name.toLowerCase()
         )
+
         if (existing) {
-          await prisma.packingItem.update({
-            where: { id: existing.id },
-            data: { quantity: Math.max(existing.quantity, item.quantity) },
-          })
+          promises.push(
+            prisma.packingItem.update({
+              where: { id: existing.id },
+              data: { quantity: Math.max(existing.quantity, item.quantity) },
+            })
+          )
         } else {
           maxItemOrder += 1
-          await prisma.packingItem.create({
-            data: {
-              categoryId: category.id,
-              name: item.name,
-              quantity: item.quantity,
-              isPacked: false,
-              isCustom: true,
-              packLast: false,
-              order: maxItemOrder,
-            },
-          })
+          promises.push(
+            prisma.packingItem.create({
+              data: {
+                categoryId: category.id,
+                name: item.name,
+                quantity: item.quantity,
+                isPacked: false,
+                isCustom: true,
+                packLast: false,
+                order: maxItemOrder,
+              },
+            })
+          )
           synced++
         }
       }
+    }
+
+    if (promises.length > 0) {
+      await prisma.$transaction(promises)
     }
 
     return NextResponse.json({ synced })
