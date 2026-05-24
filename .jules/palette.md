@@ -7,3 +7,7 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+
+## 2024-05-18 - Replacing React Hover State with Tailwind CSS for Better Accessibility
+**Learning:** In the `TaskCard` component, hover actions were previously revealed using React state (`onMouseEnter`/`onMouseLeave`). While this works visually for mouse users, it completely hides the actions from keyboard-only users who navigate via `Tab`, making them inaccessible.
+**Action:** When implementing hidden action menus or buttons that appear on hover, prefer Tailwind's `group` and `group-hover:opacity-100` coupled with `focus-within:opacity-100`. This ensures zero JavaScript overhead and allows the hidden actions to correctly appear when a user tabs into the container.
