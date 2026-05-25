@@ -256,7 +256,7 @@ export async function addInventoryItemsToTrip(tripId: string, itemIds: string[])
       const catId = categoryMap.get(catName.toLowerCase())!
       let orderCounter = (maxOrderMap.get(catId) ?? -1) + 1
 
-      for (const item of items) {
+      for (const [index, item] of items.entries()) {
         allItemsToCreate.push({
           categoryId: catId,
           name: item.name,

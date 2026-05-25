@@ -1,0 +1,18 @@
+--- actions/inventory.actions.ts
++++ actions/inventory.actions.ts
+@@ -263,7 +263,7 @@
+       let orderCounter = (maxOrderMap.get(catId) ?? -1) + 1
+
+-      for (const [index, item] of items.entries()) {
++      for (const item of items) {
+         allItemsToCreate.push({
+           categoryId: catId,
+           name: item.name,
+           quantity: item.quantity,
+           isPacked: false,
+           isCustom: false,
+-          order: orderCounter + index,
++          order: orderCounter++,
+         })
+       }
+     }
