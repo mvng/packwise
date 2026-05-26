@@ -16,9 +16,16 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
         setShowCalendarMenu(false)
       }
     }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setShowCalendarMenu(false)
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [])
 
@@ -26,21 +33,25 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
     <div className="relative" ref={calendarMenuRef}>
       <button
         onClick={() => setShowCalendarMenu(!showCalendarMenu)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
         title="Calendar Sync"
+        aria-expanded={showCalendarMenu}
+        aria-haspopup="menu"
       >
         <span>📅</span>
         <span className="hidden sm:inline">Add to Calendar</span>
       </button>
 
       {showCalendarMenu && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20"
+          role="menu">
           <div className="p-3 bg-gray-50 border-b border-gray-100">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Auto-updating</h3>
           </div>
           <a
             href={typeof window !== 'undefined' ? `webcal://${window.location.host}/api/calendar/${tripId}` : `/api/calendar/${tripId}`}
-            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 border-b border-gray-100"
+            className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 focus-visible:bg-blue-50 focus-visible:text-blue-700 focus-visible:outline-none border-b border-gray-100"
+            role="menuitem"
             onClick={() => setShowCalendarMenu(false)}
           >
             <div className="font-medium mb-0.5">Subscribe to Calendar (webcal)</div>
@@ -52,7 +63,8 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
           </div>
           <a
             href={`/api/calendar/${tripId}`}
-            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 focus-visible:bg-blue-50 focus-visible:text-blue-700 focus-visible:outline-none"
+            role="menuitem"
             onClick={() => setShowCalendarMenu(false)}
           >
             Download .ics file
