@@ -25,7 +25,14 @@ export async function POST(req: Request) {
     for (const item of allItems) {
       const key = item.category ?? 'General'
       if (!grouped.has(key)) grouped.set(key, [])
-      grouped.get(key)!.push(item)
+
+      const list = grouped.get(key)!
+      const existing = list.find(i => i.name.toLowerCase() === item.name.toLowerCase())
+      if (existing) {
+        existing.quantity = Math.max(existing.quantity, item.quantity)
+      } else {
+        list.push({ ...item })
+      }
     }
 
     const existingCategories = await prisma.category.findMany({
@@ -36,6 +43,7 @@ export async function POST(req: Request) {
 
     let maxCatOrder = existingCategories.reduce((max, c) => Math.max(max, c.order), -1)
     let synced = 0
+    const ops: any[] = []
 
     for (const [catName, items] of grouped) {
       let category = existingCategories.find(
@@ -50,10 +58,8 @@ export async function POST(req: Request) {
         })
       }
 
-      const existingItems = await prisma.packingItem.findMany({
-        where: { categoryId: category.id },
-        orderBy: { order: 'desc' },
-      })
+      // Avoid N+1 query by using pre-fetched category.items
+      const existingItems = category.items || []
       let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
 
       for (const item of items) {
@@ -61,13 +67,13 @@ export async function POST(req: Request) {
           (i) => i.name.toLowerCase() === item.name.toLowerCase()
         )
         if (existing) {
-          await prisma.packingItem.update({
+          ops.push(prisma.packingItem.update({
             where: { id: existing.id },
             data: { quantity: Math.max(existing.quantity, item.quantity) },
-          })
+          }))
         } else {
           maxItemOrder += 1
-          await prisma.packingItem.create({
+          ops.push(prisma.packingItem.create({
             data: {
               categoryId: category.id,
               name: item.name,
@@ -77,10 +83,14 @@ export async function POST(req: Request) {
               packLast: false,
               order: maxItemOrder,
             },
-          })
+          }))
           synced++
         }
       }
+    }
+
+    if (ops.length > 0) {
+      await prisma.$transaction(ops)
     }
 
     return NextResponse.json({ synced })
