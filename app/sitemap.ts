@@ -1,0 +1,19 @@
+import { MetadataRoute } from 'next'
+
+// Generates the sitemap.xml to improve crawlability of public routes
+export default function sitemap(): MetadataRoute.Sitemap {
+  return [
+    {
+      url: 'https://packwise-indol.vercel.app',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 1,
+    },
+    {
+      url: 'https://packwise-indol.vercel.app/login',
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+  ]
+}
