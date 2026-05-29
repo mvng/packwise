@@ -9,3 +9,6 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+## 2023-10-27 - [Batching Write Operations with Prisma $transaction in Loops]
+**Learning:** When trying to resolve an N+1 problem by batching `update` and `create` operations into an array for `prisma.$transaction(writeOperations)`, be aware that if the payload iterates over user-submitted data containing duplicates (e.g., duplicate packing items), it can cause Prisma errors if the transaction attempts to create or update the exact same duplicate item multiple times within the exact same batch.
+**Action:** Always deduplicate iterative payloads (e.g., using a Map or Set) before pushing their operations into a `$transaction` array.
