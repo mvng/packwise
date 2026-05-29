@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createTrip } from '@/actions/trip.actions'
@@ -117,11 +117,27 @@ export default function NewTripPage() {
     }
   }
 
-  const duration = getDurationDays(formData.startDate, formData.endDate)
-  const templateCategories = formData.generateSuggestions
-    ? generatePackingList(formData.tripType as "leisure" | "business" | "beach" | "hiking" | "city" | "skiing", duration, formData.transportMode)
-    : []
-  const totalItems = templateCategories.reduce((sum, c) => sum + c.items.length, 0)
+  // ⚡ Bolt: Memoize template list generation to prevent expensive re-renders on keystrokes
+  // when typing in unrelated inputs like Trip Name or Location.
+  const { duration, templateCategories, totalItems } = useMemo(() => {
+    const d = getDurationDays(formData.startDate, formData.endDate)
+    const cats = formData.generateSuggestions
+      ? generatePackingList(formData.tripType as "leisure" | "business" | "beach" | "hiking" | "city" | "skiing", d, formData.transportMode)
+      : []
+    const total = cats.reduce((sum, c) => sum + c.items.length, 0)
+
+    return {
+      duration: d,
+      templateCategories: cats,
+      totalItems: total
+    }
+  }, [
+    formData.startDate,
+    formData.endDate,
+    formData.generateSuggestions,
+    formData.tripType,
+    formData.transportMode
+  ])
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
