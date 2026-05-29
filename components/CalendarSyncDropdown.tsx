@@ -17,8 +17,11 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
+    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowCalendarMenu(false) }
+    document.addEventListener('keydown', handleEscape)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
     }
   }, [])
 
@@ -26,7 +29,9 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
     <div className="relative" ref={calendarMenuRef}>
       <button
         onClick={() => setShowCalendarMenu(!showCalendarMenu)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+        aria-haspopup="true"
+        aria-expanded={showCalendarMenu}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         title="Calendar Sync"
       >
         <span>📅</span>
