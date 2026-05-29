@@ -34,6 +34,7 @@ export async function generateMetadata({
 
     const titleName = list.name || list.trip.name || list.trip.destination || 'Untitled Trip'
     const title = `Join the Packing List for ${titleName} | Packwise`
+    const url = '/claim/' + resolvedParams.token;
     const description = list.trip.destination
       ? `Join the shared packing list for ${list.trip.destination}. Claim the items you're bringing!`
       : `Join this shared packing list on Packwise. Claim the items you're bringing!`
@@ -41,9 +42,13 @@ export async function generateMetadata({
     return {
       title,
       description,
+      alternates: {
+        canonical: url,
+      },
       openGraph: {
         title,
         description,
+        url,
         type: 'website',
       },
       twitter: {
