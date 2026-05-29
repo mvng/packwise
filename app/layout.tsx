@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import './globals.css'
+import { PWA } from '@/components/PWA'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
   title: 'Packwise – Smart Packing Lists',
   description: 'Create smart packing lists for every trip. Organize by category, track what you have packed, and never forget an item again.',
   keywords: ['packing', 'travel', 'packing list', 'trip planner', 'vacation packing', 'travel checklist', 'luggage planner'],
+  manifest: '/manifest.json',
   openGraph: {
     title: 'Packwise – Smart Packing Lists',
     description: 'Create smart packing lists for every trip.',
@@ -26,6 +28,10 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport = {
+  themeColor: '#000000',
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -34,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <PWA />
         {children}
         <Analytics />
         <SpeedInsights />
