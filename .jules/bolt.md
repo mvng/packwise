@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-18 - Nested array searching inside React render loop
+**Learning:** In React components dealing with large lists (like `PlanningBoardView` dealing with packing items and day plan items), calculating derived state using nested array methods (e.g. `array1.filter(item => array2.some(...))`) during a `useEffect` or render cycle causes $O(N \times M)$ time complexity which can significantly lag the UI when item counts grow. Additionally, mapping arrays of standard primitive objects like Dates inside the render loop without `useMemo` triggers unnecessary garbage collection and potentially cascading effects.
+**Action:** When deriving state from multiple arrays, always convert the array being searched into a `Set` first for $O(1)$ lookups, bringing the complexity down to $O(N + M)$. Always wrap expensive loop or date object creations in `useMemo` to preserve reference equality across renders.
