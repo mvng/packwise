@@ -23,6 +23,7 @@ export async function generateMetadata({
 
     const titleName = trip.name || trip.destination || 'Untitled Trip'
     const title = `${titleName} Packing List | Packwise`
+    const url = '/trip/' + resolvedParams.id;
     const description = trip.destination
       ? `Check out the packing list for ${trip.destination}. Organized and ready for the trip!`
       : `Check out this packing list on Packwise. Organized and ready for the trip!`
@@ -30,9 +31,13 @@ export async function generateMetadata({
     return {
       title,
       description,
+      alternates: {
+        canonical: url,
+      },
       openGraph: {
         title,
         description,
+        url,
         type: 'website',
       },
       twitter: {
