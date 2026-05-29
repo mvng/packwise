@@ -37,6 +37,8 @@ export async function POST(req: Request) {
     let maxCatOrder = existingCategories.reduce((max, c) => Math.max(max, c.order), -1)
     let synced = 0
 
+    const writeOperations = []
+
     for (const [catName, items] of grouped) {
       let category = existingCategories.find(
         (c) => c.name.toLowerCase() === catName.toLowerCase()
@@ -50,37 +52,54 @@ export async function POST(req: Request) {
         })
       }
 
-      const existingItems = await prisma.packingItem.findMany({
-        where: { categoryId: category.id },
-        orderBy: { order: 'desc' },
-      })
+      // Deduplicate payload items within the same category to prevent Prisma $transaction errors
+      const deduplicatedItems = new Map<string, typeof items[0]>()
+      for (const item of items) {
+        const key = item.name.toLowerCase()
+        if (deduplicatedItems.has(key)) {
+          deduplicatedItems.get(key)!.quantity = Math.max(deduplicatedItems.get(key)!.quantity, item.quantity)
+        } else {
+          deduplicatedItems.set(key, { ...item })
+        }
+      }
+
+      // We already have existing items in category.items thanks to the include directive
+      const existingItems = category.items || []
       let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
 
-      for (const item of items) {
+      for (const item of deduplicatedItems.values()) {
         const existing = existingItems.find(
           (i) => i.name.toLowerCase() === item.name.toLowerCase()
         )
         if (existing) {
-          await prisma.packingItem.update({
-            where: { id: existing.id },
-            data: { quantity: Math.max(existing.quantity, item.quantity) },
-          })
+          writeOperations.push(
+            prisma.packingItem.update({
+              where: { id: existing.id },
+              data: { quantity: Math.max(existing.quantity, item.quantity) },
+            })
+          )
         } else {
           maxItemOrder += 1
-          await prisma.packingItem.create({
-            data: {
-              categoryId: category.id,
-              name: item.name,
-              quantity: item.quantity,
-              isPacked: false,
-              isCustom: true,
-              packLast: false,
-              order: maxItemOrder,
-            },
-          })
+          writeOperations.push(
+            prisma.packingItem.create({
+              data: {
+                categoryId: category.id!, // using ! to bypass typescript complaint, we know category exists
+                name: item.name,
+                quantity: item.quantity,
+                isPacked: false,
+                isCustom: true,
+                packLast: false,
+                order: maxItemOrder,
+              },
+            })
+          )
           synced++
         }
       }
+    }
+
+    if (writeOperations.length > 0) {
+      await prisma.$transaction(writeOperations)
     }
 
     return NextResponse.json({ synced })
