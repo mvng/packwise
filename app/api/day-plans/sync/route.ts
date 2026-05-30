@@ -25,7 +25,14 @@ export async function POST(req: Request) {
     for (const item of allItems) {
       const key = item.category ?? 'General'
       if (!grouped.has(key)) grouped.set(key, [])
-      grouped.get(key)!.push(item)
+
+      const itemsList = grouped.get(key)!
+      const existingInGroup = itemsList.find((i) => i.name.toLowerCase() === item.name.toLowerCase())
+      if (existingInGroup) {
+        existingInGroup.quantity = Math.max(existingInGroup.quantity, item.quantity)
+      } else {
+        itemsList.push({ ...item })
+      }
     }
 
     const existingCategories = await prisma.category.findMany({
@@ -36,6 +43,7 @@ export async function POST(req: Request) {
 
     let maxCatOrder = existingCategories.reduce((max, c) => Math.max(max, c.order), -1)
     let synced = 0
+    const operations: any[] = []
 
     for (const [catName, items] of grouped) {
       let category = existingCategories.find(
@@ -48,12 +56,10 @@ export async function POST(req: Request) {
           data: { packingListId: packingList.id, name: catName, order: maxCatOrder },
           include: { items: true },
         })
+        existingCategories.push(category)
       }
 
-      const existingItems = await prisma.packingItem.findMany({
-        where: { categoryId: category.id },
-        orderBy: { order: 'desc' },
-      })
+      const existingItems = category.items || []
       let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
 
       for (const item of items) {
@@ -61,26 +67,36 @@ export async function POST(req: Request) {
           (i) => i.name.toLowerCase() === item.name.toLowerCase()
         )
         if (existing) {
-          await prisma.packingItem.update({
-            where: { id: existing.id },
-            data: { quantity: Math.max(existing.quantity, item.quantity) },
-          })
+          if (item.quantity > existing.quantity) {
+            operations.push(
+              prisma.packingItem.update({
+                where: { id: existing.id },
+                data: { quantity: item.quantity },
+              })
+            )
+          }
         } else {
           maxItemOrder += 1
-          await prisma.packingItem.create({
-            data: {
-              categoryId: category.id,
-              name: item.name,
-              quantity: item.quantity,
-              isPacked: false,
-              isCustom: true,
-              packLast: false,
-              order: maxItemOrder,
-            },
-          })
+          operations.push(
+            prisma.packingItem.create({
+              data: {
+                categoryId: category.id,
+                name: item.name,
+                quantity: item.quantity,
+                isPacked: false,
+                isCustom: true,
+                packLast: false,
+                order: maxItemOrder,
+              },
+            })
+          )
           synced++
         }
       }
+    }
+
+    if (operations.length > 0) {
+      await prisma.$transaction(operations)
     }
 
     return NextResponse.json({ synced })
