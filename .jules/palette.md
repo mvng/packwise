@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2026-05-30 - Add keyboard focus rings to interactive buttons
+**Learning:** Found that many interactive buttons (e.g. "Add item", options menu, favorite toggle, edit/delete actions) in the inventory `CategorySection` lacked keyboard focus styling (`focus-visible:`), making keyboard navigation difficult for users as they could not see which element had focus.
+**Action:** Always ensure that interactive elements like buttons have explicit `focus-visible` utility classes (e.g., `focus-visible:ring-2`, `focus-visible:outline-none`) so keyboard users can track their focus.
