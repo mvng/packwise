@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-18 - Replacing N+1 loops with pre-fetched relations and Transactions
+**Learning:** In deeply nested sync APIs like `app/api/day-plans/sync/route.ts`, looping over arrays to perform individual Prisma queries (like `await prisma.packingItem.findMany` per category or individual `update`/`create` commands) creates significant N+1 network overhead. It is much faster to fetch the relational data on the parent object (`category.items`), compute the diff in memory, and accumulate the resulting Prisma `Promise`s into a `operations` array to execute in one batched `prisma.$transaction`.
+**Action:** When seeing `await prisma.*` inside a `for` loop, refactor it by pre-fetching the necessary data using `include`, performing updates/creates conditionally in memory, and appending the un-awaited Prisma promises to a transaction array. Ensure there are no duplicate IDs inside the transaction batch by deduplicating inputs first.
