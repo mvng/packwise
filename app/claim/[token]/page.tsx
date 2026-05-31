@@ -8,6 +8,11 @@ import type { Metadata } from 'next'
 // Adding dynamic metadata to the claim page ensures that when users share this link
 // via social media or messaging apps, the Open Graph preview accurately reflects
 // the trip destination and context, significantly improving click-through rates.
+
+// SCOUT SEO RATIONALE:
+// Adding robots: { index: false, follow: false } ensures that these private, single-use
+// claim token pages are not crawled or indexed by search engines. This prevents duplicate
+// content issues and protects user privacy for shared packing lists.
 export async function generateMetadata({
   params,
 }: {
@@ -29,7 +34,11 @@ export async function generateMetadata({
       return {
         title: 'Shared Packing List | Packwise',
         description: 'Join this shared packing list on Packwise.',
-      }
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
     }
 
     const titleName = list.name || list.trip.name || list.trip.destination || 'Untitled Trip'
@@ -50,6 +59,10 @@ export async function generateMetadata({
         card: 'summary_large_image',
         title,
         description,
+      },
+      robots: {
+        index: false,
+        follow: false,
       },
     }
   } catch (error) {

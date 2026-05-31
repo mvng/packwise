@@ -11,3 +11,6 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2024-03-24 - [Noindex Private Share Tokens]
+**Learning:** Added `robots: { index: false, follow: false }` to the `generateMetadata` function of the dynamic `/claim/[token]` route. This correctly signals search engines not to index these private, single-use token pages, avoiding duplicate content penalties and protecting shared list privacy.
+**Action:** Always ensure that private, token-based, or user-specific share pages use the Next.js `robots` metadata property to enforce `noindex, nofollow`, as public discoverability is actively harmful for these route types.
