@@ -44,21 +44,24 @@ export default function CategorySection({
           <div className="relative">
             <button
               onClick={() => setShowMenu((v) => !v)}
-              className="text-gray-400 hover:text-gray-600 px-1 transition-colors text-lg leading-none"
+              className="text-gray-400 hover:text-gray-600 px-1 transition-colors text-lg leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
               aria-label="Category options"
+              aria-expanded={showMenu}
+              aria-haspopup="menu"
             >
               •••
             </button>
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 min-w-[148px] overflow-hidden">
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 min-w-[148px] overflow-hidden" role="menu">
                   <button
                     onClick={() => {
                       onDeleteCategory()
                       setShowMenu(false)
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:bg-red-50"
+                    role="menuitem"
                   >
                     Delete category
                   </button>
@@ -89,7 +92,8 @@ export default function CategorySection({
                 onClick={() => onToggleFavorite(item)}
                 disabled={isPending}
                 title={item.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                className="text-base leading-none flex-shrink-0 transition-transform hover:scale-110 disabled:opacity-50"
+                aria-label={item.isFavorite ? `Remove ${item.name} from favorites` : `Add ${item.name} to favorites`}
+                className="text-base leading-none flex-shrink-0 transition-transform hover:scale-110 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-full"
               >
                 {item.isFavorite ? (
                   '⭐'
@@ -118,7 +122,8 @@ export default function CategorySection({
                 <button
                   onClick={() => onEditItem(item)}
                   title="Edit item"
-                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label={`Edit ${item.name}`}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -138,7 +143,8 @@ export default function CategorySection({
                   onClick={() => onDeleteItem(item.id)}
                   disabled={isPending}
                   title="Delete item"
-                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                  aria-label={`Delete ${item.name}`}
+                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   <svg
                     className="w-3.5 h-3.5"
