@@ -11,6 +11,7 @@ import TripCountdown from '@/components/TripCountdown'
 import EditTripModal from '@/components/EditTripModal'
 import PackingRating from '@/components/PackingRating'
 import TripMembersSection from '@/components/TripMembersSection'
+import TripNotes from '@/components/TripNotes'
 import { formatDate } from '@/lib/utils'
 import dynamic from 'next/dynamic'
 import { Calendar, Check, RefreshCw } from 'lucide-react'
@@ -268,6 +269,12 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
           <div className="mt-5 pt-5 border-t border-gray-100">
             <TripMembersSection tripId={trip.id} members={trip.members || []} isOwner={isOwner} />
           </div>
+
+          <TripNotes
+            tripId={trip.id}
+            initialNotes={trip.notes}
+            readOnly={isSharedView}
+          />
         </div>
 
         {/* View toggle */}
