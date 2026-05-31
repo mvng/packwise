@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-06-12 - Add accessibility to all-day tag clear button
+**Learning:** Found an icon-only '✕' button in `components/PlanningBoardView.tsx` used to clear the all-day tag that lacked an `aria-label` and keyboard focus styling.
+**Action:** When implementing clear or remove buttons, especially icon-only ones, always ensure they have an `aria-label` describing their action and explicit `focus-visible:ring-2` utility classes for keyboard accessibility.
