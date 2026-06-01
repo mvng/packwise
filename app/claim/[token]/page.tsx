@@ -27,9 +27,18 @@ export async function generateMetadata({
 
     if (!list || !list.trip) {
       return {
+      title: 'Shared Packing List | Packwise',
+      description: 'Join this shared packing list on Packwise.',
+      alternates: {
+        canonical: `/claim/${resolvedParams.token}`,
+      },
+      openGraph: {
         title: 'Shared Packing List | Packwise',
         description: 'Join this shared packing list on Packwise.',
-      }
+        url: `/claim/${resolvedParams.token}`,
+        type: 'website',
+      },
+    }
     }
 
     const titleName = list.name || list.trip.name || list.trip.destination || 'Untitled Trip'
@@ -41,7 +50,11 @@ export async function generateMetadata({
     return {
       title,
       description,
+      alternates: {
+        canonical: `/claim/${resolvedParams.token}`,
+      },
       openGraph: {
+        url: `/claim/${resolvedParams.token}`,
         title,
         description,
         type: 'website',
@@ -56,6 +69,15 @@ export async function generateMetadata({
     return {
       title: 'Shared Packing List | Packwise',
       description: 'Join this shared packing list on Packwise.',
+      alternates: {
+        canonical: `/claim/${resolvedParams.token}`,
+      },
+      openGraph: {
+        title: 'Shared Packing List | Packwise',
+        description: 'Join this shared packing list on Packwise.',
+        url: `/claim/${resolvedParams.token}`,
+        type: 'website',
+      },
     }
   }
 }
