@@ -34,8 +34,14 @@ export async function GET(
           tripId: id
         }
       },
-      include: {
-        items: true
+      select: {
+        name: true,
+        items: {
+          select: {
+            quantity: true,
+            isPacked: true
+          }
+        }
       }
     })
 
