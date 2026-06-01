@@ -56,19 +56,23 @@ export async function POST(req: Request) {
       })
       let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
 
+      const itemsToCreate = []
+      const itemsToUpdate = []
+
       for (const item of items) {
         const existing = existingItems.find(
           (i) => i.name.toLowerCase() === item.name.toLowerCase()
         )
         if (existing) {
-          await prisma.packingItem.update({
-            where: { id: existing.id },
-            data: { quantity: Math.max(existing.quantity, item.quantity) },
-          })
+          if (item.quantity > existing.quantity) {
+             itemsToUpdate.push(prisma.packingItem.update({
+               where: { id: existing.id },
+               data: { quantity: item.quantity },
+             }))
+          }
         } else {
           maxItemOrder += 1
-          await prisma.packingItem.create({
-            data: {
+          itemsToCreate.push({
               categoryId: category.id,
               name: item.name,
               quantity: item.quantity,
@@ -76,10 +80,18 @@ export async function POST(req: Request) {
               isCustom: true,
               packLast: false,
               order: maxItemOrder,
-            },
           })
           synced++
         }
+      }
+
+      if (itemsToUpdate.length > 0) {
+        await prisma.$transaction(itemsToUpdate)
+      }
+      if (itemsToCreate.length > 0) {
+        await prisma.packingItem.createMany({
+          data: itemsToCreate
+        })
       }
     }
 

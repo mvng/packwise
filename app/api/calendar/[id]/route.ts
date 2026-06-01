@@ -9,16 +9,25 @@ export async function GET(
   try {
     const trip = await prisma.trip.findUnique({
       where: { id: params.id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        destination: true,
+        startDate: true,
+        endDate: true,
         packingLists: {
-          include: {
+          select: {
             categories: {
-              include: {
-                items: true,
-              },
-            },
-          },
-        },
+              select: {
+                items: {
+                  select: {
+                    isPacked: true,
+                  }
+                }
+              }
+            }
+          }
+        }
       },
     })
 
