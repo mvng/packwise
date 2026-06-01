@@ -45,7 +45,7 @@ export default function SmartSuggestions({ startDate, onSelect }: SmartSuggestio
             className="group flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-800 transition-all shadow-sm"
           >
             <span>{suggestion.title}</span>
-            <PlusCircle className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+            <PlusCircle className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity" />
           </button>
         ))}
       </div>

@@ -215,7 +215,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                       <button
                         key={type.value}
                         onClick={() => setNewLuggage({ ...newLuggage, type: type.value })}
-                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                        aria-label={`Select ${type.label}`} className={`flex items-center gap-3 p-3 rounded-xl border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all ${
                           newLuggage.type === type.value
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -236,7 +236,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                     <button
                       type="button"
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-xl hover:border-gray-400 transition-colors"
+                      className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-xl hover:border-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
                     >
                       <span className="text-2xl">{newLuggage.icon || luggageIcons[newLuggage.type]}</span>
                       <span className="text-sm text-gray-600">Change icon</span>
@@ -245,7 +245,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                       <button
                         type="button"
                         onClick={() => setNewLuggage({ ...newLuggage, icon: '' })}
-                        className="px-4 py-3 text-sm text-gray-500 hover:text-red-600 transition-colors"
+                        className="px-4 py-3 text-sm text-gray-500 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg transition-colors"
                       >
                         Reset
                       </button>
@@ -257,11 +257,7 @@ export default function LuggagePickerModal({ tripId, onClose, onSuccess }: Props
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => {
-                            setNewLuggage({ ...newLuggage, icon: emoji })
-                            setShowEmojiPicker(false)
-                          }}
-                          className="text-2xl hover:scale-125 transition-transform"
+                          aria-label={`Select emoji ${emoji}`} onClick={() => { setNewLuggage({ ...newLuggage, icon: emoji }); setShowEmojiPicker(false); }} className="text-2xl hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded transition-transform"
                         >
                           {emoji}
                         </button>
