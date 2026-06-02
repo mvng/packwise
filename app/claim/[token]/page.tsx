@@ -29,6 +29,12 @@ export async function generateMetadata({
       return {
         title: 'Shared Packing List | Packwise',
         description: 'Join this shared packing list on Packwise.',
+        alternates: {
+          canonical: `/claim/${resolvedParams.token}`,
+        },
+        openGraph: {
+          url: `/claim/${resolvedParams.token}`,
+        },
       }
     }
 
@@ -41,10 +47,14 @@ export async function generateMetadata({
     return {
       title,
       description,
+      alternates: {
+        canonical: `/claim/${resolvedParams.token}`,
+      },
       openGraph: {
         title,
         description,
         type: 'website',
+        url: `/claim/${resolvedParams.token}`,
       },
       twitter: {
         card: 'summary_large_image',
@@ -56,6 +66,12 @@ export async function generateMetadata({
     return {
       title: 'Shared Packing List | Packwise',
       description: 'Join this shared packing list on Packwise.',
+      alternates: {
+        canonical: `/claim/${resolvedParams.token}`,
+      },
+      openGraph: {
+        url: `/claim/${resolvedParams.token}`,
+      },
     }
   }
 }
