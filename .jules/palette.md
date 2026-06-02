@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-06-02 - Add aria-labels and keyboard focus to Inventory actions
+**Learning:** Found a pattern where hover-revealed action buttons (like Edit/Delete in `CategorySection.tsx`) omit `aria-label` attributes for icon-only SVGs and lack explicit keyboard focus indicators, rendering them undiscoverable and unusable for keyboard and screen reader users. Also observed that fixing test mocks requires modifying the module export (`prismaModule.prisma`) instead of the read-only imported proxy object.
+**Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes (e.g. `aria-label={"Edit ${item.name}"}`) and explicit `focus-visible` utility classes (e.g., `focus-visible:ring-blue-500`) so screen reader and keyboard users can discover and trigger them reliably.
