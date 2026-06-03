@@ -37,6 +37,11 @@ export async function POST(req: Request) {
     let maxCatOrder = existingCategories.reduce((max, c) => Math.max(max, c.order), -1)
     let synced = 0
 
+    // ⚡ Bolt Performance Optimization:
+    // Accumulate all packing item updates and creates into a single transaction
+    // to prevent N+1 queries during day plan syncing.
+    const dbOperations: any[] = []
+
     for (const [catName, items] of grouped) {
       let category = existingCategories.find(
         (c) => c.name.toLowerCase() === catName.toLowerCase()
@@ -50,37 +55,61 @@ export async function POST(req: Request) {
         })
       }
 
-      const existingItems = await prisma.packingItem.findMany({
-        where: { categoryId: category.id },
-        orderBy: { order: 'desc' },
-      })
+      // Use pre-fetched items rather than querying inside the loop
+      const existingItems = category.items || []
       let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
 
+      // Deduplicate items to prevent intra-transaction conflicts
+      const deduplicatedItems = new Map<string, { name: string, quantity: number }>()
       for (const item of items) {
+        const nameKey = item.name.toLowerCase()
+        const current = deduplicatedItems.get(nameKey)
+        if (!current) {
+          deduplicatedItems.set(nameKey, { name: item.name, quantity: item.quantity })
+        } else {
+          current.quantity = Math.max(current.quantity, item.quantity)
+        }
+      }
+
+      for (const [nameKey, itemData] of deduplicatedItems) {
         const existing = existingItems.find(
-          (i) => i.name.toLowerCase() === item.name.toLowerCase()
+          (i) => i.name.toLowerCase() === nameKey
         )
+
         if (existing) {
-          await prisma.packingItem.update({
-            where: { id: existing.id },
-            data: { quantity: Math.max(existing.quantity, item.quantity) },
-          })
+          // Only update if quantity needs to be increased
+          if (itemData.quantity > existing.quantity) {
+            dbOperations.push(
+              prisma.packingItem.update({
+                where: { id: existing.id },
+                data: { quantity: itemData.quantity },
+              })
+            )
+            // Update in-memory in case it's checked again (not strictly necessary here but good practice)
+            existing.quantity = itemData.quantity
+          }
         } else {
           maxItemOrder += 1
-          await prisma.packingItem.create({
-            data: {
-              categoryId: category.id,
-              name: item.name,
-              quantity: item.quantity,
-              isPacked: false,
-              isCustom: true,
-              packLast: false,
-              order: maxItemOrder,
-            },
-          })
+          dbOperations.push(
+            prisma.packingItem.create({
+              data: {
+                categoryId: category.id,
+                name: itemData.name,
+                quantity: itemData.quantity,
+                isPacked: false,
+                isCustom: true,
+                packLast: false,
+                order: maxItemOrder,
+              },
+            })
+          )
           synced++
         }
       }
+    }
+
+    if (dbOperations.length > 0) {
+      await prisma.$transaction(dbOperations)
     }
 
     return NextResponse.json({ synced })
