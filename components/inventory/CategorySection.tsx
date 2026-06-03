@@ -118,7 +118,7 @@ export default function CategorySection({
                 <button
                   onClick={() => onEditItem(item)}
                   title="Edit item"
-                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label="Edit item" className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none focus-visible:opacity-100"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -138,7 +138,7 @@ export default function CategorySection({
                   onClick={() => onDeleteItem(item.id)}
                   disabled={isPending}
                   title="Delete item"
-                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                  aria-label="Delete item" className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none focus-visible:opacity-100"
                 >
                   <svg
                     className="w-3.5 h-3.5"
