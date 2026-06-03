@@ -2,6 +2,22 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
+import type { Metadata } from 'next'
+
+// SCOUT SEO RATIONALE:
+// Defining relative `alternates.canonical` and `openGraph.url` at the route level
+// rather than the root layout ensures that child pages do not incorrectly inherit
+// the homepage URL, preserving correct Open Graph and canonical tags for all routes.
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    url: '/',
+  },
+}
+
+
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

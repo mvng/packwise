@@ -15,7 +15,6 @@ export const metadata: Metadata = {
     title: 'Packwise – Smart Packing Lists',
     description: 'Create smart packing lists for every trip.',
     type: 'website',
-    url: 'https://packwise-indol.vercel.app',
     siteName: 'Packwise',
     locale: 'en_US',
   },
