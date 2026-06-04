@@ -114,7 +114,7 @@ export default function CategorySection({
               </div>
 
               {/* Actions (visible on hover) */}
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus:opacity-100 focus-visible:opacity-100 transition-opacity">
                 <button
                   onClick={() => onEditItem(item)}
                   title="Edit item"
