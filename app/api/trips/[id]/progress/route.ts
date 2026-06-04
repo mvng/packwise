@@ -28,14 +28,25 @@ export async function GET(
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
     }
 
+    // ⚡ Bolt Performance Optimization
+    // Why: Switched from `include: { items: true }` to a targeted `select`.
+    // Impact: Drastically reduces the database payload and Node serialization overhead.
+    // We only fetch the required fields (name, quantity, isPacked) for progress calculation,
+    // instead of bringing thousands of items with full columns into memory.
     const categories = await prisma.category.findMany({
       where: {
         packingList: {
           tripId: id
         }
       },
-      include: {
-        items: true
+      select: {
+        name: true,
+        items: {
+          select: {
+            quantity: true,
+            isPacked: true
+          }
+        }
       }
     })
 
