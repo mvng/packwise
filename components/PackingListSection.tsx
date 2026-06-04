@@ -744,7 +744,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
           </label>
         </div>
         {!readOnly && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100 focus:opacity-100 focus-visible:opacity-100">
             <button
               onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
               title="Add/Edit Note"
@@ -1259,7 +1259,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                 </label>
                               </div>
                               {!readOnly && (
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100 focus:opacity-100 focus-visible:opacity-100">
                                   <button
                                     onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
                                     title="Add/Edit Note"
