@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-24 - Prisma Include Cartesian Product Avoidance
+**Learning:** In Next.js Server Actions or route handlers, over-fetching with `include: { items: true }` when calculating simple aggregates like "total" and "packed" causes unnecessary serialization and DB transfer overhead.
+**Action:** Always prefer targeted `select` statements to retrieve only the fields needed for the computation (e.g., `quantity` and `isPacked`) to avoid serializing complete records, unless the full record is needed by the client.
