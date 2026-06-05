@@ -1,4 +1,5 @@
 'use client'
+import { reorderDayPlanItems } from '@/actions/day-plan.actions'
 
 import { useState, useEffect, useTransition, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -54,13 +55,7 @@ async function apiDeleteDayPlanItem(itemId: string) {
   await fetch(`/api/day-plan-items/${itemId}`, { method: 'DELETE' })
 }
 
-async function apiReorderDayPlanItems(dayPlanId: string, orderedIds: string[]) {
-  await fetch('/api/day-plan-items/reorder', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dayPlanId, orderedIds }),
-  })
-}
+
 
 async function apiMoveDayPlanItem(itemId: string, dayPlanId: string, order: number) {
   await fetch(`/api/day-plan-items/${itemId}`, {
@@ -457,7 +452,7 @@ function DayColumn({
     startTransition(async () => {
       await apiUpdateDayPlanItemNotes(itemId, time)
       // Persist the new order to DB after sort
-      await apiReorderDayPlanItems(dayPlan.id, sorted.map((i) => i.id))
+      await reorderDayPlanItems(dayPlan.id, sorted.map((i) => i.id))
     })
   }
 
@@ -708,7 +703,7 @@ function TimeSlot({
     onDayPlanChange(dateKey, { ...dayPlan, items: sorted })
     startTransition(async () => {
       await apiUpdateDayPlanItemNotes(itemId, time)
-      await apiReorderDayPlanItems(dayPlan.id, sorted.map((i) => i.id))
+      await reorderDayPlanItems(dayPlan.id, sorted.map((i) => i.id))
     })
   }
 
@@ -906,7 +901,7 @@ export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: Plann
             return { ...prev, [overItemKey]: { ...plan, items: plan.items.map((i) => i.id === tempId ? result.item : i) } }
           })
           const finalIds = newItems.map((i) => i.id === tempId ? result.item.id : i.id)
-          await apiReorderDayPlanItems(overPlan.id, finalIds)
+          await reorderDayPlanItems(overPlan.id, finalIds)
         }
       })
       return
@@ -952,7 +947,7 @@ export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: Plann
         setDayPlans((prev) => ({ ...prev, [sourceKey]: { ...sourcePlan, items: sorted } }))
         startTransition(async () => {
           await apiUpdateDayPlanItemNotes(active.id as string, newTime)
-          await apiReorderDayPlanItems(sourcePlan.id, sorted.map((i) => i.id))
+          await reorderDayPlanItems(sourcePlan.id, sorted.map((i) => i.id))
         })
       }
       return
@@ -964,7 +959,7 @@ export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: Plann
       if (oldIndex === -1 || newIndex === -1) return
       const reordered = arrayMove(sourcePlan.items, oldIndex, newIndex).map((item, idx) => ({ ...item, order: idx }))
       setDayPlans((prev) => ({ ...prev, [sourceKey]: { ...sourcePlan, items: reordered } }))
-      startTransition(async () => { await apiReorderDayPlanItems(sourcePlan.id, reordered.map((i) => i.id)) })
+      startTransition(async () => { await reorderDayPlanItems(sourcePlan.id, reordered.map((i) => i.id)) })
     } else {
       const destPlan = dayPlans[destKey]
       const movingItem = sourcePlan.items.find((i) => i.id === active.id)
@@ -1121,4 +1116,7 @@ export default function PlanningBoardView({ trip, onUnsyncedItemsChange }: Plann
       </DragOverlay>
     </DndContext>
   )
+
+
+
 }
