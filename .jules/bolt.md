@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-01 - Optimizing Sequential Auth Queries in Prisma
+**Learning:** When performing database operations that require deep authorization (e.g., verifying user -> trip -> packing item access), making sequential Prisma queries creates a waterfall fetching pattern (N+1 queries). Prisma handles complex relational checks efficiently in a single query via the Native Engine using the `where` clause with deeply nested object filters (e.g., `where: { category: { packingList: { trip: { userId } } } }`).
+**Action:** Combine sequential authorization and fetch queries into a single deep relationship query to eliminate database round-trips and optimize backend route performance.
