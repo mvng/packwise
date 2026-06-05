@@ -18,6 +18,8 @@ export async function generateMetadata({
       return {
         title: 'Trip Not Found | Packwise',
         description: 'The packing list you are looking for could not be found.',
+        alternates: { canonical: `/trip/${resolvedParams.id}` },
+        openGraph: { url: `/trip/${resolvedParams.id}` }
       }
     }
 
@@ -30,7 +32,9 @@ export async function generateMetadata({
     return {
       title,
       description,
+      alternates: { canonical: `/trip/${resolvedParams.id}` },
       openGraph: {
+        url: `/trip/${resolvedParams.id}`,
         title,
         description,
         type: 'website',
@@ -45,6 +49,8 @@ export async function generateMetadata({
     return {
       title: 'Packwise – Smart Packing Lists',
       description: 'Create smart packing lists for every trip.',
+      alternates: { canonical: `/trip/${resolvedParams.id}` },
+      openGraph: { url: `/trip/${resolvedParams.id}` }
     }
   }
 }
