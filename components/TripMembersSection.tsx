@@ -67,7 +67,7 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
               {isOwner && <X className="w-3 h-3 hidden group-hover:block" />}
             </button>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-20">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-20">
               <div className="bg-gray-900 text-white text-[10px] font-medium px-2 py-1 rounded whitespace-nowrap">
                 {member.name}
                 {isOwner && <span className="text-gray-400 ml-1">&middot; click to remove</span>}
