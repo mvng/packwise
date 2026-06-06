@@ -7,3 +7,8 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+
+## $(date +%Y-%m-%d) - Adding ARIA labels to hidden icon buttons
+
+**Learning:** When modifying `aria-labels` and focus styling on dynamically rendered components like icon-only action buttons (e.g., editing or deleting an item), make sure you check if identical buttons are rendered in multiple views. In `PackingListSection.tsx`, there were duplicated item rows for different views ('By Category' vs 'Pack Last'), which meant the same missing `aria-label` and `focus-visible` states needed to be patched in multiple places.
+**Action:** When inspecting components for accessibility fixes, always use `grep` with context to see if the element block repeats throughout the file (especially in complex list views with multiple rendering modes).
