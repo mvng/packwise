@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { POST } from '../app/api/day-plan-items/save-to-inventory/route';
+import * as prismaModule from '../lib/prisma';
 import { prisma } from '../lib/prisma';
 import * as auth from '../lib/supabase/server';
 import { NextResponse } from 'next/server';
@@ -51,10 +52,7 @@ test.describe('Performance: save-to-inventory', () => {
       }
     };
 
-    Object.defineProperty(prisma, 'user', { value: mockPrisma.user, configurable: true });
-    Object.defineProperty(prisma, 'dayPlan', { value: mockPrisma.dayPlan, configurable: true });
-    Object.defineProperty(prisma, 'inventoryCategory', { value: mockPrisma.inventoryCategory, configurable: true });
-    Object.defineProperty(prisma, 'inventoryItem', { value: mockPrisma.inventoryItem, configurable: true });
+    Object.defineProperty(prismaModule, 'prisma', { value: mockPrisma, configurable: true });
 
     // Mock Supabase Auth
     Object.defineProperty(auth, 'createClient', { configurable: true,
