@@ -30,7 +30,11 @@ export async function generateMetadata({
     return {
       title,
       description,
+      alternates: {
+        canonical: `/trip/${resolvedParams.id}`,
+      },
       openGraph: {
+        url: `/trip/${resolvedParams.id}`,
         title,
         description,
         type: 'website',

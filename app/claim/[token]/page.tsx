@@ -41,7 +41,11 @@ export async function generateMetadata({
     return {
       title,
       description,
+      alternates: {
+        canonical: `/claim/${resolvedParams.token}`,
+      },
       openGraph: {
+        url: `/claim/${resolvedParams.token}`,
         title,
         description,
         type: 'website',
