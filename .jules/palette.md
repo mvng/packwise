@@ -7,3 +7,9 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-25 - Improve keyboard accessibility on hover-revealed avatars and tooltips
+**Learning:** Discovered a pattern where member avatars revealed actions (like a delete "X" and an explanatory tooltip) solely on `group-hover`, making them invisible to keyboard navigation. Using standard `focus` or `focus-visible` alone on the button wasn't enough to properly trigger these child elements.
+**Action:** When working with hover-revealed child elements or tooltips inside an interactive container, explicitly use `group-focus:hidden`, `group-focus:block`, and `group-focus:opacity-100` alongside `group-hover` equivalents to ensure the same visual feedback is provided for keyboard users.
+## 2024-05-25 - Correction: `group-focus-within` must be used over `group-focus` for child elements
+**Learning:** During review, I realized that using `group-focus` on child elements inside a `<div className="group">` does not work if the parent `div` itself cannot receive focus (e.g., lacks a `tabindex`). When an interactive child (like a `<button>`) receives focus, you must use `group-focus-within` on other child elements to make them react to the sibling's focus state.
+**Action:** Always use `group-focus-within` (not `group-focus`) when you want elements within a group to change state when any interactive element inside that group is focused.
