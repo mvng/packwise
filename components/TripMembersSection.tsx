@@ -110,15 +110,17 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
           <button
             onClick={handleAdd}
             disabled={isPending || !newName.trim()}
-            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             title="Confirm"
+            aria-label="Confirm add member"
           >
             <Check className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => { setIsAdding(false); setNewName(''); setError(null) }}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
             title="Cancel"
+            aria-label="Cancel add member"
           >
             <X className="w-3.5 h-3.5" />
           </button>

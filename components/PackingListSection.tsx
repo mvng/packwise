@@ -748,6 +748,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
             <button
               onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
               title="Add/Edit Note"
+              aria-label="Add or edit note"
               className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
             ><MessageSquare className="w-3.5 h-3.5" /></button>
             <button
@@ -758,7 +759,8 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                   ? 'bg-amber-100 text-amber-700 border-amber-300'
                   : 'bg-white text-gray-400 border-gray-200 hover:border-amber-300 hover:text-amber-600'
               }`}
-              aria-label={item.packLast ? 'Remove from pack last' : 'Mark as pack last'}
+              aria-label={item.packLast ? 'Remove from departure checklist' : 'Add to departure checklist (pack last)'}
+
             >
               <Sunrise className="w-3.5 h-3.5" />
             </button>
@@ -865,7 +867,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         {itemCount > 0 && <span className="text-xs text-gray-500">({itemCount})</span>}
                         <button
                           onClick={() => handleRemoveLuggage(tl.id, tl.luggageId)}
-                          className="ml-1 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1 flex items-center"
+                          className="ml-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-gray-400 hover:text-red-500 transition-opacity focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1 flex items-center"
                           aria-label={`Remove ${tl.luggage.name}`}
                         ><X className="w-3.5 h-3.5" /></button>
                       </div>
@@ -1263,6 +1265,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                   <button
                                     onClick={(e) => { e.preventDefault(); setEditingNotes({ id: item.id, notes: item.notes || '' }) }}
                                     title="Add/Edit Note"
+                                    aria-label="Add or edit note"
                                     className="text-xs p-1 rounded-full border bg-white text-gray-400 border-gray-200 hover:border-blue-300 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center"
                                   ><MessageSquare className="w-3.5 h-3.5" /></button>
                                   <button
