@@ -9,3 +9,6 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+## 2025-02-12 - Prevent N+1 Authorization Waterfalls
+**Learning:** Checking authorization by sequentially querying the user, then the parent resource (e.g. Trip), and finally the child resource (e.g. PackingItem) creates a classic waterfall query anti-pattern that severely impacts latency.
+**Action:** Always combine sequential database authorization checks into a single query using deep relational filters in Prisma's \`where\` clause (e.g., \`where: { id: childId, parent: { userId: user.id } }\`).
