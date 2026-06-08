@@ -35,6 +35,7 @@ export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: Tas
       <div className="flex items-start gap-3">
         <button
           onClick={() => onToggleStatus(task.id, task.status)}
+          aria-label={isDone ? 'Mark as incomplete' : 'Mark as complete'}
           className={`mt-1 flex-shrink-0 text-gray-400 hover:text-blue-600 transition-colors ${
             isDone ? 'text-green-500 hover:text-green-600' : ''
           }`}
@@ -70,18 +71,20 @@ export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: Tas
           </div>
         </div>
 
-        <div className={`flex items-center gap-1 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`flex items-center gap-1 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'} focus-within:opacity-100`}>
           <button
             onClick={() => onEdit(task)}
-            className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors focus-visible:opacity-100"
             title="Edit task"
+            aria-label="Edit task"
           >
             <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(task.id)}
-            className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors focus-visible:opacity-100"
             title="Delete task"
+            aria-label="Delete task"
           >
             <Trash2 className="w-4 h-4" />
           </button>
