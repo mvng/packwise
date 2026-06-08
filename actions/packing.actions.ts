@@ -16,29 +16,22 @@ async function verifyTripItemAccess(itemId: string, tripId: string) {
   const user = await getAuthenticatedUser()
   if (!user) return false
 
-  const prismaUser = await prisma.user.findUnique({ where: { supabaseId: user.id } })
-  if (!prismaUser) return false
-
-  // Verify the trip exists and the user has access
-  const trip = await prisma.trip.findFirst({
-    where: {
-      id: tripId,
-      OR: [
-        { userId: prismaUser.id },
-        { members: { some: { userId: prismaUser.id } } }
-      ]
-    }
-  })
-
-  if (!trip) return false
-
-  // Verify the item belongs to this trip
+  // ⚡ Bolt Performance Optimization
+  // Why: Combined three sequential database queries (user, trip access, item existence)
+  // into a single database query using deep relational filters.
+  // Impact: Prevents N+1 waterfall query delays, significantly speeding up latency.
   const item = await prisma.packingItem.findFirst({
     where: {
       id: itemId,
       category: {
         packingList: {
-          tripId: tripId
+          tripId: tripId,
+          trip: {
+            OR: [
+              { user: { supabaseId: user.id } },
+              { members: { some: { user: { supabaseId: user.id } } } }
+            ]
+          }
         }
       }
     }
