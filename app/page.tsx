@@ -1,6 +1,17 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    url: '/',
+  },
+}
 
 export default async function HomePage() {
   const supabase = await createClient()

@@ -1,9 +1,13 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
+  alternates: {
+    canonical: '/login',
+  },
   title: 'Sign In or Create Account | Packwise',
   description: 'Log in to your Packwise account to view and manage your smart packing lists, or create a new account to get started.',
   openGraph: {
+    url: '/login',
     title: 'Sign In or Create Account | Packwise',
     description: 'Log in to your Packwise account to view and manage your smart packing lists, or create a new account to get started.',
   },

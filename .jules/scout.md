@@ -11,3 +11,6 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2024-03-16 - [OpenGraph URL Inheritance Anti-Pattern]
+**Learning:** In Next.js App Router, hardcoding an absolute `openGraph.url` or `alternates.canonical` in the root `app/layout.tsx` forces all child routes to inherit it. This breaks social sharing for nested pages, as they will falsely report the homepage as their URL.
+**Action:** Instead, set `metadataBase` in the root layout and define relative `alternates.canonical` and `openGraph.url` strings on individual routes (or dynamically in `generateMetadata` for dynamic routes).
