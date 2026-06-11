@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getSharedTripById } from '@/actions/trip.actions'
 import { getTripWeather } from '@/actions/weather.actions'
@@ -7,6 +8,54 @@ import { Suspense } from 'react'
 import TripWeather from '@/components/TripWeather'
 import TripWeatherSkeleton from '@/components/TripWeatherSkeleton'
 import TripPageClient from './TripPageClient'
+
+// SCOUT SEO RATIONALE:
+// Adding dynamic metadata to the shared trip page ensures that when users share this link
+// via social media or messaging apps, the Open Graph preview accurately reflects
+// the trip destination and context, significantly improving click-through rates.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+
+  try {
+    const tripResponse = await getSharedTripById(id)
+    const trip = tripResponse.trip
+
+    if (!trip) {
+      return {
+        title: 'Shared Trip | Packwise',
+        description: 'View this shared trip on Packwise.',
+      }
+    }
+
+    const titleName = trip.name || trip.destination || 'Untitled Trip'
+    const title = `${titleName} | Packwise Trip`
+    const description = `View the packing list and details for ${titleName} on Packwise.`
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+      },
+    }
+  } catch (error) {
+    return {
+      title: 'Shared Trip | Packwise',
+      description: 'View this shared trip on Packwise.',
+    }
+  }
+}
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
