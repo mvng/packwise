@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-25 - Fix jsx-a11y errors for Switch roles and improve button labeling
+**Learning:** Found that custom `role="switch"` implementations in Next.js/React applications will cause ESLint `jsx-a11y` errors if they use `aria-pressed` instead of `aria-checked`. Additionally, when using inline Node.js scripts or `sed` to patch TSX/JSX props (like adding `aria-label`), it's very easy to accidentally duplicate existing props.
+**Action:** Always use `aria-checked` for `role="switch"` elements. When patching files, always run `pnpm lint` immediately afterward to catch accidental syntax errors or duplicate props (`react/jsx-no-duplicate-props`).
