@@ -1,0 +1,3 @@
+## 2026-06-12 - SessionStorage and Next.js Auth Callbacks
+**Learning:** In Next.js App Router, using a server route (`app/auth/callback/route.ts`) for authentication means it cannot directly access client-side APIs like `sessionStorage`. Features that rely on client-stored intent (like pending actions saved before login) must either be checked entirely in client components *after* the redirect from the server callback, or be stored in a cookie instead of `sessionStorage`.
+**Action:** When saving an action state pre-login to execute post-login, implement the execution logic directly in the authentication client component (like `app/(auth)/login/page.tsx`) immediately after a successful client login, instead of expecting the server to handle it.
