@@ -64,16 +64,12 @@ test.describe('Performance: addInventoryItemsToTrip', () => {
       }
     };
 
-    const { prisma } = require('../lib/prisma');
+    const prismaModule = require('../lib/prisma');
     const auth = require('../lib/auth');
     const { addInventoryItemsToTrip } = require('../actions/inventory.actions');
 
-    Object.defineProperty(prisma, 'trip', { value: mockPrisma.trip });
-    Object.defineProperty(prisma, 'inventoryItem', { value: mockPrisma.inventoryItem });
-    Object.defineProperty(prisma, 'packingList', { value: mockPrisma.packingList });
-    Object.defineProperty(prisma, 'category', { value: mockPrisma.category });
-    Object.defineProperty(prisma, 'packingItem', { value: mockPrisma.packingItem });
-    Object.defineProperty(auth, 'getUserId', { value: async () => 'user-1' });
+    Object.defineProperty(prismaModule, 'prisma', { value: mockPrisma, configurable: true });
+    Object.defineProperty(auth, 'getUserId', { value: async () => 'user-1', configurable: true });
 
     await addInventoryItemsToTrip('trip-1', ['item-1', 'item-2', 'item-3', 'item-4', 'item-5']);
 

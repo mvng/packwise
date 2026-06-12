@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-18 - Avoid over-fetching in list queries
+**Learning:** List endpoints and pages, such as `getDashboardTrips` mapping for the main Dashboard, frequently query `findMany` using deep relationships (`include: { packingLists: ... }`) when the UI only actually renders the top-level scalar values (like trip name, destination, and dates).
+**Action:** Inspect Prisma `findMany` queries used to populate simple lists. Drop `include` in favor of `select` projecting only the needed top-level scalars to drastically reduce payload size and query execution time.
