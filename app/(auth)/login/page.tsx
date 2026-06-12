@@ -1,8 +1,12 @@
+
 'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { forkTrip } from '@/actions/trip.actions'
+import { getTripLocalStorageState } from '@/components/PackingListSection'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -11,6 +15,28 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const router = useRouter()
+
+  const handleLoginSuccess = async () => {
+    const tripIdToFork = sessionStorage.getItem('fork_trip_after_login')
+    if (tripIdToFork) {
+      sessionStorage.removeItem('fork_trip_after_login')
+      try {
+        const localStorageState = getTripLocalStorageState(tripIdToFork)
+        const result = await forkTrip(tripIdToFork, localStorageState)
+        if (result.success && result.tripId) {
+          if (typeof window !== 'undefined' && localStorageState) {
+            localStorage.removeItem(`packwise_trip_${tripIdToFork}`)
+          }
+          router.push(`/trip/${result.tripId}`)
+          return
+        }
+      } catch (err) {
+        console.error('Failed to fork trip after login:', err)
+      }
+    }
+    window.location.href = '/dashboard' // Intentionally using window.location for full app reload / hydration on auth change just to be safe
+  }
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,7 +62,7 @@ export default function LoginPage() {
       // If email confirmation is disabled, signUp returns a valid session.
       // Redirect immediately to dashboard (the auth callback will upsert the Prisma User).
       if (data?.session) {
-        window.location.href = '/dashboard'
+        handleLoginSuccess()
         return
       }
 
@@ -49,7 +75,7 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
-      window.location.href = '/dashboard'
+      handleLoginSuccess()
       return
     }
     setLoading(false)
