@@ -9,3 +9,6 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+## 2024-05-24 - Prisma N+1 Query in Loop
+**Learning:** The `sync` route was making a `findMany` query for `packingItem` inside a loop for each category, despite the fact that `category.items` were already loaded via the `include: { items: true }` directive in the initial `category` query. This resulted in an N+1 query pattern.
+**Action:** Avoid querying the database inside a loop when the related items are already included in the parent query. Sort or process the included items in memory instead.
