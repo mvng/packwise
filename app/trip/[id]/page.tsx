@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { getSharedTripById } from '@/actions/trip.actions'
 import { getTripWeather } from '@/actions/weather.actions'
 import { createClient } from '@/lib/supabase/server'
@@ -7,6 +8,59 @@ import { Suspense } from 'react'
 import TripWeather from '@/components/TripWeather'
 import TripWeatherSkeleton from '@/components/TripWeatherSkeleton'
 import TripPageClient from './TripPageClient'
+
+
+// SCOUT SEO RATIONALE:
+// Adding dynamic metadata to the trip page ensures that when users share this link
+// via social media or messaging apps, the Open Graph preview accurately reflects
+// the trip destination and context, significantly improving click-through rates.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const resolvedParams = await params
+
+  try {
+    const trip = await prisma.trip.findUnique({
+      where: { id: resolvedParams.id },
+      select: { name: true, destination: true },
+    })
+
+    if (!trip) {
+      return {
+        title: 'Trip Details | Packwise',
+        description: 'View trip details and packing list on Packwise.',
+      }
+    }
+
+    const titleName = trip.name || trip.destination || 'Untitled Trip'
+    const title = `${titleName} | Packwise Trip`
+    const description = trip.destination
+      ? `View the packing list and details for the trip to ${trip.destination} on Packwise.`
+      : `View trip details and packing list on Packwise.`
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+      },
+    }
+  } catch (error) {
+    return {
+      title: 'Trip Details | Packwise',
+      description: 'View trip details and packing list on Packwise.',
+    }
+  }
+}
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
