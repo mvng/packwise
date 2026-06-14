@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2024-06-14 - Prisma Relation Unloading Trap
+**Learning:** When attempting to eliminate Prisma N+1 queries by replacing `findMany` calls with direct property access (e.g., `category.items`), explicitly verify that the parent query actually utilizes the `include` directive for that relation. In Prisma, accessing an unloaded relation returns `undefined`, which can cause silent functional regressions if default fallbacks like `|| []` are incorrectly assumed to accurately reflect the database state.
+**Action:** Always check the parent query's `include` or `select` block to confirm a relation is eagerly loaded before refactoring child queries to use in-memory property access.
