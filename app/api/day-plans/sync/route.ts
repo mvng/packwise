@@ -50,10 +50,7 @@ export async function POST(req: Request) {
         })
       }
 
-      const existingItems = await prisma.packingItem.findMany({
-        where: { categoryId: category.id },
-        orderBy: { order: 'desc' },
-      })
+      const existingItems = category.items || []
       let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
 
       for (const item of items) {
