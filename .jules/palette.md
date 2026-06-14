@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-06-14 - Use correct ARIA attributes and focus for custom switch roles
+**Learning:** Found custom toggle components (e.g., `LaundryToggle`) implementing a switch using a `<button>` element but missing the required `role="switch"` and using the incorrect `aria-pressed` attribute instead of `aria-checked`. The toggle also lacked explicit keyboard focus indicators (`focus-visible:ring-2`), making it inaccessible for keyboard users to know when it was focused.
+**Action:** When implementing a custom toggle switch using a button, always ensure it has `role="switch"`, uses `aria-checked` to reflect its state (compliant with `jsx-a11y`), includes a descriptive `aria-label`, and incorporates visible focus styles like `focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`.

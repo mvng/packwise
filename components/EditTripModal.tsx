@@ -307,10 +307,12 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
               <button
                 type="button"
                 onClick={() => handleLaundryToggle(!hasLaundry)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                   hasLaundry ? 'bg-blue-600' : 'bg-gray-200'
                 }`}
-                aria-pressed={hasLaundry}
+                role="switch"
+                aria-checked={hasLaundry}
+                aria-label="Toggle laundry access"
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                   hasLaundry ? 'translate-x-6' : 'translate-x-1'
