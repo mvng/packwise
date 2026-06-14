@@ -11,3 +11,6 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2026-03-15 - [Dedicated Queries for Dynamic Metadata]
+**Learning:** When generating dynamic metadata in Next.js Server Components, it is often more performant to perform a focused, lightweight database query (`prisma.model.findUnique` with a minimal `select` for only the fields needed, like `name` and `destination`) rather than reusing the page's primary data-fetching action (e.g., `getSharedTripById`), which may load deeply nested relationships unnecessary for SEO tags.
+**Action:** Always favor isolated, precise database queries within `generateMetadata` functions to avoid pulling massive object graphs into memory solely to extract a page title.
