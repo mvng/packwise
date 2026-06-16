@@ -1,5 +1,7 @@
 'use client'
 
+import { reorderDayPlanItems } from '@/actions/day-plan.actions'
+
 import { useState, useEffect, useTransition, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -55,11 +57,7 @@ async function apiDeleteDayPlanItem(itemId: string) {
 }
 
 async function apiReorderDayPlanItems(dayPlanId: string, orderedIds: string[]) {
-  await fetch('/api/day-plan-items/reorder', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dayPlanId, orderedIds }),
-  })
+  await reorderDayPlanItems(dayPlanId, orderedIds)
 }
 
 async function apiMoveDayPlanItem(itemId: string, dayPlanId: string, order: number) {
