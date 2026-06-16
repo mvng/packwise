@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getSharedTripById } from '@/actions/trip.actions'
 import { getTripWeather } from '@/actions/weather.actions'
@@ -7,6 +8,59 @@ import { Suspense } from 'react'
 import TripWeather from '@/components/TripWeather'
 import TripWeatherSkeleton from '@/components/TripWeatherSkeleton'
 import TripPageClient from './TripPageClient'
+
+
+// SCOUT SEO RATIONALE:
+// Adding dynamic metadata to the individual trip page ensures that when users share this link
+// via social media or messaging apps, the Open Graph preview accurately reflects
+// the trip destination and context, significantly improving click-through rates.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const resolvedParams = await params
+
+  try {
+    const trip = await prisma.trip.findUnique({
+      where: { id: resolvedParams.id },
+      select: { name: true, destination: true },
+    })
+
+    if (!trip) {
+      return {
+        title: 'Trip Plan | Packwise',
+        description: 'View this trip plan on Packwise.',
+      }
+    }
+
+    const titleName = trip.name || trip.destination || 'Untitled Trip'
+    const title = `Trip Plan: ${titleName} | Packwise`
+    const description = trip.destination
+      ? `View the trip plan for ${trip.destination} on Packwise. Pack smarter, travel better.`
+      : `View this trip plan on Packwise. Pack smarter, travel better.`
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+      },
+    }
+  } catch (error) {
+    return {
+      title: 'Trip Plan | Packwise',
+      description: 'View this trip plan on Packwise.',
+    }
+  }
+}
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
