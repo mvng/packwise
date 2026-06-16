@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useEffect } from 'react'
 import { importItemsToTrip } from '@/actions/packing.actions'
 
 interface PasteListModalProps {
@@ -151,6 +151,15 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
   const [parsedItems, setParsedItems] = useState<ParsedItem[]>([])
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleParse = () => {
     const items = parsePastedText(pastedText)
