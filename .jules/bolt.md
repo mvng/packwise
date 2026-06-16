@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-18 - Cron Job N+1 Query Optimization
+**Learning:** Found a classic N+1 query bottleneck in `app/api/cron/send-reminders/route.ts` where it was updating `reminderSentAt` individually for each task inside a `for` loop (O(n) database operations).
+**Action:** Replaced the individual loop updates with a single `prisma.tripTask.updateMany` operation outside the loop (O(1) database operation). This is a common pattern to look out for in batch processing scripts or cron jobs within this codebase. Always use `updateMany` or `createMany` when possible instead of looping. Also ensure that code comments are added explaining the optimization.
