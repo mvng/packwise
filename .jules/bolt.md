@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-05-20 - N+1 Queries in Route Handlers
+**Learning:** Next.js Route Handlers (like API routes) are susceptible to N+1 query patterns, especially when syncing lists (e.g. day-plans to packing lists), which can crash the application during heavy usage as database connections become saturated. Grouping queries and mutating arrays with `prisma.findMany`, `prisma.createMany`, and `prisma.$transaction()` greatly optimizes efficiency.
+**Action:** Always scan for `for` loops inside route handlers or server actions. Whenever database queries (`prisma.*`) are inside a loop, extract them, build `Set`s or `Map`s for lookups, batch `findMany`, and use `$transaction` for concurrent updates.
