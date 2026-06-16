@@ -118,7 +118,8 @@ export default function CategorySection({
                 <button
                   onClick={() => onEditItem(item)}
                   title="Edit item"
-                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="p-1.5 text-gray-400 hover:text-gray-600 focus-visible:text-gray-600 rounded-lg hover:bg-gray-100 focus-visible:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 transition-colors"
+                  aria-label="Edit item"
                 >
                   <svg
                     className="w-3.5 h-3.5"
