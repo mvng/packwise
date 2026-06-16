@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSharedTripById } from '@/actions/trip.actions'
@@ -107,10 +107,10 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
   } : trip
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allItems = displayTrip.packingLists.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items))
+  const allItems = useMemo(() => displayTrip.packingLists.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items)), [displayTrip.packingLists])
   const totalItems = allItems.length
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const packedItems = allItems.filter((item: any) => item.isPacked).length
+  const packedItems = useMemo(() => allItems.filter((item: any) => item.isPacked).length, [allItems])
   const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
 
   // Post-trip: true if end date is in the past
