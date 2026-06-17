@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-24 - Redundant Database Lookups During Nested Creation
+**Learning:** In deeply nested sync algorithms (like updating categories and items), performing individual database fetches inside a loop (`await prisma.packingItem.findMany` within `categories.map`) creates severe N+1 database bottlenecks, even if the parent query (`existingCategories`) was already executed with an `include: { items: true }` relational join.
+**Action:** When iterating over parent records that have pre-fetched relational data, use the populated in-memory object properties (e.g., `category.items`) rather than querying the database repeatedly. This dramatically cuts query round-trips from `O(N)` to `O(1)`.
