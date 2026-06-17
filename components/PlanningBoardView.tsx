@@ -269,10 +269,7 @@ function InlineTagCard({
             className="ml-2 text-[11px] bg-white border border-current/20 rounded px-1.5 py-0.5 focus:outline-none w-32"
           />
         ) : (
-          <button
-            onClick={() => setEditingTime(true)}
-            className="ml-2 text-[11px] opacity-60 hover:opacity-100 transition-opacity"
-          >
+          <button aria-label={item.time ? "Edit time" : "Add time"} onClick={() => setEditingTime(true)} className="ml-2 text-[11px] opacity-60 hover:opacity-100 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded px-1">
             {item.time ? fmtTime(item.time) : <span className="italic">+ time</span>}
           </button>
         )}
@@ -352,8 +349,8 @@ function AddItemForm({ onAdd, onOpenInventory }: {
 
   if (!open) return (
     <div className="flex items-center gap-3 pt-1">
-      <button onClick={() => setOpen(true)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">+ Add item</button>
-      <button onClick={onOpenInventory} className="text-xs text-gray-400 hover:text-blue-500 transition-colors">+ Inventory</button>
+      <button aria-label="Add item" onClick={() => setOpen(true)} className="text-xs text-blue-500 hover:text-blue-700 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1">+ Add item</button>
+      <button aria-label="Open inventory" onClick={onOpenInventory} className="text-xs text-gray-400 hover:text-blue-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1">+ Inventory</button>
     </div>
   )
 
@@ -497,7 +494,7 @@ function DayColumn({
               <span className="text-sm">{allDayTag.icon}</span>
               <span className={`text-[11px] font-semibold ${headerText} opacity-90`}>{allDayTag.label}</span>
               <span className={`text-[10px] ml-0.5 opacity-50 ${headerText}`}>— all day</span>
-              <button onClick={() => saveLabel('')} className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none leading-none`}>✕</button>
+              <button aria-label="Remove all-day tag" onClick={() => saveLabel('')} className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current rounded px-1 leading-none`}>✕</button>
             </div>
           ) : editingLabel ? (
             <input autoFocus type="text" value={labelInput}
@@ -507,7 +504,7 @@ function DayColumn({
               className="mt-1 text-[11px] w-full bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           ) : (
-            <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none rounded w-full text-left">
+            <button aria-label="Edit label" onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded w-full text-left px-1">
               {dayPlan?.label
                 ? <span className="text-[11px] text-gray-500 font-medium">{dayPlan.label}</span>
                 : <span className={`text-[11px] italic ${dropping ? 'text-blue-400' : 'text-gray-300'}`}>
@@ -544,7 +541,7 @@ function DayColumn({
               <div className="mb-1.5">
                 {toast
                   ? <p className="text-[11px] text-indigo-500">{toast}</p>
-                  : <button onClick={handleSaveToInventory} className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors">↓ Save to inventory</button>
+                  : <button aria-label="Save items to inventory" onClick={handleSaveToInventory} className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded px-1">↓ Save to inventory</button>
                 }
               </div>
             )}
