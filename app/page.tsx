@@ -72,7 +72,8 @@ export default async function HomePage() {
             href="#features"
             className="text-gray-600 px-8 py-4 rounded-xl text-lg font-medium hover:text-gray-900 transition-colors"
           >
-            Learn more
+            {/* SCOUT SEO RATIONALE: Replaced generic "Learn more" anchor text with descriptive keywords to improve internal link relevance and accessibility context */}
+            Explore packing features
           </Link>
         </div>
       </section>
