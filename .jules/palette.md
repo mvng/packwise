@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-06-17 - Use role="switch" for toggle buttons
+**Learning:** Found custom UI toggle buttons using `aria-pressed` without the proper `role="switch"`. While `aria-pressed` is valid for toggle buttons, the Next.js `jsx-a11y` rules strictly enforce that elements functioning as semantic switches must use `role="switch"` and `aria-checked` instead, to provide the best screen reader context.
+**Action:** Always implement custom UI toggle switches with `role="switch"` and `aria-checked` instead of `aria-pressed` to ensure strict compliance and better screen reader context.
