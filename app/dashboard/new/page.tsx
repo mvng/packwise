@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createTrip } from '@/actions/trip.actions'
@@ -59,9 +59,14 @@ export default function NewTripPage() {
   const countryInputRef = useRef<HTMLInputElement>(null)
   const countryDropdownRef = useRef<HTMLDivElement>(null)
 
-  const filteredCountries = COUNTRIES.filter((c) =>
-    c.toLowerCase().includes(countrySearch.toLowerCase())
-  )
+  // ⚡ Bolt Performance Optimization
+  // Why: Prevents filtering the COUNTRIES array synchronously on every render (e.g., when typing in the name or destination fields).
+  // Impact: Keeps form input responsive and smooth.
+  const filteredCountries = useMemo(() => {
+    return COUNTRIES.filter((c) =>
+      c.toLowerCase().includes(countrySearch.toLowerCase())
+    )
+  }, [countrySearch])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -118,10 +123,21 @@ export default function NewTripPage() {
   }
 
   const duration = getDurationDays(formData.startDate, formData.endDate)
-  const templateCategories = formData.generateSuggestions
-    ? generatePackingList(formData.tripType as "leisure" | "business" | "beach" | "hiking" | "city" | "skiing", duration, formData.transportMode)
-    : []
-  const totalItems = templateCategories.reduce((sum, c) => sum + c.items.length, 0)
+
+  // ⚡ Bolt Performance Optimization
+  // Why: generatePackingList performs string manipulations, array concatenations, and object creation. Wrapping it in useMemo prevents it from running repeatedly on every keystroke in controlled inputs.
+  // Impact: Significantly reduces main thread blocking during form input, improving perceived performance.
+  const templateCategories = useMemo(() => {
+    return formData.generateSuggestions
+      ? generatePackingList(formData.tripType as "leisure" | "business" | "beach" | "hiking" | "city" | "skiing", duration, formData.transportMode)
+      : []
+  }, [formData.generateSuggestions, formData.tripType, duration, formData.transportMode])
+
+  // ⚡ Bolt Performance Optimization
+  // Why: Avoids re-calculating the total over nested arrays on every render.
+  const totalItems = useMemo(() => {
+    return templateCategories.reduce((sum, c) => sum + c.items.length, 0)
+  }, [templateCategories])
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
