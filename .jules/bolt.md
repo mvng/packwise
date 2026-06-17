@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2023-10-25 - React Form Re-renders
+**Learning:** In React client components with controlled form inputs (like destination text fields), every keystroke causes a component re-render. If there are computationally expensive operations inside the render loop (such as large array generating functions or `.reduce()` calls), this causes severe UI lag for the user typing.
+**Action:** Always wrap expensive synchronous computations (like `generatePackingList` and array aggregations) in `useMemo` hooks, specifying exactly which form fields they depend on, to decouple them from rapid keystroke-driven re-renders.
