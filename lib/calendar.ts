@@ -9,6 +9,8 @@ interface CalendarTripInput {
   endDate: Date
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   packingLists?: any[]
+  totalItems?: number
+  packedItems?: number
 }
 
 /**
@@ -25,10 +27,10 @@ export function generateTripCalendarFeed(trip: CalendarTripInput, appBaseUrl: st
   const end = dayjs(trip.endDate).add(1, 'day') // Add 1 day for all-day events in ICS
 
   // Count items safely
-  let totalItems = 0
-  let packedItems = 0
+  let totalItems = trip.totalItems ?? 0
+  let packedItems = trip.packedItems ?? 0
 
-  if (trip.packingLists) {
+  if (trip.totalItems === undefined && trip.packedItems === undefined && trip.packingLists) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const allItems = trip.packingLists.flatMap((list: any) =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
