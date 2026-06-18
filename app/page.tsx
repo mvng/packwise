@@ -72,7 +72,8 @@ export default async function HomePage() {
             href="#features"
             className="text-gray-600 px-8 py-4 rounded-xl text-lg font-medium hover:text-gray-900 transition-colors"
           >
-            Learn more
+            {/* SCOUT SEO RATIONALE: Replaced generic "Learn more" anchor text with descriptive keyword-rich text to improve crawler context and accessibility. */}
+            Explore packing features
           </Link>
         </div>
       </section>
@@ -131,7 +132,8 @@ export default async function HomePage() {
             href="/login"
             className="bg-white text-blue-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-50 transition-colors inline-block"
           >
-            Get started for free
+            {/* SCOUT SEO RATIONALE: Replaced generic "Get started for free" anchor text with descriptive keyword-rich text to improve crawler context and accessibility. */}
+            Create your free packing list
           </Link>
         </div>
       </section>
