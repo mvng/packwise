@@ -4,6 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
+import { forkTrip } from '@/actions/trip.actions'
+import { getTripLocalStorageState } from '@/components/PackingListSection'
+
+
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -11,6 +15,29 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+
+
+  const handleLoginSuccess = async () => {
+    const forkTripId = sessionStorage.getItem('fork_trip_after_login')
+    if (forkTripId) {
+      try {
+        const localStorageState = getTripLocalStorageState(forkTripId)
+        const result = await forkTrip(forkTripId, localStorageState)
+
+        if (result.success && result.tripId) {
+          sessionStorage.removeItem('fork_trip_after_login')
+          if (localStorageState) {
+            localStorage.removeItem(`packwise_trip_${forkTripId}`)
+          }
+          window.location.href = `/trip/${result.tripId}`
+          return
+        }
+      } catch (err) {
+        console.error('Failed to fork trip after login:', err)
+      }
+    }
+    window.location.href = '/dashboard'
+  }
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,7 +63,7 @@ export default function LoginPage() {
       // If email confirmation is disabled, signUp returns a valid session.
       // Redirect immediately to dashboard (the auth callback will upsert the Prisma User).
       if (data?.session) {
-        window.location.href = '/dashboard'
+        await handleLoginSuccess()
         return
       }
 
@@ -49,7 +76,7 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
-      window.location.href = '/dashboard'
+      await handleLoginSuccess()
       return
     }
     setLoading(false)
