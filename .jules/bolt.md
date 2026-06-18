@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-18 - Replacing Deep Includes with Parallel Counts
+**Learning:** When a deeply nested Prisma `include` (e.g., fetching lists, categories, and items) is used in an API route *purely* to compute aggregated counts (like `totalItems` and `packedItems`), it creates a massive Cartesian product that bloats Node memory and slows down query execution time, sending megabytes of unnecessary JSON payload to the server just to calculate two integers.
+**Action:** Replace the heavy `include` with targeted, parallel `prisma.model.count()` queries utilizing deep relational `where` filters (e.g., `where: { category: { packingList: { tripId: id } } }`). This prevents N+1 explosions and drastically reduces execution time.
