@@ -1,3 +1,7 @@
+## 2026-06-19 - Replaced JS hover state with CSS group-focus-within
+**Learning:** JS `onMouseEnter`/`onMouseLeave` hover states make interactive elements inaccessible to keyboard users because they cannot be focused when hidden.
+**Action:** Replace React `useState` hover tracking with Tailwind CSS `group`, `group-hover:opacity-100`, and `group-focus-within:opacity-100` so elements become visible naturally upon hover or keyboard focus within the container.
+
 ## 2024-05-24 - Add accessible close buttons to modals
 **Learning:** Found a pattern across multiple modal components (`EditTripModal`, `LuggagePickerModal`, `InventoryPickerModal`) where icon-only close buttons lacked `aria-label`s and the modals lacked `Escape` key close handlers.
 **Action:** When creating or editing modals in the future, ensure that icon-only buttons have descriptive `aria-label`s and that keyboard accessibility (like the Escape key) is implemented to close the modals.
