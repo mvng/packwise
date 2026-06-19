@@ -1,0 +1,5 @@
+💡 **What:** Added `generateMetadata` to dynamic trip pages to populate title and Open Graph metadata.
+🎯 **Why:** To improve click-through rates and unfurl previews when trip links are shared.
+📊 **Impact:** Enhances SEO and social sharing metrics for public trips.
+🔬 **Verification:** Check page source in a browser or use social sharing debuggers.
+🔗 **References:** Next.js Metadata Docs
