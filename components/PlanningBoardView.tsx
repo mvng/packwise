@@ -497,7 +497,7 @@ function DayColumn({
               <span className="text-sm">{allDayTag.icon}</span>
               <span className={`text-[11px] font-semibold ${headerText} opacity-90`}>{allDayTag.label}</span>
               <span className={`text-[10px] ml-0.5 opacity-50 ${headerText}`}>— all day</span>
-              <button onClick={() => saveLabel('')} className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none leading-none`}>✕</button>
+              <button onClick={() => saveLabel('')} className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded leading-none`} aria-label="Clear day label">✕</button>
             </div>
           ) : editingLabel ? (
             <input autoFocus type="text" value={labelInput}
@@ -507,7 +507,7 @@ function DayColumn({
               className="mt-1 text-[11px] w-full bg-white border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           ) : (
-            <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none rounded w-full text-left">
+            <button onClick={() => setEditingLabel(true)} className="mt-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded w-full text-left" aria-label={`Edit label for ${format(date, 'MMM d')}`}>
               {dayPlan?.label
                 ? <span className="text-[11px] text-gray-500 font-medium">{dayPlan.label}</span>
                 : <span className={`text-[11px] italic ${dropping ? 'text-blue-400' : 'text-gray-300'}`}>
@@ -544,7 +544,7 @@ function DayColumn({
               <div className="mb-1.5">
                 {toast
                   ? <p className="text-[11px] text-indigo-500">{toast}</p>
-                  : <button onClick={handleSaveToInventory} className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors">↓ Save to inventory</button>
+                  : <button onClick={handleSaveToInventory} className="text-[11px] text-gray-400 hover:text-indigo-600 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded">↓ Save to inventory</button>
                 }
               </div>
             )}
