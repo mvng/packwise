@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-04-13 - UI Lag from Unmemoized Array Operations
+**Learning:** Controlled text inputs in complex React forms (like `NewTripPage` trip creation) cause frequent re-renders on every keystroke. In this codebase, if operations like `generatePackingList` and subsequent array `.reduce()` calculations are executed inline within the component body without memoization, they execute synchronously on every keystroke. This causes noticeable UI lag for users when typing the trip name or destination.
+**Action:** Always wrap computationally expensive operations—especially those involving deep array mapping, reduction, or instantiation (like `generatePackingList`)—in `useMemo` hooks, ensuring the dependency array is correctly tailored to only the values that actually influence the calculation.
