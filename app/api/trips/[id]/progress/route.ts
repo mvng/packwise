@@ -28,16 +28,17 @@ export async function GET(
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
     }
 
-    const categories = await prisma.category.findMany({
-      where: {
-        packingList: {
-          tripId: id
-        }
-      },
-      include: {
-        items: true
-      }
-    })
+        const [categories, itemsAgg] = await Promise.all([
+      prisma.category.findMany({
+        where: { packingList: { tripId: id } },
+        select: { id: true, name: true }
+      }),
+      prisma.packingItem.groupBy({
+        by: ['categoryId', 'isPacked'],
+        where: { category: { packingList: { tripId: id } } },
+        _sum: { quantity: true }
+      })
+    ])
 
     let total = 0
     let packed = 0
@@ -47,10 +48,13 @@ export async function GET(
       let catTotal = 0
       let catPacked = 0
 
-      category.items.forEach(item => {
-        catTotal += item.quantity
-        if (item.isPacked) {
-          catPacked += item.quantity
+      itemsAgg.forEach(agg => {
+        if (agg.categoryId === category.id) {
+          const qty = agg._sum.quantity || 0
+          catTotal += qty
+          if (agg.isPacked) {
+            catPacked += qty
+          }
         }
       })
 
