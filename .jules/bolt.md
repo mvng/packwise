@@ -9,3 +9,6 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+## 2024-10-25 - Prisma groupBy Relation Limitations
+**Learning:** Prisma's `groupBy` aggregation does not support relation filtering in its `where` clause (e.g., you cannot filter `packingItem` by `category: { packingList: { tripId: id } }`). Attempting to do so will result in a runtime `PrismaClientValidationError`.
+**Action:** When pushing deep relational aggregations down to the database using `groupBy`, you must split the operation into two sequential queries: first fetch the relevant IDs using a standard `findMany` relation query, then pass those IDs into the `groupBy`'s `where` clause using an `in` filter.
