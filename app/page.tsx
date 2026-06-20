@@ -68,11 +68,14 @@ export default async function HomePage() {
           >
             Start packing smarter
           </Link>
+          {/* SCOUT SEO RATIONALE:
+              Replacing generic "Learn more" with descriptive anchor text ("Explore Packwise features")
+              provides better context to search engines about the linked section, improving topical relevance. */}
           <Link
             href="#features"
             className="text-gray-600 px-8 py-4 rounded-xl text-lg font-medium hover:text-gray-900 transition-colors"
           >
-            Learn more
+            Explore Packwise features
           </Link>
         </div>
       </section>
