@@ -27,6 +27,8 @@ export default function CalendarSyncDropdown({ tripId }: CalendarSyncDropdownPro
       <button
         onClick={() => setShowCalendarMenu(!showCalendarMenu)}
         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+        aria-expanded={showCalendarMenu}
+        aria-haspopup="menu"
         title="Calendar Sync"
       >
         <span>📅</span>
