@@ -58,16 +58,17 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
           <div key={member.id} className="group relative">
             <button
               onClick={isOwner ? () => handleRemove(member.id) : undefined}
-              className={`w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold ring-2 ring-white transition-all ${
-                isOwner ? 'hover:bg-red-100 hover:text-red-600 cursor-pointer' : 'cursor-default'
+              className={`w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold ring-2 ring-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+                isOwner ? 'hover:bg-red-100 hover:text-red-600 cursor-pointer focus-visible:ring-red-500 focus-visible:bg-red-100 focus-visible:text-red-600' : 'cursor-default'
               }`}
               title={member.name}
+              aria-label={isOwner ? `Remove ${member.name}` : member.name}
             >
-              <span className="group-hover:hidden">{member.name.charAt(0).toUpperCase()}</span>
-              {isOwner && <X className="w-3 h-3 hidden group-hover:block" />}
+              <span className="group-hover:hidden group-focus-within:hidden">{member.name.charAt(0).toUpperCase()}</span>
+              {isOwner && <X className="w-3 h-3 hidden group-hover:block group-focus-within:block" />}
             </button>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-20">
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-20">
               <div className="bg-gray-900 text-white text-[10px] font-medium px-2 py-1 rounded whitespace-nowrap">
                 {member.name}
                 {isOwner && <span className="text-gray-400 ml-1">&middot; click to remove</span>}
@@ -84,8 +85,9 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
         {isOwner && !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="w-7 h-7 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent focus-visible:text-blue-500 flex items-center justify-center transition-colors"
             title="Add member"
+            aria-label="Add new member"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -110,15 +112,17 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
           <button
             onClick={handleAdd}
             disabled={isPending || !newName.trim()}
-            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 disabled:opacity-50 transition-colors"
             title="Confirm"
+            aria-label="Confirm adding member"
           >
             <Check className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => { setIsAdding(false); setNewName(''); setError(null) }}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1 rounded-lg transition-colors"
             title="Cancel"
+            aria-label="Cancel adding member"
           >
             <X className="w-3.5 h-3.5" />
           </button>
