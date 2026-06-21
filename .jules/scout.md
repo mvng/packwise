@@ -11,3 +11,10 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+## 2024-03-14 - [Next.js App Router Root Canonical URLs]
+**Learning:** Do not define a static canonical URL (e.g., `alternates: { canonical: '/' }`) in the root `app/layout.tsx`. Doing so causes Next.js to merge and pass this static canonical URL to all child pages, incorrectly instructing search engines to treat every page as a duplicate of the homepage.
+**Action:** When implementing canonical URLs, define them explicitly on a per-page basis or use a dynamically generated layout that relies on the request URL.
+
+## 2024-03-14 - [JSON-LD Stored XSS Prevention]
+**Learning:** When injecting JSON-LD structured data via `<script dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />`, any user-supplied content within the JSON (like trip names or item names) can break out of the script tag if it contains a `</script>` string, leading to severe Stored XSS vulnerabilities.
+**Action:** Always safely escape JSON strings before injecting them into the DOM, e.g., by replacing less-than signs: `JSON.stringify(data).replace(/</g, '\\u003c')`.
