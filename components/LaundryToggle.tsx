@@ -40,10 +40,10 @@ export default function LaundryToggle({ startDate, endDate, onChange }: LaundryT
         </div>
         <button
           onClick={() => handleToggle(!hasLaundry)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
             hasLaundry ? 'bg-blue-600' : 'bg-gray-200'
           }`}
-          aria-pressed={hasLaundry}
+          role="switch" aria-checked={hasLaundry} aria-label="Toggle laundry access"
         >
           <span
             className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -62,7 +62,7 @@ export default function LaundryToggle({ startDate, endDate, onChange }: LaundryT
             max={endDate}
             value={laundryDate}
             onChange={e => handleDateChange(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full max-w-xs"
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:ring-2 focus:ring-blue-400 w-full max-w-xs"
           />
           {laundryDate && (
             <p className="text-xs text-green-600 mt-2 flex items-center gap-1.5">

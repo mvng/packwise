@@ -170,7 +170,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
       <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-semibold text-gray-900">Edit Trip</h2>
-          <button onClick={onClose} aria-label="Close modal" className="text-gray-400 hover:text-gray-600 text-2xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded-md">&times;</button>
+          <button onClick={onClose} aria-label="Close modal" className="text-gray-400 hover:text-gray-600 text-2xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-2 focus-visible:ring-gray-400 rounded-md">&times;</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -219,7 +219,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
                 <div ref={countryDropdownRef} className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {filteredCountries.map(c => (
                     <button key={c} type="button" onClick={() => handleCountrySelect(c)}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors first:rounded-t-lg last:rounded-b-lg">
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-colors first:rounded-t-lg last:rounded-b-lg">
                       <span className={formData.country === c ? 'font-semibold text-blue-600' : 'text-gray-700'}>{c}</span>
                     </button>
                   ))}
@@ -307,10 +307,10 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
               <button
                 type="button"
                 onClick={() => handleLaundryToggle(!hasLaundry)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                   hasLaundry ? 'bg-blue-600' : 'bg-gray-200'
                 }`}
-                aria-pressed={hasLaundry}
+                role="switch" aria-checked={hasLaundry} aria-label="Toggle laundry access"
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                   hasLaundry ? 'translate-x-6' : 'translate-x-1'
@@ -327,7 +327,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
                   max={effectiveEnd}
                   value={laundryDate}
                   onChange={e => handleLaundryDateChange(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus:ring-2 focus:ring-blue-400 w-full"
                 />
                 {laundryDate && (
                   <p className="text-xs text-green-600 mt-1 flex items-center gap-1.5">
