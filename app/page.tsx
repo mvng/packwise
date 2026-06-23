@@ -2,6 +2,16 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
+export const metadata = {
+  // SCOUT SEO RATIONALE:
+  // Defining a page-specific canonical URL ensures that if tracking parameters are added
+  // to the root URL (e.g., /?ref=twitter), search engines consolidate link equity and
+  // avoid duplicate content penalties.
+  alternates: {
+    canonical: 'https://packwise-indol.vercel.app',
+  },
+};
+
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
