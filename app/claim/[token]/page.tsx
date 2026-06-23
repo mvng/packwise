@@ -51,11 +51,22 @@ export async function generateMetadata({
         title,
         description,
       },
+      // SCOUT SEO RATIONALE:
+      // Shared claim pages are private by nature and should not be indexed by search engines.
+      // Adding a robots directive prevents sensitive user data from leaking into public search results.
+      robots: {
+        index: false,
+        follow: false,
+      },
     }
   } catch (error) {
     return {
       title: 'Shared Packing List | Packwise',
       description: 'Join this shared packing list on Packwise.',
+      robots: {
+        index: false,
+        follow: false,
+      },
     }
   }
 }
