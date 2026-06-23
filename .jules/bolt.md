@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-24 - Flattened Cartesian queries in trip actions
+**Learning:** In Prisma with PostgreSQL, deeply nested `include` directives (e.g. trips -> packingLists -> categories -> items) create a massive Cartesian product, significantly slowing down query execution and bloating Node memory. This issue was specifically impacting `getUserTrips` and `forkTrip`.
+**Action:** Flatten these deeply nested relations into parallel `Promise.all` `findMany` queries, and stitch the data back together in memory.
