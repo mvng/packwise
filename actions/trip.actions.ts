@@ -137,11 +137,61 @@ export async function getUserTrips() {
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized' }
 
-    const trips = await prisma.trip.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      include: { packingLists: { include: { categories: { include: { items: true } } } } },
-    })
+    // ⚡ Bolt Performance Optimization
+    // Why: Flattened the deeply nested Cartesian product Prisma query into parallel queries.
+    // Impact: Prevents N+1 database explosions when loading user trips on the dashboard.
+    const [baseTrips, rawPackingLists, rawCategories, rawItems] = await Promise.all([
+      prisma.trip.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.packingList.findMany({
+        where: { trip: { userId } },
+      }),
+      prisma.category.findMany({
+        where: { packingList: { trip: { userId } } },
+        orderBy: { order: 'asc' }
+      }),
+      prisma.packingItem.findMany({
+        where: { category: { packingList: { trip: { userId } } } },
+        orderBy: { order: 'asc' }
+      })
+    ]);
+
+    const itemsByCategoryId: Record<string, typeof rawItems> = {};
+    for (const item of rawItems) {
+      if (!itemsByCategoryId[item.categoryId]) {
+        itemsByCategoryId[item.categoryId] = [];
+      }
+      itemsByCategoryId[item.categoryId].push(item);
+    }
+
+    const categoriesByListId: Record<string, any[]> = {};
+    for (const category of rawCategories) {
+      if (!categoriesByListId[category.packingListId]) {
+        categoriesByListId[category.packingListId] = [];
+      }
+      categoriesByListId[category.packingListId].push({
+        ...category,
+        items: itemsByCategoryId[category.id] || []
+      });
+    }
+
+    const listsByTripId: Record<string, any[]> = {};
+    for (const list of rawPackingLists) {
+      if (!listsByTripId[list.tripId]) {
+        listsByTripId[list.tripId] = [];
+      }
+      listsByTripId[list.tripId].push({
+        ...list,
+        categories: categoriesByListId[list.id] || []
+      });
+    }
+
+    const trips = baseTrips.map(trip => ({
+      ...trip,
+      packingLists: listsByTripId[trip.id] || []
+    }));
 
     return { trips }
   } catch (error: any) {
@@ -372,14 +422,58 @@ export async function forkTrip(
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized', requiresAuth: true }
 
-    const sourceTrip = await prisma.trip.findUnique({
-      where: { id: sourceTripId },
-      include: {
-        packingLists: {
-          include: { categories: { include: { items: true } } }
+    // ⚡ Bolt Performance Optimization
+    // Why: Flattened the deeply nested Cartesian product Prisma query into parallel queries.
+    // Impact: Prevents N+1 database explosions and massive memory bloating when copying large trips.
+    const [baseTrip, rawPackingLists, rawCategories, rawItems] = await Promise.all([
+      prisma.trip.findUnique({
+        where: { id: sourceTripId },
+      }),
+      prisma.packingList.findMany({
+        where: { tripId: sourceTripId },
+      }),
+      prisma.category.findMany({
+        where: { packingList: { tripId: sourceTripId } },
+        orderBy: { order: 'asc' }
+      }),
+      prisma.packingItem.findMany({
+        where: { category: { packingList: { tripId: sourceTripId } } },
+        orderBy: { order: 'asc' }
+      })
+    ]);
+
+    let sourceTrip = null;
+
+    if (baseTrip) {
+      const itemsByCategoryId: Record<string, typeof rawItems> = {};
+      for (const item of rawItems) {
+        if (!itemsByCategoryId[item.categoryId]) {
+          itemsByCategoryId[item.categoryId] = [];
         }
+        itemsByCategoryId[item.categoryId].push(item);
       }
-    })
+
+      const categoriesByListId: Record<string, any[]> = {};
+      for (const category of rawCategories) {
+        if (!categoriesByListId[category.packingListId]) {
+          categoriesByListId[category.packingListId] = [];
+        }
+        categoriesByListId[category.packingListId].push({
+          ...category,
+          items: itemsByCategoryId[category.id] || []
+        });
+      }
+
+      const stitchedPackingLists = rawPackingLists.map(list => ({
+        ...list,
+        categories: categoriesByListId[list.id] || []
+      }));
+
+      sourceTrip = {
+        ...baseTrip,
+        packingLists: stitchedPackingLists
+      };
+    }
 
     if (!sourceTrip) return { error: 'Trip not found' }
     if (sourceTrip.userId === userId) return { error: 'You already own this trip', alreadyOwned: true }
