@@ -40,10 +40,12 @@ export default function LaundryToggle({ startDate, endDate, onChange }: LaundryT
         </div>
         <button
           onClick={() => handleToggle(!hasLaundry)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
             hasLaundry ? 'bg-blue-600' : 'bg-gray-200'
           }`}
-          aria-pressed={hasLaundry}
+          role="switch"
+          aria-checked={hasLaundry}
+          aria-label="Enable laundry access mid-trip"
         >
           <span
             className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -55,8 +57,9 @@ export default function LaundryToggle({ startDate, endDate, onChange }: LaundryT
 
       {hasLaundry && (
         <div className="mt-4">
-          <label className="text-xs text-gray-500 block mb-1">Laundry date (mid-trip)</label>
+          <label htmlFor="laundry-date" className="text-xs text-gray-500 block mb-1">Laundry date (mid-trip)</label>
           <input
+            id="laundry-date"
             type="date"
             min={startDate}
             max={endDate}
