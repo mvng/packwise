@@ -11,3 +11,7 @@
 ## 2025-02-23 - [Dynamic Metadata for Shared Links]
 **Learning:** Next.js App Router allows exporting a `generateMetadata` function from Server Components (like `app/claim/[token]/page.tsx`) to dynamically set Open Graph and Twitter card metadata based on database content. This is crucial for improving link unfurling and CTR on external-facing shared pages.
 **Action:** Always check public-facing share/claim pages for missing dynamic metadata and implement `generateMetadata` with a `try/catch` fallback to ensure robust SSR.
+
+## 2024-06-24 - [Canonical URLs in Next.js App Router]
+**Learning:** In Next.js App Router, defining a static canonical URL (like `/`) in the root `app/layout.tsx` causes it to incorrectly cascade to all child pages, making search engines treat every page as a duplicate of the homepage.
+**Action:** Always define page-specific canonical URLs in the leaf `page.tsx` (or its co-located layout if it's a leaf node) using the `alternates: { canonical: '...' }` metadata property to ensure proper unique indexing.

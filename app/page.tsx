@@ -1,6 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' }
+}
 
 export default async function HomePage() {
   const supabase = await createClient()
