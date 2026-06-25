@@ -1,6 +1,17 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { Metadata } from 'next'
+
+// SCOUT SEO RATIONALE:
+// Defining the canonical URL here rather than in the root layout prevents Next.js
+// from incorrectly inheriting this static canonical to all dynamic child routes,
+// avoiding duplicate content issues across the site.
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+}
 
 export default async function HomePage() {
   const supabase = await createClient()
