@@ -50,10 +50,10 @@ export async function POST(req: Request) {
         })
       }
 
-      const existingItems = await prisma.packingItem.findMany({
-        where: { categoryId: category.id },
-        orderBy: { order: 'desc' },
-      })
+      // ⚡ Bolt Performance Optimization
+      // Why: Eliminates N+1 database queries. The items are already loaded via the 'include: { items: true }'
+      // directive in the parent category query above.
+      const existingItems = [...(category.items || [])].sort((a, b) => b.order - a.order);
       let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
 
       for (const item of items) {
