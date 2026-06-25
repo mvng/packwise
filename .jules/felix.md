@@ -1,0 +1,3 @@
+## 2024-06-25 - Fix: post-login redirect ignoring sessionStorage intent
+**Learning:** When dealing with authentication flows that allow deep-linking or pre-login intents (like forking a trip), always check for and process stored intents in `sessionStorage` before unconditionally redirecting the user to a default dashboard. Client-side routing with Next.js during auth transitions can be tricky; sometimes using `window.location.href` is necessary to enforce a full reload and pick up the new auth cookie.
+**Action:** Always verify if a login page or auth callback needs to respect stored intents (e.g., in `sessionStorage`) before redirecting to the default post-login route.
