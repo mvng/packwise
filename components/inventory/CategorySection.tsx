@@ -37,15 +37,15 @@ export default function CategorySection({
         <div className="flex items-center gap-3">
           <button
             onClick={onAddItem}
-            className="text-sm text-blue-500 hover:text-blue-600 font-medium transition-colors"
+            className="text-sm text-blue-500 hover:text-blue-600 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1"
           >
             + Add item
           </button>
           <div className="relative">
             <button
               onClick={() => setShowMenu((v) => !v)}
-              className="text-gray-400 hover:text-gray-600 px-1 transition-colors text-lg leading-none"
-              aria-label="Category options"
+              className="text-gray-400 hover:text-gray-600 px-1 transition-colors text-lg leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded"
+              aria-label={`Options for ${category.name} category`}
             >
               •••
             </button>
@@ -75,7 +75,7 @@ export default function CategorySection({
           <p className="text-sm text-gray-400">No items yet.</p>
           <button
             onClick={onAddItem}
-            className="mt-1.5 text-sm text-blue-500 hover:text-blue-600 font-medium transition-colors"
+            className="mt-1.5 text-sm text-blue-500 hover:text-blue-600 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1"
           >
             Add your first item
           </button>
@@ -89,7 +89,8 @@ export default function CategorySection({
                 onClick={() => onToggleFavorite(item)}
                 disabled={isPending}
                 title={item.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                className="text-base leading-none flex-shrink-0 transition-transform hover:scale-110 disabled:opacity-50"
+                aria-label={`${item.isFavorite ? 'Remove' : 'Add'} ${item.name} ${item.isFavorite ? 'from' : 'to'} favorites`}
+                className="text-base leading-none flex-shrink-0 transition-transform hover:scale-110 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 rounded-full p-1"
               >
                 {item.isFavorite ? (
                   '⭐'
@@ -118,7 +119,8 @@ export default function CategorySection({
                 <button
                   onClick={() => onEditItem(item)}
                   title="Edit item"
-                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label={`Edit ${item.name}`}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:opacity-100"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -138,7 +140,8 @@ export default function CategorySection({
                   onClick={() => onDeleteItem(item.id)}
                   disabled={isPending}
                   title="Delete item"
-                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                  aria-label={`Delete ${item.name}`}
+                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:opacity-100"
                 >
                   <svg
                     className="w-3.5 h-3.5"

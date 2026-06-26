@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-25 - Ensure descriptive ARIA labels and focus states for inventory actions
+**Learning:** Found an accessibility issue pattern specific to this app's components where hover-revealed icon buttons in `CategorySection` (like Edit, Delete, and Favorite) missed context-specific `aria-label` attributes and explicit focus states, making them undiscoverable for screen readers and difficult to navigate for keyboard-only users.
+**Action:** When designing hover-revealed action buttons in UI components, always ensure they are accessible by providing descriptive context-specific aria-label attributes (e.g., aria-label="Edit ${item.name}") and explicit focus-visible utility classes (e.g., focus-visible:opacity-100) to guarantee they are discoverable and triggerable by screen reader and keyboard users.
