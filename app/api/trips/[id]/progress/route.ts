@@ -28,29 +28,59 @@ export async function GET(
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
     }
 
-    const categories = await prisma.category.findMany({
-      where: {
-        packingList: {
-          tripId: id
+    // ⚡ Bolt Optimization: Offload item aggregation to the database using groupBy
+    // instead of pulling all full item object trees into application memory.
+    const [categories, itemStats] = await Promise.all([
+      prisma.category.findMany({
+        where: {
+          packingList: {
+            tripId: id
+          }
+        },
+        select: {
+          id: true,
+          name: true
         }
-      },
-      include: {
-        items: true
-      }
-    })
+      }),
+      prisma.packingItem.groupBy({
+        by: ['categoryId', 'isPacked'],
+        where: {
+          category: {
+            packingList: {
+              tripId: id
+            }
+          }
+        },
+        _sum: {
+          quantity: true
+        }
+      })
+    ])
 
     let total = 0
     let packed = 0
     const byCategory: { name: string, total: number, packed: number }[] = []
 
+    // ⚡ Bolt Optimization: Group the stats by categoryId for O(1) lookup
+    const statsByCategory = itemStats.reduce((acc, stat) => {
+      if (!acc[stat.categoryId]) {
+        acc[stat.categoryId] = []
+      }
+      acc[stat.categoryId].push(stat)
+      return acc
+    }, {} as Record<string, typeof itemStats>)
+
     categories.forEach(category => {
+      const catStats = statsByCategory[category.id] || []
+
       let catTotal = 0
       let catPacked = 0
 
-      category.items.forEach(item => {
-        catTotal += item.quantity
-        if (item.isPacked) {
-          catPacked += item.quantity
+      catStats.forEach(stat => {
+        const qty = stat._sum.quantity || 0
+        catTotal += qty
+        if (stat.isPacked) {
+          catPacked += qty
         }
       })
 
