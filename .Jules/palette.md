@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-06-28 - Add accessible labels to interactive icons in inventory
+**Learning:** Discovered an accessibility issue pattern in inventory lists where interactive icon-only buttons (like favorite toggles) and overflow menus ("•••") lack context-specific `aria-label`s and proper focus indicators, making them difficult for screen reader and keyboard users to navigate.
+**Action:** Always ensure stateful toggles and generic menus include interpolated `aria-label`s specifying the target item, and apply `focus-visible:ring-2` for keyboard accessibility.
