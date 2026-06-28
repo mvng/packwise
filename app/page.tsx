@@ -1,6 +1,16 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { Metadata } from 'next'
+
+// SCOUT SEO RATIONALE:
+// Adding page-specific canonical URLs prevents Next.js from merging static
+// canonicals down to all child pages, ensuring correct indexing and og:url generation.
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+}
 
 export default async function HomePage() {
   const supabase = await createClient()

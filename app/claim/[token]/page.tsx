@@ -8,6 +8,8 @@ import type { Metadata } from 'next'
 // Adding dynamic metadata to the claim page ensures that when users share this link
 // via social media or messaging apps, the Open Graph preview accurately reflects
 // the trip destination and context, significantly improving click-through rates.
+// Additionally, adding page-specific canonical URLs prevents Next.js from merging static
+// canonicals down to all child pages, ensuring correct indexing and og:url generation.
 export async function generateMetadata({
   params,
 }: {
@@ -41,6 +43,9 @@ export async function generateMetadata({
     return {
       title,
       description,
+      alternates: {
+        canonical: `/claim/${resolvedParams.token}`,
+      },
       openGraph: {
         title,
         description,
