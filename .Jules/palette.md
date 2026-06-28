@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-26 - Replace component state with CSS group-hover for hover-revealed actions
+**Learning:** Using explicit `isHovered` state tied to `onMouseEnter`/`onMouseLeave` for hover-revealed UI elements makes it harder to ensure keyboard focus visibility natively without extra event listeners.
+**Action:** Instead, use CSS parent-child styling like `group-hover:opacity-100` combined with `focus-within:opacity-100` to simplify the component and inherently support keyboard focus visibility.
