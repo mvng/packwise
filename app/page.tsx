@@ -1,6 +1,17 @@
+import { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+
+// SCOUT SEO RATIONALE:
+// Adding a page-specific canonical tag to the homepage explicitly marks it as the primary version
+// of this content, preventing duplicate content issues if accessed via different query params.
+// Next.js will automatically use this to populate the `og:url` for the homepage.
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+}
 
 export default async function HomePage() {
   const supabase = await createClient()

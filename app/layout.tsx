@@ -6,6 +6,11 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// SCOUT SEO RATIONALE:
+// Removing the hardcoded `url` property from the `openGraph` object. By doing this,
+// child pages will no longer incorrectly inherit the homepage's specific Open Graph URL.
+// Instead, Next.js will automatically generate the correct `og:url` for each page
+// by combining the `metadataBase` defined here with the page-specific canonical URL.
 export const metadata: Metadata = {
   metadataBase: new URL('https://packwise-indol.vercel.app'),
   title: 'Packwise – Smart Packing Lists',
@@ -15,7 +20,6 @@ export const metadata: Metadata = {
     title: 'Packwise – Smart Packing Lists',
     description: 'Create smart packing lists for every trip.',
     type: 'website',
-    url: 'https://packwise-indol.vercel.app',
     siteName: 'Packwise',
     locale: 'en_US',
   },
