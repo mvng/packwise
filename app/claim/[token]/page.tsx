@@ -38,9 +38,15 @@ export async function generateMetadata({
       ? `Join the shared packing list for ${list.trip.destination}. Claim the items you're bringing!`
       : `Join this shared packing list on Packwise. Claim the items you're bringing!`
 
+    // SCOUT SEO RATIONALE:
+    // We add a dynamic canonical URL here to ensure that Next.js properly constructs the correct `og:url`
+    // for this specific shared list. This prevents social platforms from incorrectly caching the homepage URL.
     return {
       title,
       description,
+      alternates: {
+        canonical: `/claim/${resolvedParams.token}`,
+      },
       openGraph: {
         title,
         description,
