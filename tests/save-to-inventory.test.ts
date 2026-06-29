@@ -52,9 +52,9 @@ test.describe('Performance: save-to-inventory', () => {
     };
 
     Object.defineProperty(prisma, 'user', { value: mockPrisma.user, configurable: true });
-    Object.defineProperty(prisma, 'dayPlan', { value: mockPrisma.dayPlan, configurable: true });
-    Object.defineProperty(prisma, 'inventoryCategory', { value: mockPrisma.inventoryCategory, configurable: true });
-    Object.defineProperty(prisma, 'inventoryItem', { value: mockPrisma.inventoryItem, configurable: true });
+    Object.assign(prisma, { dayPlan: mockPrisma.dayPlan });
+    Object.assign(prisma, { inventoryCategory: mockPrisma.inventoryCategory });
+    Object.assign(prisma, { inventoryItem: mockPrisma.inventoryItem });
 
     // Mock Supabase Auth
     Object.defineProperty(auth, 'createClient', { configurable: true,
