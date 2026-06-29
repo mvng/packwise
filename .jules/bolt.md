@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-24 - GroupBy Memory Optimization
+**Learning:** When fetching deeply nested Prisma lists purely to compute counts or sums (like trip packing progress across categories and items), the `include: { items: true }` directive triggers a massive Cartesian product that bloats Node.js memory.
+**Action:** Replace the `include` with parallel queries using `prisma.model.groupBy()` and `prisma.model.findMany()`, reducing the aggregated results into a `Map` in application memory to achieve fast O(1) lookups instead of expensive nested loops.
