@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-06-30 - Add ARIA labels to note editing and hover actions in PackingListSection
+**Learning:** Found a recurring pattern in list items where inline action buttons (save/cancel note edits, pack last toggle, delete) lacked `aria-label` attributes and focus states, making them undiscoverable to screen readers and difficult to access via keyboard navigation.
+**Action:** Always ensure that icon-only buttons and hover-revealed actions include descriptive `aria-label`s and explicit `focus-visible` or `focus:ring` utility classes for keyboard accessibility.
