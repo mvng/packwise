@@ -6,6 +6,10 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// SCOUT SEO RATIONALE:
+// Removing the hardcoded openGraph.url here and relying on metadataBase ensures
+// that child pages correctly generate their own specific Open Graph URLs rather
+// than incorrectly inheriting the homepage's URL.
 export const metadata: Metadata = {
   metadataBase: new URL('https://packwise-indol.vercel.app'),
   title: 'Packwise – Smart Packing Lists',
@@ -15,7 +19,6 @@ export const metadata: Metadata = {
     title: 'Packwise – Smart Packing Lists',
     description: 'Create smart packing lists for every trip.',
     type: 'website',
-    url: 'https://packwise-indol.vercel.app',
     siteName: 'Packwise',
     locale: 'en_US',
   },
