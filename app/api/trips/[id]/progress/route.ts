@@ -28,31 +28,57 @@ export async function GET(
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
     }
 
-    const categories = await prisma.category.findMany({
-      where: {
-        packingList: {
-          tripId: id
+    // ⚡ Bolt Performance Optimization
+    // Why: Replaced deeply nested `include` with parallel aggregation queries.
+    // Impact: Eliminates Cartesian product data explosion and memory overhead.
+    const [categories, itemStats] = await Promise.all([
+      prisma.category.findMany({
+        where: {
+          packingList: {
+            tripId: id
+          }
+        },
+        select: {
+          id: true,
+          name: true
         }
-      },
-      include: {
-        items: true
+      }),
+      prisma.packingItem.groupBy({
+        by: ['categoryId', 'isPacked'],
+        where: {
+          category: {
+            packingList: {
+              tripId: id
+            }
+          }
+        },
+        _sum: {
+          quantity: true
+        }
+      })
+    ])
+
+    const statsByCategory = new Map<string, { total: number, packed: number }>()
+    for (const stat of itemStats) {
+      const quantity = stat._sum.quantity || 0
+      if (!statsByCategory.has(stat.categoryId)) {
+        statsByCategory.set(stat.categoryId, { total: 0, packed: 0 })
       }
-    })
+      const categoryStats = statsByCategory.get(stat.categoryId)!
+      categoryStats.total += quantity
+      if (stat.isPacked) {
+        categoryStats.packed += quantity
+      }
+    }
 
     let total = 0
     let packed = 0
     const byCategory: { name: string, total: number, packed: number }[] = []
 
     categories.forEach(category => {
-      let catTotal = 0
-      let catPacked = 0
-
-      category.items.forEach(item => {
-        catTotal += item.quantity
-        if (item.isPacked) {
-          catPacked += item.quantity
-        }
-      })
+      const stats = statsByCategory.get(category.id) || { total: 0, packed: 0 }
+      const catTotal = stats.total
+      const catPacked = stats.packed
 
       total += catTotal
       packed += catPacked
