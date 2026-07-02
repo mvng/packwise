@@ -15,7 +15,12 @@ export const metadata: Metadata = {
     title: 'Packwise – Smart Packing Lists',
     description: 'Create smart packing lists for every trip.',
     type: 'website',
-    url: 'https://packwise-indol.vercel.app',
+    // SCOUT SEO RATIONALE:
+    // Removed hardcoded `url` from global openGraph metadata.
+    // In Next.js App Router, hardcoding this here causes all child pages
+    // to incorrectly inherit the homepage's Open Graph URL for social sharing.
+    // Instead, Next.js will automatically populate og:url for every page based
+    // on `metadataBase` combined with page-specific `alternates: { canonical: ... }`.
     siteName: 'Packwise',
     locale: 'en_US',
   },
