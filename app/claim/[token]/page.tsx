@@ -51,6 +51,11 @@ export async function generateMetadata({
         title,
         description,
       },
+      // SCOUT SEO RATIONALE: Adding page-specific canonical URL to ensure Next.js
+      // correctly generates the og:url using the global metadataBase.
+      alternates: {
+        canonical: `/claim/${resolvedParams.token}`,
+      },
     }
   } catch (error) {
     return {

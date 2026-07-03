@@ -7,6 +7,11 @@ export const metadata: Metadata = {
     title: 'Sign In or Create Account | Packwise',
     description: 'Log in to your Packwise account to view and manage your smart packing lists, or create a new account to get started.',
   },
+  // SCOUT SEO RATIONALE: Adding page-specific canonical URL to ensure Next.js
+  // correctly generates the og:url using the global metadataBase.
+  alternates: {
+    canonical: '/login',
+  },
 }
 
 export default function LoginLayout({
