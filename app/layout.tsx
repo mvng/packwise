@@ -15,7 +15,11 @@ export const metadata: Metadata = {
     title: 'Packwise – Smart Packing Lists',
     description: 'Create smart packing lists for every trip.',
     type: 'website',
-    url: 'https://packwise-indol.vercel.app',
+    // SCOUT SEO RATIONALE:
+    // Removed hardcoded 'url' property to prevent all child pages from
+    // incorrectly inheriting the homepage URL for social sharing.
+    // Instead, Next.js uses metadataBase combined with page-specific
+    // alternates.canonical to properly generate og:url.
     siteName: 'Packwise',
     locale: 'en_US',
   },
