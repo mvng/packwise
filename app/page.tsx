@@ -1,6 +1,17 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import type { Metadata } from 'next'
+
+// SCOUT SEO RATIONALE:
+// Adding page-specific canonical URL allows Next.js to combine it with
+// the root metadataBase and dynamically populate the correct og:url
+// without causing child routes to inherit it.
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+}
 
 export default async function HomePage() {
   const supabase = await createClient()
