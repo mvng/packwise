@@ -9,3 +9,11 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-24 - Flattened Cartesian query for getUserTrips
+**Learning:** When retrieving a list of trips with their deeply nested relationships (packingLists -> categories -> items), Prisma creates a massive Cartesian product that bloats memory and database execution time.
+**Action:** Flatten deeply nested relationship queries into parallel `findMany` calls and stitch them together in-memory.
+
+## 2025-03-24 - GroupBy Aggregation for Progress
+**Learning:** Fetching deeply nested relationships just to calculate counts or sums (e.g. `include: { items: true }` to count packed items) results in massive, unnecessary data transfers and memory bloat.
+**Action:** Replace relational data fetching with `prisma.groupBy` to offload aggregation (using `_sum` or `_count`) directly to the database.
