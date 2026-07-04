@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-26 - Add accessible actions to Inventory Category Section
+**Learning:** Found a pattern where interactive list elements (Favorite, Edit, Delete buttons) in `CategorySection.tsx` lacked keyboard focus indicators (`focus-visible:ring-2`) and context-specific `aria-label` attributes (e.g. `aria-label="Edit item name"`), making them difficult to use for keyboard-only and screen reader users. The "Category options" button also lacked focus indicators.
+**Action:** Always ensure mapped list action buttons include context-interpolated `aria-label`s and explicit `focus-visible` utility classes with appropriate ring colors to guarantee they are accessible and discoverable.
