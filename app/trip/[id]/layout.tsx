@@ -40,6 +40,9 @@ export async function generateMetadata({
         title,
         description,
       },
+      alternates: {
+        canonical: `/trip/${resolvedParams.id}`,
+      },
     }
   } catch (error) {
     return {
