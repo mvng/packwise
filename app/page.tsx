@@ -1,6 +1,15 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import type { Metadata } from 'next'
+
+// SCOUT SEO RATIONALE:
+// Defining the canonical URL at the leaf node ensures this page gets its
+// explicit canonical while allowing Next.js to combine it with metadataBase
+// to automatically populate the correct openGraph url.
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 export default async function HomePage() {
   const supabase = await createClient()
