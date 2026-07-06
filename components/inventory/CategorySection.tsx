@@ -44,7 +44,7 @@ export default function CategorySection({
           <div className="relative">
             <button
               onClick={() => setShowMenu((v) => !v)}
-              className="text-gray-400 hover:text-gray-600 px-1 transition-colors text-lg leading-none"
+              className="text-gray-400 hover:text-gray-600 px-1 transition-colors text-lg leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
               aria-label="Category options"
             >
               •••
@@ -118,7 +118,8 @@ export default function CategorySection({
                 <button
                   onClick={() => onEditItem(item)}
                   title="Edit item"
-                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label={`Edit ${item.name}`}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -138,7 +139,8 @@ export default function CategorySection({
                   onClick={() => onDeleteItem(item.id)}
                   disabled={isPending}
                   title="Delete item"
-                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                  aria-label={`Delete ${item.name}`}
+                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   <svg
                     className="w-3.5 h-3.5"
