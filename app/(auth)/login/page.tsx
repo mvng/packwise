@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { forkTrip } from '@/actions/trip.actions'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -11,6 +12,30 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+
+
+    const handleLoginSuccess = async () => {
+      const forkTripId = sessionStorage.getItem('fork_trip_after_login');
+      if (forkTripId) {
+        try {
+          const rawState = localStorage.getItem(`packwise_trip_${forkTripId}`);
+          const localStorageState = rawState ? JSON.parse(rawState) : null;
+
+          const result = await forkTrip(forkTripId, localStorageState);
+
+          if (result && result.success && result.tripId) {
+            sessionStorage.removeItem('fork_trip_after_login');
+            localStorage.removeItem(`packwise_trip_${forkTripId}`);
+            window.location.href = `/trip/${result.tripId}`;
+            return;
+          }
+        } catch (err) {
+          console.error('Failed to fork trip after login:', err);
+        }
+      }
+
+      window.location.href = '/dashboard';
+    };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,8 +61,8 @@ export default function LoginPage() {
       // If email confirmation is disabled, signUp returns a valid session.
       // Redirect immediately to dashboard (the auth callback will upsert the Prisma User).
       if (data?.session) {
-        window.location.href = '/dashboard'
-        return
+        await handleLoginSuccess()
+      return
       }
 
       // Email confirmation is enabled — user must click the link in their email
@@ -49,8 +74,8 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
-      window.location.href = '/dashboard'
-      return
+      await handleLoginSuccess()
+        return
     }
     setLoading(false)
   }
