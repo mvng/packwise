@@ -372,17 +372,50 @@ export async function forkTrip(
     const userId = await getUserId()
     if (!userId) return { error: 'Unauthorized', requiresAuth: true }
 
-    const sourceTrip = await prisma.trip.findUnique({
-      where: { id: sourceTripId },
-      include: {
-        packingLists: {
-          include: { categories: { include: { items: true } } }
-        }
-      }
-    })
+    // ⚡ Bolt Performance Optimization
+    // Why: Flattened deeply nested Cartesian 'include' into parallel queries to avoid large DB memory bloat.
+    const [sourceTrip, rawPackingLists, rawCategories, rawItems] = await Promise.all([
+      prisma.trip.findUnique({
+        where: { id: sourceTripId },
+      }),
+      prisma.packingList.findMany({
+        where: { tripId: sourceTripId },
+      }),
+      prisma.category.findMany({
+        where: { packingList: { tripId: sourceTripId } },
+      }),
+      prisma.packingItem.findMany({
+        where: { category: { packingList: { tripId: sourceTripId } } },
+      })
+    ]);
 
     if (!sourceTrip) return { error: 'Trip not found' }
     if (sourceTrip.userId === userId) return { error: 'You already own this trip', alreadyOwned: true }
+
+    // Stitch the data together in-memory
+    const itemsByCategoryId: Record<string, typeof rawItems> = {};
+    for (const item of rawItems) {
+      if (!itemsByCategoryId[item.categoryId]) {
+        itemsByCategoryId[item.categoryId] = [];
+      }
+      itemsByCategoryId[item.categoryId].push(item);
+    }
+
+    const categoriesByListId: Record<string, typeof rawCategories & { items: typeof rawItems }[]> = {};
+    for (const category of rawCategories) {
+      if (!categoriesByListId[category.packingListId]) {
+        categoriesByListId[category.packingListId] = [];
+      }
+      categoriesByListId[category.packingListId].push({
+        ...category,
+        items: itemsByCategoryId[category.id] || []
+      });
+    }
+
+    const stitchedPackingLists = rawPackingLists.map(list => ({
+      ...list,
+      categories: categoriesByListId[list.id] || []
+    }));
 
     const newTrip = await prisma.trip.create({
       data: {
@@ -395,7 +428,7 @@ export async function forkTrip(
         transportMode: sourceTrip.transportMode,
         notes: sourceTrip.notes,
         packingLists: {
-          create: sourceTrip.packingLists.map((sourceList) => ({
+          create: stitchedPackingLists.map((sourceList) => ({
             name: sourceList.name,
             categories: {
               create: sourceList.categories.map((sourceCategory) => ({

@@ -9,3 +9,6 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+## 2025-03-24 - Parallel aggregations over nested includes
+**Learning:** When retrieving counts or sum of quantities over deeply nested items (like calculating packing progress percentage from packingLists -> categories -> items), using a deeply nested \`include: { items: true }\` causes massive memory bloat and slow DB queries.
+**Action:** Replace Cartesian product queries for statistics with a combination of flat \`findMany\` queries for structure and \`groupBy\` with \`_sum\` parallel aggregations, stitching the results back in-memory with O(1) Dictionary lookups.
