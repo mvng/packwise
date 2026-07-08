@@ -102,6 +102,15 @@ test.describe('Trip Actions', () => {
           { id: 'trip-1', name: 'Trip 1' },
           { id: 'trip-2', name: 'Trip 2' }
         ]
+      },
+      packingList: {
+        findMany: async () => ([])
+      },
+      category: {
+        findMany: async () => ([])
+      },
+      packingItem: {
+        findMany: async () => ([])
       }
     };
 
