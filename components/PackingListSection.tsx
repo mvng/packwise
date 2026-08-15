@@ -725,9 +725,16 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                         handleUpdateNotes(item.id, item.categoryId, item.packingListId, editingNotes?.notes || "")
                         setEditingNotes(null)
                       }}
-                      className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                      title="Save note"
+                      aria-label="Save note"
                     ><Check className="w-3 h-3" /></button>
-                    <button onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200"><X className="w-3 h-3" /></button>
+                    <button
+                      onClick={() => setEditingNotes(null)}
+                      className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                      title="Cancel"
+                      aria-label="Cancel editing note"
+                    ><X className="w-3 h-3" /></button>
                   </div>
                 </div>
               ) : item.notes ? (
@@ -1241,9 +1248,16 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                                               handleUpdateNotes(item.id, category.id, list.id, editingNotes?.notes || "")
                                               setEditingNotes(null)
                                             }}
-                                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                            title="Save note"
+                                            aria-label="Save note"
                                           ><Check className="w-3 h-3" /></button>
-                                          <button onClick={() => setEditingNotes(null)} className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200"><X className="w-3 h-3" /></button>
+                                          <button
+                                            onClick={() => setEditingNotes(null)}
+                                            className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                                            title="Cancel"
+                                            aria-label="Cancel editing note"
+                                          ><X className="w-3 h-3" /></button>
                                         </div>
                                       </div>
                                     ) : item.notes ? (
