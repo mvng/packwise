@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSharedTripById } from '@/actions/trip.actions'
@@ -92,25 +92,30 @@ export default function TripPageClient({ initialTrip, user, isOwner, initialTrip
   }
 
   const isSharedView = !isOwner
-  const displayTrip = isSharedView ? {
-    ...trip,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    packingLists: trip.packingLists.map((list: any) => ({
-      ...list,
+
+  // ⚡ Bolt Performance Optimization
+  // Wrap expensive deeply nested mapping with useMemo to prevent derived state recalculation on every render
+  const displayTrip = useMemo(() => {
+    return isSharedView ? {
+      ...trip,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      categories: list.categories.map((cat: any) => ({
-        ...cat,
+      packingLists: trip.packingLists.map((list: any) => ({
+        ...list,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        items: cat.items.map((item: any) => ({ ...item, isPacked: false }))
+        categories: list.categories.map((cat: any) => ({
+          ...cat,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          items: cat.items.map((item: any) => ({ ...item, isPacked: false }))
+        }))
       }))
-    }))
-  } : trip
+    } : trip
+  }, [isSharedView, trip])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allItems = displayTrip.packingLists.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items))
+  const allItems = useMemo(() => displayTrip.packingLists.flatMap((list: any) => list.categories.flatMap((cat: any) => cat.items)), [displayTrip])
   const totalItems = allItems.length
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const packedItems = allItems.filter((item: any) => item.isPacked).length
+  const packedItems = useMemo(() => allItems.filter((item: any) => item.isPacked).length, [allItems])
   const progress = totalItems > 0 ? Math.round((packedItems / totalItems) * 100) : 0
 
   // Post-trip: true if end date is in the past
