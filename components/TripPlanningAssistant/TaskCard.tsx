@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Calendar, Trash2, Edit2, Bell, CheckCircle, Circle, Smartphone, Mail, Calendar as CalendarIcon } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
@@ -21,16 +20,16 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: TaskCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
   const isDone = task.status === 'DONE'
 
+  // ⚡ Bolt Performance Optimization
+  // Why: Replaced JS-based hover state (useState + onMouseEnter/Leave) with native CSS (group + group-hover).
+  // Impact: Prevents unnecessary React component re-renders when hovering over the task card.
   return (
     <div
-      className={`relative p-4 rounded-xl border transition-all ${
+      className={`group relative p-4 rounded-xl border transition-all ${
         isDone ? 'bg-gray-50 border-gray-100 opacity-75' : 'bg-white border-gray-200 shadow-sm hover:shadow-md'
       }`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex items-start gap-3">
         <button
@@ -70,7 +69,7 @@ export default function TaskCard({ task, onToggleStatus, onDelete, onEdit }: Tas
           </div>
         </div>
 
-        <div className={`flex items-center gap-1 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="flex items-center gap-1 transition-opacity opacity-0 group-hover:opacity-100 focus-within:opacity-100">
           <button
             onClick={() => onEdit(task)}
             className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
