@@ -497,7 +497,12 @@ function DayColumn({
               <span className="text-sm">{allDayTag.icon}</span>
               <span className={`text-[11px] font-semibold ${headerText} opacity-90`}>{allDayTag.label}</span>
               <span className={`text-[10px] ml-0.5 opacity-50 ${headerText}`}>— all day</span>
-              <button onClick={() => saveLabel('')} className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none leading-none`}>✕</button>
+              <button
+                onClick={() => saveLabel('')}
+                className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none focus-visible:ring-2 focus-visible:ring-current rounded-sm leading-none`}
+                aria-label="Remove all day label"
+                title="Remove label"
+              >✕</button>
             </div>
           ) : editingLabel ? (
             <input autoFocus type="text" value={labelInput}

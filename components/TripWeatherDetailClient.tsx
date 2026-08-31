@@ -22,7 +22,7 @@ export default function TripWeatherDetailClient({ weather, headerChildren, expan
       {/* Ultra-compact preview - no capped warning when collapsed */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-3 py-2 flex items-center justify-between hover:bg-white hover:bg-opacity-30 transition-colors text-left gap-2"
+        className="w-full px-3 py-2 flex items-center justify-between hover:bg-white hover:bg-opacity-30 transition-colors text-left gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-inset rounded-lg"
         aria-expanded={isExpanded}
         aria-controls="weather-details"
       >
