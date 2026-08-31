@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-21 - Fix TaskCard Action Accessibility
+**Learning:** Hover-only action buttons hidden with `opacity-0` can become inaccessible to keyboard users because standard `focus` styling is not triggered if the container remains hidden. Also, purely icon-based actions require screen reader context.
+**Action:** Always combine `focus-within:opacity-100` on the hover container with `focus-visible:ring` and context-interpolated `aria-label`s (e.g., `aria-label={"Delete task: " + task.title}`) for list-item actions to ensure both visual keyboard visibility and precise screen-reader announcement.
