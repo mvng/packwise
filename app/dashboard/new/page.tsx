@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createTrip } from '@/actions/trip.actions'
@@ -118,10 +118,26 @@ export default function NewTripPage() {
   }
 
   const duration = getDurationDays(formData.startDate, formData.endDate)
-  const templateCategories = formData.generateSuggestions
-    ? generatePackingList(formData.tripType as "leisure" | "business" | "beach" | "hiking" | "city" | "skiing", duration, formData.transportMode)
-    : []
-  const totalItems = templateCategories.reduce((sum, c) => sum + c.items.length, 0)
+
+  // ⚡ Bolt Performance Optimization
+  // Why: The NewTripPage is a form with controlled inputs (e.g. name, destination). Without memoization,
+  // `generatePackingList` executes data processing and allocates memory on every single keystroke.
+  // Impact: Prevents UI lag by ensuring the template packing list is only recalculated when relevant
+  // fields (like trip duration or transport mode) actually change.
+  const templateCategories = useMemo(() => {
+    return formData.generateSuggestions
+      ? generatePackingList(formData.tripType as "leisure" | "business" | "beach" | "hiking" | "city" | "skiing", duration, formData.transportMode)
+      : []
+  }, [
+    formData.generateSuggestions,
+    formData.tripType,
+    formData.transportMode,
+    duration
+  ])
+
+  // ⚡ Bolt Performance Optimization
+  // Why: Avoids iterating through the entire templateCategories array on every render cycle.
+  const totalItems = useMemo(() => templateCategories.reduce((sum, c) => sum + c.items.length, 0), [templateCategories])
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
