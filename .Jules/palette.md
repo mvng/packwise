@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2024-05-26 - Add Escape key support to inventory modals
+**Learning:** Found that some modals in the inventory section (`AddItemModal`, `AddCategoryModal`) were missing the `Escape` key close handler that is standard across other modals in the application. Also learned that when adding event listeners to React components using `useEffect`, they should be kept in a separate hook rather than merged into existing on-mount hooks (like those handling initial focus) to avoid unintended side effects on re-renders.
+**Action:** Always ensure that custom modal components implement an `Escape` keydown event listener attached to the `document` (with proper unmount cleanup) that triggers the modal's close function. When adding such listeners, separate them into their own `useEffect` hooks.
