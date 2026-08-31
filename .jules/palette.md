@@ -7,3 +7,6 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+## 2026-03-23 - Add accessible edit and delete buttons to trip cards
+**Learning:** Found that edit/delete action buttons revealed on hover often omit keyboard focus management, remaining invisible when a user tabs into them.
+**Action:** Always ensure hover-revealed action button containers have `focus-within:opacity-100` and the buttons themselves have explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
