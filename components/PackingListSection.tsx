@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback, useOptimistic } from 'react'
+import { useState, useTransition, useEffect, useCallback, useOptimistic, useMemo } from 'react'
 import { toggleItemPacked, addCustomItem, deleteItem, togglePackLast, updateItemNotes, assignItemToMember, generateShareToken } from '@/actions/packing.actions'
 import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
@@ -560,11 +560,6 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     return tl.luggage.icon || luggageIcons[tl.luggage.type as LuggageType]
   }
 
-  const getItemPackedState = (item: PackingItem): boolean => {
-    if (readOnly) return localPackedState[item.id] ?? item.isPacked
-    return item.isPacked
-  }
-
   const handleShareToClaim = async (packingListId: string) => {
     if (readOnly) return
     const result = await generateShareToken(packingListId, trip.id)
@@ -579,39 +574,47 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     }
   }
 
-  const allItems = optimisticLists.flatMap(list =>
-    list.categories.flatMap(cat =>
-      cat.items.map(item => ({
-        ...item,
-        categoryId: cat.id,
-        categoryName: cat.name,
-        packingListId: list.id,
-        isPacked: getItemPackedState(item)
-      }))
+  const allItems = useMemo(() =>
+    optimisticLists.flatMap(list =>
+      list.categories.flatMap(cat =>
+        cat.items.map(item => ({
+          ...item,
+          categoryId: cat.id,
+          categoryName: cat.name,
+          packingListId: list.id,
+          isPacked: readOnly ? (localPackedState[item.id] ?? item.isPacked) : item.isPacked
+        }))
+      )
     )
-  )
+  , [optimisticLists, readOnly, localPackedState])
 
-  const packLastItems = !readOnly ? allItems.filter(item => item.packLast) : []
-  const regularItems = allItems.filter(item => !item.packLast)
+  const packLastItems = useMemo(() => !readOnly ? allItems.filter(item => item.packLast) : [], [allItems, readOnly])
+  const regularItems = useMemo(() => allItems.filter(item => !item.packLast), [allItems])
 
-  const itemsByLuggage: Record<string, typeof allItems> = {
-    'not-assigned': regularItems.filter(item => !item.tripLuggageId)
-  }
-  optimisticTripLuggages.forEach(tl => {
-    itemsByLuggage[tl.id] = regularItems.filter(item => item.tripLuggageId === tl.id)
-  })
-
-  const itemsByPerson: Record<string, typeof allItems> = {
-    'not-assigned': regularItems.filter(item => !item.assigneeId)
-  }
-  if (trip.members) {
-    trip.members.forEach(member => {
-      itemsByPerson[member.id] = regularItems.filter(item => item.assigneeId === member.id)
+  const itemsByLuggage = useMemo(() => {
+    const map: Record<string, typeof allItems> = {
+      'not-assigned': regularItems.filter(item => !item.tripLuggageId)
+    }
+    optimisticTripLuggages.forEach(tl => {
+      map[tl.id] = regularItems.filter(item => item.tripLuggageId === tl.id)
     })
-  }
+    return map
+  }, [regularItems, optimisticTripLuggages])
+
+  const itemsByPerson = useMemo(() => {
+    const map: Record<string, typeof allItems> = {
+      'not-assigned': regularItems.filter(item => !item.assigneeId)
+    }
+    if (trip.members) {
+      trip.members.forEach(member => {
+        map[member.id] = regularItems.filter(item => item.assigneeId === member.id)
+      })
+    }
+    return map
+  }, [regularItems, trip.members])
 
   const renderItem = (item: typeof allItems[0]) => {
-    const isPacked = getItemPackedState(item)
+    const isPacked = item.isPacked
     return (
       <div
         key={item.id}
@@ -913,7 +916,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
               <div className="text-left">
                 <h3 className="font-semibold text-amber-900">Morning of Departure</h3>
                 <p className="text-xs text-amber-700">
-                  {packLastItems.filter(i => getItemPackedState(i)).length}/{packLastItems.length} packed · These go in last
+                  {packLastItems.filter(i => i.isPacked).length}/{packLastItems.length} packed · These go in last
                 </p>
               </div>
             </div>
@@ -960,7 +963,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
           <div className="space-y-4">
             {trip.members.map((member) => {
               const items = itemsByPerson[member.id] || []
-              const packedCount = items.filter(i => getItemPackedState(i)).length
+              const packedCount = items.filter(i => i.isPacked).length
               const isExpanded = expandedGroups[member.id] ?? true
               const isDropTarget = !readOnly && dragOverTarget === member.id
               return (
@@ -1036,7 +1039,7 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
           <div className="space-y-4">
             {optimisticTripLuggages.map((tl) => {
               const items = itemsByLuggage[tl.id] || []
-              const packedCount = items.filter(i => getItemPackedState(i)).length
+              const packedCount = items.filter(i => i.isPacked).length
               const isExpanded = expandedGroups[tl.id]
               const isDropTarget = !readOnly && dragOverTarget === tl.id
               return (
@@ -1132,14 +1135,14 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{category.name}</h4>
                       <span className="text-xs text-gray-400">
-                        {category.items.filter(i => getItemPackedState(i)).length}/{category.items.length}
+                        {category.items.filter(i => (readOnly ? (localPackedState[i.id] ?? i.isPacked) : i.isPacked)).length}/{category.items.length}
                       </span>
                     </div>
                     <ul className="space-y-2" role="list">
                       {category.items
                         .filter(item => !item.packLast)
                         .map((item) => {
-                          const isPacked = getItemPackedState(item)
+                          const isPacked = readOnly ? (localPackedState[item.id] ?? item.isPacked) : item.isPacked
                           return (
                             <li
                               key={item.id}
