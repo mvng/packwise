@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-05-08 - Sequential Network I/O and DB Writes in Cron Loops
+**Learning:** In cron jobs that iterate over database records to perform external network actions (like sending Twilio SMS or push notifications) and subsequent database updates, executing these sequentially in a `for...of` loop creates significant performance bottlenecks (N+1 queries and blocking network latency). Furthermore, instantiating the API client inside the loop causes unnecessary overhead per item.
+**Action:** Always instantiate API clients (like Twilio) once outside the loop. Use `Promise.all` with `.map` to perform independent external network requests concurrently. Finally, aggregate the processed record IDs and use a single `updateMany` batch operation to perform the database updates.

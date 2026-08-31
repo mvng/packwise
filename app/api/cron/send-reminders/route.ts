@@ -33,7 +33,14 @@ export async function GET(request: NextRequest) {
 
     console.log(`Processing ${tasks.length} reminders...`)
 
-    for (const task of tasks) {
+    // ⚡ Bolt Performance Optimization
+    // Why: Instantiate Twilio client once outside the loop instead of recreating it for every SMS.
+    const hasTwilio = Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER)
+    const twilioClient = hasTwilio ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN) : null
+
+    // ⚡ Bolt Performance Optimization
+    // Why: Replaced sequential processing with Promise.all for concurrent external I/O operations (SMS, Push)
+    await Promise.all(tasks.map(async (task) => {
       const { reminderTypes } = task
 
       if (reminderTypes.includes('PUSH')) {
@@ -43,10 +50,9 @@ export async function GET(request: NextRequest) {
 
       if (reminderTypes.includes('SMS')) {
         if (task.user.phone) {
-          if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+          if (hasTwilio && twilioClient) {
             try {
-              const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-              await client.messages.create({
+              await twilioClient.messages.create({
                 body: `Packwise Reminder: ${task.title} for your trip to ${task.trip.destination}`,
                 from: process.env.TWILIO_PHONE_NUMBER,
                 to: task.user.phone
@@ -74,10 +80,13 @@ export async function GET(request: NextRequest) {
         const calendarLink = calendar.toString()
         console.log(`[CALENDAR] Calendar invite generated for task: ${task.title}`)
       }
+    }))
 
-      // Mark as sent
-      await prisma.tripTask.update({
-        where: { id: task.id },
+    // ⚡ Bolt Performance Optimization
+    // Why: Replaced N+1 individual updates with a single batch updateMany
+    if (tasks.length > 0) {
+      await prisma.tripTask.updateMany({
+        where: { id: { in: tasks.map(t => t.id) } },
         data: { reminderSentAt: now }
       })
     }
