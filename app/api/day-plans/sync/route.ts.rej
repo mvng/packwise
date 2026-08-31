@@ -1,0 +1,9 @@
+--- route.ts
++++ route.ts
+@@ -29,6 +29,7 @@ export async function POST(req: Request) {
+
+     const existingCategories = await prisma.category.findMany({
+       where: { packingListId: packingList.id },
++      include: { items: true },
+       orderBy: { order: 'asc' },
+     })

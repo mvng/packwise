@@ -37,6 +37,12 @@ export async function POST(req: Request) {
     let maxCatOrder = existingCategories.reduce((max, c) => Math.max(max, c.order), -1)
     let synced = 0
 
+    // ⚡ Bolt Performance Optimization
+    // Why: Accumulating operations allows us to use a single database transaction,
+    // and using pre-fetched category.items avoids an N+1 query loop.
+    // Impact: Drastically reduces DB round trips and speeds up sync time.
+    const dbOperations = []
+
     for (const [catName, items] of grouped) {
       let category = existingCategories.find(
         (c) => c.name.toLowerCase() === catName.toLowerCase()
@@ -50,37 +56,57 @@ export async function POST(req: Request) {
         })
       }
 
-      const existingItems = await prisma.packingItem.findMany({
-        where: { categoryId: category.id },
-        orderBy: { order: 'desc' },
-      })
+      const existingItems = category.items || []
       let maxItemOrder = existingItems.reduce((max, i) => Math.max(max, i.order), -1)
 
+      // Deduplicate items within the payload to prevent transaction errors
+      const aggregatedItems = new Map<string, number>()
       for (const item of items) {
+        const key = item.name.toLowerCase()
+        aggregatedItems.set(key, Math.max(aggregatedItems.get(key) || 0, item.quantity))
+      }
+
+      const itemsToCreate = []
+
+      for (const [itemNameKey, maxQuantity] of aggregatedItems) {
+        const originalItem = items.find(i => i.name.toLowerCase() === itemNameKey)!
         const existing = existingItems.find(
-          (i) => i.name.toLowerCase() === item.name.toLowerCase()
+          (i) => i.name.toLowerCase() === itemNameKey
         )
+
         if (existing) {
-          await prisma.packingItem.update({
-            where: { id: existing.id },
-            data: { quantity: Math.max(existing.quantity, item.quantity) },
-          })
+          dbOperations.push(
+            prisma.packingItem.update({
+              where: { id: existing.id },
+              data: { quantity: Math.max(existing.quantity, maxQuantity) },
+            })
+          )
         } else {
           maxItemOrder += 1
-          await prisma.packingItem.create({
-            data: {
-              categoryId: category.id,
-              name: item.name,
-              quantity: item.quantity,
-              isPacked: false,
-              isCustom: true,
-              packLast: false,
-              order: maxItemOrder,
-            },
+          itemsToCreate.push({
+            categoryId: category.id,
+            name: originalItem.name,
+            quantity: maxQuantity,
+            isPacked: false,
+            isCustom: true,
+            packLast: false,
+            order: maxItemOrder,
           })
           synced++
         }
       }
+
+      if (itemsToCreate.length > 0) {
+        dbOperations.push(
+          prisma.packingItem.createMany({
+            data: itemsToCreate
+          })
+        )
+      }
+    }
+
+    if (dbOperations.length > 0) {
+      await prisma.$transaction(dbOperations)
     }
 
     return NextResponse.json({ synced })
