@@ -254,7 +254,7 @@ export default function PasteListModal({ tripId, onClose, onSuccess }: PasteList
                     />
                     <button
                       onClick={() => handleRemoveItem(item.id)}
-                      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-opacity p-1.5 rounded-md hover:bg-red-50"
+                      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-opacity p-1.5 rounded-md hover:bg-red-50"
                       aria-label={`Remove ${item.name}`}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
