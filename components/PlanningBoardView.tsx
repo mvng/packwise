@@ -271,7 +271,8 @@ function InlineTagCard({
         ) : (
           <button
             onClick={() => setEditingTime(true)}
-            className="ml-2 text-[11px] opacity-60 hover:opacity-100 transition-opacity"
+            className="ml-2 text-[11px] opacity-60 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
+            aria-label="Add or edit time"
           >
             {item.time ? fmtTime(item.time) : <span className="italic">+ time</span>}
           </button>
@@ -497,7 +498,11 @@ function DayColumn({
               <span className="text-sm">{allDayTag.icon}</span>
               <span className={`text-[11px] font-semibold ${headerText} opacity-90`}>{allDayTag.label}</span>
               <span className={`text-[10px] ml-0.5 opacity-50 ${headerText}`}>— all day</span>
-              <button onClick={() => saveLabel('')} className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus:outline-none leading-none`}>✕</button>
+              <button
+                onClick={() => saveLabel('')}
+                className={`ml-auto text-[11px] opacity-60 hover:opacity-100 ${headerText} focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 rounded leading-none`}
+                aria-label="Remove all day tag"
+              >✕</button>
             </div>
           ) : editingLabel ? (
             <input autoFocus type="text" value={labelInput}
