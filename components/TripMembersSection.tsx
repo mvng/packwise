@@ -59,9 +59,10 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
             <button
               onClick={isOwner ? () => handleRemove(member.id) : undefined}
               className={`w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold ring-2 ring-white transition-all ${
-                isOwner ? 'hover:bg-red-100 hover:text-red-600 cursor-pointer' : 'cursor-default'
+                isOwner ? 'hover:bg-red-100 hover:text-red-600 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1' : 'cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1'
               }`}
-              title={member.name}
+              title={isOwner ? `Remove ${member.name}` : member.name}
+              aria-label={isOwner ? `Remove ${member.name}` : member.name}
             >
               <span className="group-hover:hidden">{member.name.charAt(0).toUpperCase()}</span>
               {isOwner && <X className="w-3 h-3 hidden group-hover:block" />}
@@ -84,8 +85,9 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
         {isOwner && !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="w-7 h-7 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             title="Add member"
+            aria-label="Add new member"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -110,15 +112,17 @@ export default function TripMembersSection({ tripId, members: initialMembers, is
           <button
             onClick={handleAdd}
             disabled={isPending || !newName.trim()}
-            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
             title="Confirm"
+            aria-label="Confirm new member"
           >
             <Check className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => { setIsAdding(false); setNewName(''); setError(null) }}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-1"
             title="Cancel"
+            aria-label="Cancel adding member"
           >
             <X className="w-3.5 h-3.5" />
           </button>
