@@ -15,9 +15,19 @@ export default function TripWeatherDetailClient({ weather, headerChildren, expan
 
   return (
     <div
-      className="bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 rounded-lg border border-blue-100 relative cursor-help shadow-sm overflow-hidden transition-all"
+      className="group bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 rounded-lg border border-blue-100 relative cursor-help shadow-sm overflow-hidden transition-all"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
+      onFocus={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setShowTooltip(true)
+        }
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setShowTooltip(false)
+        }
+      }}
     >
       {/* Ultra-compact preview - no capped warning when collapsed */}
       <button

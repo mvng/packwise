@@ -13,9 +13,22 @@ export default function TripWeatherCardClient({ weather, children }: TripWeather
 
   return (
     <div
-      className="mt-3 pt-3 border-t border-gray-100 relative cursor-help"
+      tabIndex={0}
+      role="region"
+      aria-label="Weather forecast details"
+      className="mt-3 pt-3 border-t border-gray-100 relative cursor-help rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
+      onFocus={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setShowTooltip(true)
+        }
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setShowTooltip(false)
+        }
+      }}
     >
       {children}
 
