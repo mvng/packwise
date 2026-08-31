@@ -66,7 +66,13 @@ export default function InventoryClient({ initialCategories }: InventoryClientPr
       .filter((cat) => cat.items.length > 0 || cat.name.toLowerCase().includes(q))
   }, [optimisticCategories, search])
 
-  const totalItems = optimisticCategories.reduce((sum, cat) => sum + cat.items.length, 0)
+  // ⚡ Bolt Performance Optimization
+  // Why: Prevents iterating over the entire categories array to recalculate the sum of items on every render.
+  // Impact: Keeps the UI responsive during search filtering, typing, and other non-optimistic state changes.
+  const totalItems = useMemo(
+    () => optimisticCategories.reduce((sum, cat) => sum + cat.items.length, 0),
+    [optimisticCategories]
+  )
 
   function handleAddCategory(name: string) {
     setError(null)
