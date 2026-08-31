@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback, useOptimistic } from 'react'
+import { useState, useTransition, useEffect, useCallback, useOptimistic, useMemo } from 'react'
 import { toggleItemPacked, addCustomItem, deleteItem, togglePackLast, updateItemNotes, assignItemToMember, generateShareToken } from '@/actions/packing.actions'
 import { getTripLuggage, assignItemToLuggage, removeLuggageFromTrip } from '@/actions/luggage.actions'
 import InventoryPickerModal from '@/components/inventory/InventoryPickerModal'
@@ -579,36 +579,43 @@ export default function PackingListSection({ trip, readOnly = false, sharedTripL
     }
   }
 
-  const allItems = optimisticLists.flatMap(list =>
-    list.categories.flatMap(cat =>
-      cat.items.map(item => ({
-        ...item,
-        categoryId: cat.id,
-        categoryName: cat.name,
-        packingListId: list.id,
-        isPacked: getItemPackedState(item)
-      }))
+  const { allItems, packLastItems, itemsByLuggage, itemsByPerson } = useMemo(() => {
+    // ⚡ Bolt Performance Optimization
+    // Why: Prevents expensive O(N) recalculations of nested relational arrays during frequent re-renders caused by unrelated state updates (like toggling view modes, showing modals, or expanding groups).
+    // Impact: Avoids lag and keeps the UI responsive when interacting with unrelated components on large packing lists.
+    const all = optimisticLists.flatMap(list =>
+      list.categories.flatMap(cat =>
+        cat.items.map(item => ({
+          ...item,
+          categoryId: cat.id,
+          categoryName: cat.name,
+          packingListId: list.id,
+          isPacked: readOnly ? (localPackedState[item.id] ?? item.isPacked) : item.isPacked
+        }))
+      )
     )
-  )
 
-  const packLastItems = !readOnly ? allItems.filter(item => item.packLast) : []
-  const regularItems = allItems.filter(item => !item.packLast)
+    const packLast = !readOnly ? all.filter(item => item.packLast) : []
+    const regular = all.filter(item => !item.packLast)
 
-  const itemsByLuggage: Record<string, typeof allItems> = {
-    'not-assigned': regularItems.filter(item => !item.tripLuggageId)
-  }
-  optimisticTripLuggages.forEach(tl => {
-    itemsByLuggage[tl.id] = regularItems.filter(item => item.tripLuggageId === tl.id)
-  })
-
-  const itemsByPerson: Record<string, typeof allItems> = {
-    'not-assigned': regularItems.filter(item => !item.assigneeId)
-  }
-  if (trip.members) {
-    trip.members.forEach(member => {
-      itemsByPerson[member.id] = regularItems.filter(item => item.assigneeId === member.id)
+    const byLuggage: Record<string, typeof all> = {
+      'not-assigned': regular.filter(item => !item.tripLuggageId)
+    }
+    optimisticTripLuggages.forEach(tl => {
+      byLuggage[tl.id] = regular.filter(item => item.tripLuggageId === tl.id)
     })
-  }
+
+    const byPerson: Record<string, typeof all> = {
+      'not-assigned': regular.filter(item => !item.assigneeId)
+    }
+    if (trip.members) {
+      trip.members.forEach(member => {
+        byPerson[member.id] = regular.filter(item => item.assigneeId === member.id)
+      })
+    }
+
+    return { allItems: all, packLastItems: packLast, itemsByLuggage: byLuggage, itemsByPerson: byPerson }
+  }, [optimisticLists, optimisticTripLuggages, trip.members, readOnly, localPackedState])
 
   const renderItem = (item: typeof allItems[0]) => {
     const isPacked = getItemPackedState(item)

@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-18 - Memoizing derived state in React
+**Learning:** In React Client Components, recalculating derived state via expensive array iterations (like `flatMap` followed by multiple `filter` passes to categorize items by different attributes) on every render causes significant overhead. However, wrapping them in `useMemo` specifically protects against performance degradation during *unrelated* state updates (like opening a modal or expanding UI tabs). It does not prevent recalculation on state-mutating actions (like toggling checkmarks) that bust the memo cache.
+**Action:** Wrap these expensive array iterations computing derived state in a single `useMemo` block with correct dependencies. This prevents `O(N)` recalculations of downstream state (like categorized arrays by luggage or assignee) when unrelated component state changes, directly improving UI responsiveness.
