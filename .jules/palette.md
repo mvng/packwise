@@ -7,3 +7,7 @@
 ## 2024-05-25 - Add accessible delete buttons to planning board items
 **Learning:** Found that delete/close actions revealed on hover often omit `aria-label` attributes and keyboard focus management since their visual state is tied to pointer events (e.g. `group-hover:opacity-100`).
 **Action:** Always ensure hover-revealed action buttons have descriptive `aria-label` attributes and explicit `focus-visible` utility classes so screen reader and keyboard users can discover and trigger them.
+
+## 2024-05-18 - Ensure keyboard accessibility for hover-revealed containers
+**Learning:** When using Tailwind CSS `group-hover` to reveal action buttons on hover (e.g., `opacity-0 group-hover:opacity-100`), keyboard users won't see the buttons when they tab into them unless the container also responds to focus.
+**Action:** Always include `focus-within:opacity-100` alongside `group-hover:opacity-100` on containers that hide interactive elements until hovered, ensuring they become visible during keyboard navigation.
