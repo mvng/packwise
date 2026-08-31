@@ -73,7 +73,8 @@ export default function TaskForm({ initialTask, onSave, onCancel, startDate }: T
         <button
           type="button"
           onClick={onCancel}
-          className="p-1 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
+          aria-label="Cancel task creation"
+          className="p-1 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
