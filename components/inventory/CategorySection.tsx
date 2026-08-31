@@ -89,7 +89,8 @@ export default function CategorySection({
                 onClick={() => onToggleFavorite(item)}
                 disabled={isPending}
                 title={item.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                className="text-base leading-none flex-shrink-0 transition-transform hover:scale-110 disabled:opacity-50"
+                aria-label={item.isFavorite ? `Remove ${item.name} from favorites` : `Add ${item.name} to favorites`}
+                className="text-base leading-none flex-shrink-0 transition-transform hover:scale-110 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 rounded-sm"
               >
                 {item.isFavorite ? (
                   '⭐'
@@ -117,8 +118,9 @@ export default function CategorySection({
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <button
                   onClick={() => onEditItem(item)}
-                  title="Edit item"
-                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  title={`Edit ${item.name}`}
+                  aria-label={`Edit ${item.name}`}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 focus-visible:opacity-100"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -137,8 +139,9 @@ export default function CategorySection({
                 <button
                   onClick={() => onDeleteItem(item.id)}
                   disabled={isPending}
-                  title="Delete item"
-                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                  title={`Delete ${item.name}`}
+                  aria-label={`Delete ${item.name}`}
+                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 focus-visible:opacity-100"
                 >
                   <svg
                     className="w-3.5 h-3.5"
