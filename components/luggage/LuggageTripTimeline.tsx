@@ -87,14 +87,16 @@ export function LuggageTripTimeline({
 
               <button
                 onClick={() => toggleTrip(tl.trip.id)}
-                className="w-full flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors text-sm"
+                className="w-full flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-expanded={isExpanded}
+                aria-controls={`trip-items-${tl.trip.id}`}
               >
                 <span className="font-medium">{totalItems} items packed</span>
                 <span className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
               </button>
 
               {isExpanded && (
-                <div className="mt-2 pt-2 border-t border-border space-y-1">
+                <div id={`trip-items-${tl.trip.id}`} className="mt-2 pt-2 border-t border-border space-y-1">
                   {tl.packingItems.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-2 text-center">No items packed</p>
                   ) : (
