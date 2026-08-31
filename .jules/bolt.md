@@ -9,3 +9,7 @@
 ## 2025-03-18 - Type strictness with Prisma Transactions
 **Learning:** When collecting different Prisma operations (like `.update` and `.create`) into an array to be executed by `prisma.$transaction()`, explicitly typing the array as `Promise<any>[]` will cause a TypeScript build failure. Prisma requires `PrismaPromise`, which has internal brand properties that native Promises lack.
 **Action:** When building dynamic arrays of Prisma operations for transactions, type the array explicitly as `any[]` (or strictly as `PrismaPromise<any>[]` if all elements conform) to prevent build failures during `next build`.
+
+## 2025-03-18 - Nested array operations in React Renders
+**Learning:** In React components like `PackingListSection` where derived state involves multiple `flatMap` and `filter` operations on deeply nested relational data (like a trip's packing lists, categories, and items), performing these calculations directly in the render cycle severely blocks the main thread during unrelated state updates (e.g. typing in an input field).
+**Action:** Always wrap expensive derived O(N) list calculations in `useMemo`. Ensure that any helper functions (like `getItemPackedState`) used within the calculation are either also memoized or their logic is inlined to prevent the `useMemo` from recalculating on every render due to unstable function references.
