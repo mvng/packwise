@@ -77,8 +77,10 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
             e.stopPropagation()
             setIsOpen(true)
           }}
-          className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-lg transition-colors"
+          className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-lg transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
           aria-label="Assign to luggage"
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
         >
           {currentIcon}
         </button>
@@ -112,7 +114,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
                       <button
                         key={tl.id}
                         onClick={() => handleSelect(tl.id)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
+                        className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                           isSelected
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -138,7 +140,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
                   {/* No Bag Option */}
                   <button
                     onClick={() => handleSelect(null)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
+                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                       !currentLuggageId
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -161,7 +163,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
                 <div className="p-6 pt-0">
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="w-full py-3 text-blue-600 font-semibold hover:bg-gray-50 rounded-xl transition-colors"
+                    className="w-full py-3 text-blue-600 font-semibold hover:bg-gray-50 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   >
                     Cancel
                   </button>
@@ -183,7 +185,9 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
           e.stopPropagation()
           setIsOpen(!isOpen)
         }}
-        className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-lg transition-colors"
+        className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-lg transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
         aria-label="Assign to luggage"
       >
         {currentIcon}
@@ -194,6 +198,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
           ref={popoverRef}
           className="absolute right-0 top-10 z-30 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 animate-in fade-in zoom-in-95 duration-200"
           style={{ transformOrigin: 'top right' }}
+          role="menu"
         >
           {tripLuggages.map((tl) => {
             const isSelected = tl.id === currentLuggageId
@@ -201,7 +206,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
               <button
                 key={tl.id}
                 onClick={() => handleSelect(tl.id)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500" role="menuitem"
               >
                 <div className="text-2xl">{luggageIcons[tl.luggage.type as LuggageType]}</div>
                 <div className="flex-1 text-left">
@@ -226,7 +231,7 @@ export default function LuggageAssignmentButton({ currentLuggageId, tripLuggages
           {/* No Bag Option */}
           <button
             onClick={() => handleSelect(null)}
-            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500" role="menuitem"
           >
             <div className="text-2xl">☐</div>
             <div className="flex-1 text-left">
